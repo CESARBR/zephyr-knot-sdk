@@ -20,6 +20,7 @@
 
 #include <net/net_app.h>
 
+#include "net.h"
 #include "tcp.h"
 
 #define PEER_IPV4_PORT 9994
@@ -31,17 +32,27 @@
 
 static struct net_app_ctx tcp6;
 static struct net_app_ctx tcp4;
+static net_recv_t recv;
 
 static void tcp_received(struct net_app_ctx *ctx,
 			 struct net_pkt *ipkt,
 			 int status,
 			 void *user_data)
 {
-	u16_t ilen;
+	struct net_buf *netbuf;
+	size_t ilen;
+	size_t dlen;
+	size_t hlen;
 
-	ilen = net_pkt_appdatalen(ipkt);
+	ilen = net_pkt_get_len(ipkt);
+	dlen = net_pkt_appdatalen(ipkt);
 
-	NET_DBG("TCP(%p) Received %u bytes", ctx, ilen);
+	if (ilen != dlen) {
+		netbuf = ipkt->frags;
+		hlen = net_pkt_appdata(ipkt) - netbuf->data;
+		net_buf_pull(netbuf, hlen);
+		recv(netbuf);
+	}
 
 	net_pkt_unref(ipkt);
 }
@@ -50,25 +61,7 @@ static void tcp_connected(struct net_app_ctx *ctx,
 			  int status,
 			  void *user_data)
 {
-	struct net_pkt *opkt;
-	char buffer[] = "Hello World";
-	int olen;
-	int ret;
-
-	opkt = net_app_get_net_pkt(ctx, AF_UNSPEC, BUF_TIMEOUT);
-	if (!opkt) {
-
-		NET_DBG("TCP(%p) Can't create TCP packet!", ctx);
-		return;
-	}
-
-	olen = net_pkt_append(opkt, sizeof(buffer), buffer, K_FOREVER);
-
-	ret = net_app_send_pkt(ctx, opkt, NULL, 0, K_FOREVER, NULL);
-	if (ret < 0) {
-		NET_DBG("TCP(%p) cam not send %p", ctx, opkt);
-		net_pkt_unref(opkt);
-	}
+	NET_DBG("TCP(%p) connected", ctx);
 }
 
 static int connect_tcp(struct net_app_ctx *ctx, const char *peer, int port)
@@ -100,11 +93,13 @@ fail:
 	return ret;
 }
 
-int tcp_start(void)
+int tcp_start(net_recv_t recv_cb)
 {
 	int ret = 0;
 
 	NET_DBG("Starting TCP IPv4(%p) IPv6(%p) ...", &tcp4, &tcp6);
+
+	recv = recv_cb;
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
 		ret = connect_tcp(&tcp6, CONFIG_NET_APP_PEER_IPV6_ADDR,
@@ -134,4 +129,22 @@ void tcp_stop(void)
 		net_app_close(&tcp4);
 		net_app_release(&tcp4);
 	}
+}
+
+int tcp_send(const u8_t *opdu, size_t olen)
+{
+	struct net_pkt *opkt;
+	int ret;
+
+	opkt = net_app_get_net_pkt(&tcp4, AF_UNSPEC, BUF_TIMEOUT);
+	if (!opkt)
+		return -EIO;
+
+	olen = net_pkt_append(opkt, olen, opdu, K_FOREVER);
+
+	ret = net_app_send_pkt(&tcp4, opkt, NULL, 0, K_FOREVER, NULL);
+	if (ret < 0)
+		net_pkt_unref(opkt);
+
+	return 0;
 }

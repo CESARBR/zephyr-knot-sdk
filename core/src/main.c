@@ -16,19 +16,42 @@
 #define NET_LOG_ENABLED 1
 
 #include <zephyr.h>
-
 #include <net/net_core.h>
-#include "tcp.h"
+#include <net/net_app.h>
+
+#include "proto.h"
+#include "net.h"
+
+K_PIPE_DEFINE(p2n_pipe, 100, 4);
+K_PIPE_DEFINE(n2p_pipe, 100, 4);
+static struct k_sem quit_lock;
 
 void main(void)
 {
 	NET_DBG("*** Welcome to KNoT! %s\n", CONFIG_ARCH);
-	if (IS_ENABLED(CONFIG_NET_TCP))
-		tcp_start();
 
-	for (;;)
-		k_sleep(K_FOREVER);
+	k_sem_init(&quit_lock, 0, UINT_MAX);
 
-	if (IS_ENABLED(CONFIG_NET_TCP))
-		tcp_stop();
+	/*
+	 * KNoT state thread: manage device registration, detects
+	 * sensor data changes acting like a proxy forwarding data
+	 * from sensors to network layer (and oposite). Proto is
+	 * consumer of ipdu fifo and producer of opdu.
+	 */
+	if (proto_start(&p2n_pipe, &n2p_pipe) < 0)
+		return;
+
+	/*
+	 * Network thread: manage traffic from TCP or non-ip wireless
+	 * technologies. Each technology(thread) is responsible for
+	 * managing incoming and outgoing data. Net is consumer of
+	 * opdu fifo and producer of ipdu.
+	 */
+	if (net_start(&p2n_pipe, &n2p_pipe) < 0)
+		return;
+
+	k_sem_take(&quit_lock, K_FOREVER);
+
+	net_stop();
+	proto_stop();
 }
