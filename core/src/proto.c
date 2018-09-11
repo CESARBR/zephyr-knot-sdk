@@ -20,6 +20,7 @@
 #include <net/buf.h>
 
 #include "knot_app.h"
+#include "sm.h"
 #include "proto.h"
 
 static struct k_thread rx_thread_data;
@@ -49,13 +50,16 @@ static void proto_thread(void)
 		ret = k_pipe_get(net2proto, ipdu, sizeof(ipdu),
 				 &ilen, 0U, K_NO_WAIT);
 
-		olen = 0;
+		olen = sm_run(ipdu, ilen, opdu, sizeof(opdu));
 
 		/* Sending data to NET thread */
-		k_pipe_put(proto2net, opdu, olen, &olen, olen, K_NO_WAIT);
+		if (olen != 0)
+			k_pipe_put(proto2net, opdu, olen, &olen, olen, K_NO_WAIT);
 
 		k_sleep(1000);
 	}
+
+	sm_stop();
 }
 
 int proto_start(struct k_pipe *p2n, struct k_pipe *n2p)
