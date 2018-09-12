@@ -100,7 +100,7 @@ int tcp6_start(net_recv_t recv_cb)
 	recv = recv_cb;
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
-		ret = connect_tcp6(&tcp6, CONFIG_NET_APP_PEER_IPV6_ADDR,
+		ret = connect_tcp6(&tcp6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR,
 				  PEER_IPV6_PORT);
 		if (ret < 0)
 			NET_ERR("Cannot init IPv6 TCP client (%d)", ret);
