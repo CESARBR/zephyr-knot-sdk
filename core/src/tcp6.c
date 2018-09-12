@@ -1,4 +1,4 @@
-/* tcp.c - KNoT Application Client */
+/* tcp6.c - KNoT Application Client */
 
 /*
  * Copyright (c) 2018, CESAR. All rights reserved.
@@ -21,9 +21,8 @@
 #include <net/net_app.h>
 
 #include "net.h"
-#include "tcp.h"
+#include "tcp6.h"
 
-#define PEER_IPV4_PORT 9994
 #define PEER_IPV6_PORT 9996
 
 #define BUF_TIMEOUT	K_MSEC(100)
@@ -31,10 +30,9 @@
 #define CONNECT_TIME	K_SECONDS(10)
 
 static struct net_app_ctx tcp6;
-static struct net_app_ctx tcp4;
 static net_recv_t recv;
 
-static void tcp_received(struct net_app_ctx *ctx,
+static void tcp6_received(struct net_app_ctx *ctx,
 			 struct net_pkt *ipkt,
 			 int status,
 			 void *user_data)
@@ -57,14 +55,14 @@ static void tcp_received(struct net_app_ctx *ctx,
 	net_pkt_unref(ipkt);
 }
 
-static void tcp_connected(struct net_app_ctx *ctx,
+static void tcp6_connected(struct net_app_ctx *ctx,
 			  int status,
 			  void *user_data)
 {
 	NET_DBG("TCP(%p) connected", ctx);
 }
 
-static int connect_tcp(struct net_app_ctx *ctx, const char *peer, int port)
+static int connect_tcp6(struct net_app_ctx *ctx, const char *peer, int port)
 {
 	int ret;
 
@@ -77,7 +75,7 @@ static int connect_tcp(struct net_app_ctx *ctx, const char *peer, int port)
 		goto fail;
 	}
 
-	ret = net_app_set_cb(ctx, tcp_connected, tcp_received, NULL, NULL);
+	ret = net_app_set_cb(ctx, tcp6_connected, tcp6_received, NULL, NULL);
 	if (ret < 0) {
 		NET_ERR("Cannot set callbacks (%d)", ret);
 		goto fail;
@@ -93,56 +91,44 @@ fail:
 	return ret;
 }
 
-int tcp_start(net_recv_t recv_cb)
+int tcp6_start(net_recv_t recv_cb)
 {
-	int ret = 0;
+	int ret = -EPERM;
 
-	NET_DBG("Starting TCP IPv4(%p) IPv6(%p) ...", &tcp4, &tcp6);
+	NET_DBG("Starting TCP IPv6(%p) ...", &tcp6);
 
 	recv = recv_cb;
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
-		ret = connect_tcp(&tcp6, CONFIG_NET_APP_PEER_IPV6_ADDR,
+		ret = connect_tcp6(&tcp6, CONFIG_NET_APP_PEER_IPV6_ADDR,
 				  PEER_IPV6_PORT);
 		if (ret < 0)
 			NET_ERR("Cannot init IPv6 TCP client (%d)", ret);
 	}
 
-	if (IS_ENABLED(CONFIG_NET_IPV4)) {
-		ret = connect_tcp(&tcp4, CONFIG_NET_APP_PEER_IPV4_ADDR,
-				  PEER_IPV4_PORT);
-		if (ret < 0)
-			NET_ERR("Cannot init IPv4 TCP client (%d)", ret);
-	}
-
 	return ret;
 }
 
-void tcp_stop(void)
+void tcp6_stop(void)
 {
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
 		net_app_close(&tcp6);
 		net_app_release(&tcp6);
 	}
-
-	if (IS_ENABLED(CONFIG_NET_IPV4)) {
-		net_app_close(&tcp4);
-		net_app_release(&tcp4);
-	}
 }
 
-int tcp_send(const u8_t *opdu, size_t olen)
+int tcp6_send(const u8_t *opdu, size_t olen)
 {
 	struct net_pkt *opkt;
 	int ret;
 
-	opkt = net_app_get_net_pkt(&tcp4, AF_UNSPEC, BUF_TIMEOUT);
+	opkt = net_app_get_net_pkt(&tcp6, AF_UNSPEC, BUF_TIMEOUT);
 	if (!opkt)
 		return -EIO;
 
 	olen = net_pkt_append(opkt, olen, opdu, K_FOREVER);
 
-	ret = net_app_send_pkt(&tcp4, opkt, NULL, 0, K_FOREVER, NULL);
+	ret = net_app_send_pkt(&tcp6, opkt, NULL, 0, K_FOREVER, NULL);
 	if (ret < 0)
 		net_pkt_unref(opkt);
 

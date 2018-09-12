@@ -21,7 +21,7 @@
 #include <net/buf.h>
 
 #include "net.h"
-#include "tcp.h"
+#include "tcp6.h"
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
@@ -54,7 +54,7 @@ static void net_thread(void)
 	size_t ilen;
 	int ret;
 
-	ret = tcp_start(recv_cb);
+	ret = tcp6_start(recv_cb);
 	if (ret < 0) {
 		NET_DBG("NET: TCP start failure");
 		return;
@@ -68,12 +68,12 @@ static void net_thread(void)
 		ret = k_pipe_get(proto2net, ipdu, sizeof(ipdu),
 				 &ilen, 0U, K_NO_WAIT);
 		if (ret == 0 && ilen)
-			ret = tcp_send(ipdu, ilen);
+			ret = tcp6_send(ipdu, ilen);
 
 		k_sleep(1000);
 	}
 
-	tcp_stop();
+	tcp6_stop();
 }
 
 int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
