@@ -40,6 +40,8 @@ static void proto_thread(void)
 	/* Calling KNoT app: setup() */
 	setup();
 
+	sm_start();
+
 	while (1) {
 		/* Calling KNoT app: loop() */
 		loop();
@@ -54,7 +56,8 @@ static void proto_thread(void)
 
 		/* Sending data to NET thread */
 		if (olen != 0)
-			k_pipe_put(proto2net, opdu, olen, &olen, olen, K_NO_WAIT);
+			k_pipe_put(proto2net, opdu, olen,
+				   &olen, olen, K_NO_WAIT);
 
 		k_sleep(1000);
 	}
