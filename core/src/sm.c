@@ -20,6 +20,7 @@
 #define TIMEOUT_WIN				15 /* 15 sec */
 
 static bool is_registered = false;
+static bool schemas_done = false;
 
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
@@ -62,6 +63,45 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 	}
 	/* TODO: Check if ipdu received is for error */
 
+	return next;
+}
+
+static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
+				u8_t *opdu, size_t olen, size_t *len)
+{
+	enum sm_state next = STATE_AUTH;
+	*len = 0;
+
+	/* Timeout expired, resend message */
+	if (resend) {
+		/* TODO: Read credentials from non-volatile memory */
+		/* TODO: Send auth request */
+		strncpy(opdu, "AUTH", olen);
+		*len = strlen(opdu);
+		goto done;
+	}
+	/* TODO: Check if ipdu received is for error */
+	/* If authenticate message is not OK, goto error */
+	if (strstr(ipdu, "ERROR") != NULL) {
+		state = STATE_ERROR;
+		goto done;
+	}
+	/*
+	 * If the ipdu is not error nor auth, it is some async message
+	 * and it is ignored
+	 */
+	/* TODO: Check if ipdu received is for authenticate */
+	if (strstr(ipdu, "AUTH") == NULL)
+		goto done;
+
+	/* TODO: Retrieve from non-volatile memory if all schemas were sent */
+	/*
+	 * If all schemas were sent move to state online. Otherwise, resend
+	 * all the schemas.
+	 */
+	next = (schemas_done ? STATE_ONLINE : STATE_SCH);
+
+done:
 	return next;
 }
 
@@ -118,9 +158,8 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	case STATE_AUTH:
 		/* Authenticate if registed previously */
-		strcpy(opdu, "AUTH");
-		len = strlen(opdu);
-		next = STATE_SCH;
+		resend = ((to_exp || to_on == false ) ? true : false);
+		next = state_auth(resend, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_SCH:
 		/* Send schemas */
