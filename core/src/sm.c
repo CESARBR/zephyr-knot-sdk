@@ -17,10 +17,13 @@
 
 #include "sm.h"
 
-#define TIMEOUT_DISABLED			0xFFFF
-#define TIMEOUT_WIN				15000
+#define TIMEOUT_WIN				15 /* 15 sec */
 
 static bool is_registered = false;
+
+static struct k_timer to;	/* Re-send timeout */
+static bool to_on;		/* Timeout active */
+static bool to_exp;		/* Timeout expired */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -33,7 +36,13 @@ enum sm_state {
 
 static enum sm_state state;
 
-static enum sm_state state_register(bool restart,
+static void timer_expired(struct k_timer *to)
+{
+	to_exp = true;
+	to_on = false;
+}
+
+static enum sm_state state_register(bool resend,
 				    const unsigned char *ipdu, size_t ilen,
 				    unsigned char *opdu, size_t olen,
 				    size_t *len)
@@ -42,7 +51,7 @@ static enum sm_state state_register(bool restart,
 	*len = 0;
 
 	/* Timeout expired, resend message */
-	if (restart) {
+	if (resend) {
 		/* TODO: Send register request */
 		strncpy(opdu, "REG", olen);
 		*len = strlen(opdu);
@@ -72,21 +81,27 @@ int sm_start(void)
 	if (is_registered == false)
 		state = STATE_REG;
 
+	k_timer_init(&to, timer_expired, NULL);
+	to_on = false;
+	to_exp = false;
+
 	return 0;
 }
 
 void sm_stop(void)
 {
 	NET_DBG("SM: Stop");
+	if (to_on)
+		k_timer_stop(&to);
+
 }
 
 int sm_run(const unsigned char *ipdu, size_t ilen,
 	   unsigned char *opdu, size_t olen)
 {
-	static int elapsed_time = TIMEOUT_DISABLED;
-	bool restart = false;
 	enum sm_state next;
 	size_t len = 0;
+	bool resend;
 
 	/* TODO: Check if timeout expired */
 
@@ -95,42 +110,64 @@ int sm_run(const unsigned char *ipdu, size_t ilen,
 	 *  data is received, it is not necessary to run the state machine.
 	 */
 
-	if (elapsed_time != TIMEOUT_DISABLED && ilen == 0)
+	if (to_on && ilen == 0)
 		return 0; /* Waiting RSP */
-
-	restart = (elapsed_time > TIMEOUT_WIN ? true : false);
 
 	switch (state) {
 	case STATE_REG:
 		/* Register new device */
-		next = state_register(restart, ipdu, ilen, opdu, olen, &len);
+		resend = ((to_exp || to_on == false ) ? true : false);
+		next = state_register(resend, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_AUTH:
 		/* Authenticate if registed previously */
 		strcpy(opdu, "AUTH");
+		len = strlen(opdu);
 		next = STATE_SCH;
 		break;
 	case STATE_SCH:
 		/* Send schemas */
 		strcpy(opdu, "SCHM");
+		len = strlen(opdu);
 		next = STATE_ONESHOOT;
 		break;
 	case STATE_ONESHOOT:
 		/* Sends the status of each item. */
 		strcpy(opdu, "SHOOT");
+		len = strlen(opdu);
 		next = STATE_ONLINE;
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
 		strcpy(opdu, "ONLINE");
-		next = STATE_ONLINE;
+		len = strlen(opdu);
+		next = STATE_ERROR;
 		break;
 	default:
 		strcpy(opdu, "ERR");
+		len = strlen(opdu);
 		next = STATE_ERROR;
 		break;
 	}
 
+	/* State has changed: Stop timer */
+	if (next != state) {
+		if (to_on) {
+			k_timer_stop(&to);
+			to_on = false;
+			to_exp = false;
+		}
+		goto done;
+	}
+
+	/* At same state: Waiting RSP or Resending (timeout expired) */
+	if (len && to_on == false) {
+		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
+		to_on = true;
+		to_exp = false;
+		goto done;
+	}
+done:
 	state = next;
 
 	return len;
