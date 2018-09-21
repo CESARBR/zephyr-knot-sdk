@@ -16,6 +16,7 @@
 #include <net/net_core.h>
 
 #include "sm.h"
+#include "knot_protocol.h"
 
 #define TIMEOUT_WIN				15 /* 15 sec */
 
@@ -69,30 +70,43 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 				u8_t *opdu, size_t olen, size_t *len)
 {
+	knot_msg *msg;
 	enum sm_state next = STATE_AUTH;
-	*len = 0;
 
-	/* Timeout expired, resend message */
+	/* Default UUID and TOKEN used for testing while NVM is not done */
+	const u8_t uuid[] = "365eb258-89d2-43b4-b011-f78a28910000";
+	const u8_t token[] = "9bcfa43050f37cd2635adb1d160ceb22c167e461";
+
+	/* Timeout expired (or new device), resend message */
 	if (resend) {
+		/* Send authentication request and waiting response */
+		msg = (knot_msg *) opdu;
 		/* TODO: Read credentials from non-volatile memory */
-		/* TODO: Send auth request */
-		strncpy(opdu, "AUTH", olen);
-		*len = strlen(opdu);
+		strncpy(msg->auth.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);
+		strncpy(msg->auth.token, token, KNOT_PROTOCOL_TOKEN_LEN);
+
+		msg->hdr.type = KNOT_MSG_AUTH_REQ;
+		msg->hdr.payload_len = KNOT_PROTOCOL_UUID_LEN +
+					KNOT_PROTOCOL_TOKEN_LEN;
+		*len = sizeof(msg->hdr) + msg->hdr.payload_len;
 		goto done;
 	}
-	/* TODO: Check if ipdu received is for error */
-	/* If authenticate message is not OK, goto error */
-	if (strstr(ipdu, "ERROR") != NULL) {
-		state = STATE_ERROR;
-		goto done;
-	}
+
 	/*
 	 * If the ipdu is not error nor auth, it is some async message
 	 * and it is ignored
 	 */
-	/* TODO: Check if ipdu received is for authenticate */
-	if (strstr(ipdu, "AUTH") == NULL)
+	if (ilen == 0)
 		goto done;
+
+	msg = (knot_msg *) ipdu;
+	*len = 0;
+	if (msg->hdr.type != KNOT_MSG_AUTH_RESP &&
+	    msg->action.result != KNOT_SUCCESS) {
+		/* Unexpected PDU opcode */
+		next = STATE_ERROR;
+		goto done;
+	}
 
 	/* TODO: Retrieve from non-volatile memory if all schemas were sent */
 	/*
