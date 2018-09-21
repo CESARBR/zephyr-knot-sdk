@@ -11,5 +11,4 @@
 int sm_start(void);
 void sm_stop(void);
 
-int sm_run(const unsigned char *ipdu, size_t ilen,
-	   unsigned char *opdu, size_t olen);
+int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen);

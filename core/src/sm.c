@@ -42,10 +42,8 @@ static void timer_expired(struct k_timer *to)
 	to_on = false;
 }
 
-static enum sm_state state_register(bool resend,
-				    const unsigned char *ipdu, size_t ilen,
-				    unsigned char *opdu, size_t olen,
-				    size_t *len)
+static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
+				    u8_t *opdu, size_t olen, size_t *len)
 {
 	enum sm_state next = STATE_REG;
 	*len = 0;
@@ -96,8 +94,7 @@ void sm_stop(void)
 
 }
 
-int sm_run(const unsigned char *ipdu, size_t ilen,
-	   unsigned char *opdu, size_t olen)
+int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 {
 	enum sm_state next;
 	size_t len = 0;

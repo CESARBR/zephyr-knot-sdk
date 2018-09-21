@@ -31,8 +31,8 @@ static struct k_pipe *net2proto;
 static void proto_thread(void)
 {
 	/* Considering KNOT Max MTU 32 */
-	unsigned char ipdu[32];
-	unsigned char opdu[32];
+	u8_t ipdu[32];
+	u8_t opdu[32];
 	size_t olen;
 	size_t ilen;
 	int ret;
