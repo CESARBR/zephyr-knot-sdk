@@ -14,7 +14,7 @@ endmacro()
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(NONE)
 
-target_sources(                     app PRIVATE src/main.c)
-target_sources_ifdef(CONFIG_NET_TCP app PRIVATE src/proto.c src/net.c src/tcp6.c src/sm.c src/hello.c)
+FILE(GLOB app_sources src/*.c)
+target_sources(app PRIVATE ${app_sources})
 
 include($ENV{ZEPHYR_BASE}/samples/net/common/common.cmake)
