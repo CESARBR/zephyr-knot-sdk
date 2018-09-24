@@ -23,7 +23,7 @@
 #include "net.h"
 #include "tcp6.h"
 
-#define PEER_IPV6_PORT 9996
+#define PEER_IPV6_PORT 8886
 
 #define BUF_TIMEOUT	K_MSEC(100)
 #define WAIT_TIME	K_SECONDS(10)
