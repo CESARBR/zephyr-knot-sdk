@@ -31,19 +31,28 @@ static struct k_pipe *net2proto;
 static bool recv_cb(struct net_buf *netbuf)
 {
 	u8_t opdu[32];
-	struct net_buf *frag;
-	size_t olen;
-	u16_t offset = 0;
+	struct net_buf *frag = netbuf;
+	size_t olen = 0;
+	size_t frag_len = 0;
+	u16_t pos = 0;
 
 	memset(opdu, 0, sizeof(opdu));
-	/* Data comming from network */
-	frag = net_frag_read(netbuf, offset, &offset,
-			     netbuf->len, (u8_t *) opdu);
-        if (!frag && offset == 0xffff)
-		return true;
+
+	while (frag) {
+		/* Data comming from network */
+		if ((olen + frag->len) > sizeof(opdu)) {
+			NET_ERR("Small MTU");
+			return true;
+		}
+
+		frag_len = frag->len;
+		frag = net_frag_read(frag, pos, &pos, frag_len,
+				     (u8_t *) (opdu + olen));
+		olen += frag_len;
+	}
 
 	/* Sending PROTO to NET thread */
-	k_pipe_put(net2proto, opdu, netbuf->len, &olen, netbuf->len, K_NO_WAIT);
+	k_pipe_put(net2proto, opdu, olen, &olen, 0, K_NO_WAIT);
 
 	return true;
 }
