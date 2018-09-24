@@ -30,7 +30,7 @@ static struct k_pipe *net2proto;
 
 static bool recv_cb(struct net_buf *netbuf)
 {
-	u8_t opdu[32];
+	u8_t opdu[128];
 	struct net_buf *frag = netbuf;
 	size_t olen = 0;
 	size_t frag_len = 0;
@@ -59,7 +59,7 @@ static bool recv_cb(struct net_buf *netbuf)
 
 static void net_thread(void)
 {
-	u8_t ipdu[32];
+	u8_t ipdu[128];
 	size_t ilen;
 	int ret;
 

@@ -22,8 +22,8 @@
 #include "proto.h"
 #include "net.h"
 
-K_PIPE_DEFINE(p2n_pipe, 100, 4);
-K_PIPE_DEFINE(n2p_pipe, 100, 4);
+K_PIPE_DEFINE(p2n_pipe, 128, 4);
+K_PIPE_DEFINE(n2p_pipe, 128, 4);
 static struct k_sem quit_lock;
 
 void main(void)
