@@ -14,11 +14,14 @@
 
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <misc/byteorder.h>
 
 #include "sm.h"
 #include "knot_protocol.h"
 
 #define TIMEOUT_WIN				15 /* 15 sec */
+
+#define THING_NAME				"ZephyrThing0"
 
 static bool is_registered = false;
 static bool schemas_done = false;
@@ -26,6 +29,9 @@ static bool schemas_done = false;
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
 static bool to_exp;		/* Timeout expired */
+
+static char uuid[KNOT_PROTOCOL_UUID_LEN];	/* Device uuid */
+static char token[KNOT_PROTOCOL_TOKEN_LEN];	/* Device token */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -48,22 +54,48 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 				    u8_t *opdu, size_t olen, size_t *len)
 {
 	enum sm_state next = STATE_REG;
-	*len = 0;
+	const char *devname = THING_NAME;
+	knot_msg *msg;
+	size_t devname_len;
 
 	/* Timeout expired, resend message */
 	if (resend) {
-		/* TODO: Send register request */
-		strncpy(opdu, "REG", olen);
-		*len = strlen(opdu);
-	}
-	/* TODO: Check if ipdu received is for register */
-	if (strstr(ipdu, "REG") != NULL) {
-		/* TODO: Save credentials on storage */
-		is_registered = true;
-		next = STATE_SCH;
-	}
-	/* TODO: Check if ipdu received is for error */
+		msg = (knot_msg *) opdu;
+		msg->reg.hdr.type = KNOT_MSG_REGISTER_REQ;
+		devname_len = strlen(devname);
+		memcpy(msg->reg.devName, devname, devname_len);
+		msg->reg.hdr.payload_len = devname_len + sizeof(msg->reg.id);
+		/* TODO: Use random id */
+		msg->reg.id = sys_cpu_to_be64(0x123456789abcdef);
 
+		*len = sizeof(msg->reg.hdr) + msg->reg.hdr.payload_len;
+		goto done;
+	}
+
+	*len = 0;
+	/* Finish if no message was received */
+	if (ilen == 0)
+		goto done;
+
+	/* Decode received message */
+	msg = (knot_msg *) ipdu;
+
+	if (msg->cred.hdr.type != KNOT_MSG_REGISTER_RESP)
+		goto done;
+
+	if (msg->cred.result != KNOT_SUCCESS) {
+		next = STATE_ERROR;
+		goto done;
+	}
+
+	memcpy(uuid, msg->cred.uuid, KNOT_PROTOCOL_UUID_LEN);
+	memcpy(token, msg->cred.token, KNOT_PROTOCOL_TOKEN_LEN);
+
+	/* TODO: Save credentials to NVS */
+
+	is_registered = true;
+	next = STATE_SCH;
+done:
 	return next;
 }
 
