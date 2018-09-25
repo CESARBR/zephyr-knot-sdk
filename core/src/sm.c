@@ -101,9 +101,12 @@ static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 
 	msg = (knot_msg *) ipdu;
 	*len = 0;
-	if (msg->hdr.type != KNOT_MSG_AUTH_RESP &&
-	    msg->action.result != KNOT_SUCCESS) {
-		/* Unexpected PDU opcode */
+
+	/* Unexpected PDU opcode */
+	if (msg->hdr.type != KNOT_MSG_AUTH_RESP)
+		goto done;
+
+	if (msg->action.result != KNOT_SUCCESS) {
 		next = STATE_ERROR;
 		goto done;
 	}
