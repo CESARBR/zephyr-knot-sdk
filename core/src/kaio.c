@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "knot_protocol.h"
+#include "kaio_pdu.h"
 #include "kaio.h"
 
 #define KNOT_THING_DATA_MAX    3
@@ -68,6 +69,33 @@ s8_t kaio_register(u8_t id, const char *name,
 
 	io->read_cb = read_cb;
 	io->write_cb = write_cb;
+
+	return 0;
+}
+
+s8_t kaio_pdu_create_schema(u8_t id, knot_msg_schema *msg)
+{
+	struct aio *io;
+
+	if (aio[id].id == -1)
+		return -EINVAL;
+
+	io = &aio[id];
+
+	if (id == KNOT_THING_DATA_MAX-1)
+		msg->hdr.type = KNOT_MSG_SCHEMA;
+	else
+		msg->hdr.type = KNOT_MSG_SCHEMA_END;
+
+	msg->sensor_id = id;
+
+	msg->values.value_type = io->schema.value_type;
+	msg->values.unit = io->schema.unit;
+	/* TODO: missing endianess */
+	msg->values.type_id = io->schema.type_id;
+	strncpy(msg->values.name, io->schema.name, KNOT_PROTOCOL_DATA_NAME_LEN);
+
+	msg->hdr.payload_len = sizeof(msg->values) + sizeof(msg->sensor_id);
 
 	return 0;
 }
