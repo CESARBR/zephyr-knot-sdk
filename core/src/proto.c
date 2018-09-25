@@ -22,6 +22,7 @@
 #include "knot.h"
 #include "sm.h"
 #include "proto.h"
+#include "storage.h"
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
@@ -36,6 +37,9 @@ static void proto_thread(void)
 	size_t olen;
 	size_t ilen;
 	int ret;
+
+	/* Initializing KNoT storage */
+	storage_init();
 
 	/* Calling KNoT app: setup() */
 	setup();

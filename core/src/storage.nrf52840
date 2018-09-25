@@ -1,0 +1,92 @@
+/* storage.c - KNoT Thing Storage handler */
+
+/*
+ * Copyright (c) 2018, CESAR. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr.h>
+#include <nvs/nvs.h>
+#include <string.h>
+
+#include "storage.h"
+#include "knot_protocol.h"
+
+/* Flash parameters */
+#define NVS_SECTOR_SIZE 	FLASH_ERASE_BLOCK_SIZE
+#define NVS_SECTOR_COUNT 	2
+#define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET
+
+#define MAC_ADDR_LEN 12 // in bytes
+
+static struct nvs_fs knot_fs = {
+	.sector_size = NVS_SECTOR_SIZE,
+	.sector_count = NVS_SECTOR_COUNT,
+	.offset = NVS_STORAGE_OFFSET,
+};
+
+int8_t storage_init(void)
+{
+	return nvs_init(&knot_fs, FLASH_DEV_NAME);
+}
+
+int8_t storage_reset(void)
+{
+	int ret;
+
+	/* Clear MAC */
+	ret = nvs_delete(&knot_fs, STORAGE_KEY_MAC);
+	if (ret < 0)
+		return ret;
+
+	/* Clear UUID */
+	ret = nvs_delete(&knot_fs, STORAGE_KEY_UUID);
+	if (ret < 0)
+		return ret;
+
+	/* Clear TOKEN */
+	return nvs_delete(&knot_fs, STORAGE_KEY_TOKEN);
+}
+
+int8_t storage_get(enum storage_key key, u8_t *value)
+{
+	size_t len;
+
+	switch (key) {
+	case STORAGE_KEY_UUID:
+		len = KNOT_PROTOCOL_UUID_LEN;
+		break;
+	case STORAGE_KEY_TOKEN:
+		len = KNOT_PROTOCOL_TOKEN_LEN;
+		break;
+	case STORAGE_KEY_MAC:
+		len = MAC_ADDR_LEN;
+		break;
+	default:
+		return -EINVAL;
+	}
+	/* TODO: Fix return value */
+	return nvs_read(&knot_fs, key, value, len);
+}
+
+int8_t storage_set(enum storage_key key, const u8_t *value)
+{
+	size_t len;
+
+	switch (key) {
+	case STORAGE_KEY_UUID:
+		len = KNOT_PROTOCOL_UUID_LEN;
+		break;
+	case STORAGE_KEY_TOKEN:
+		len = KNOT_PROTOCOL_TOKEN_LEN;
+		break;
+	case STORAGE_KEY_MAC:
+		len = MAC_ADDR_LEN;
+		break;
+	default:
+		return -1;
+	}
+
+	return nvs_write(&knot_fs, key, value, len);
+}
