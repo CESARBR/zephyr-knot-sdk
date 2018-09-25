@@ -11,33 +11,30 @@
 #include "kaio.h"
 
 #define KNOT_THING_DATA_MAX    3
+#define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
 static struct aio {
-       /* KNoT identifier */
-       u8_t                    id;
+	/* KNoT identifier */
+	u8_t			id;
 
-       /* Schema values */
-       u8_t                    value_type;
-       u8_t                    unit;
-       uint16_t                type_id;
-       const char              *name; /* TODO */
+	/* Schema values */
+	knot_schema		schema;
 
-       /* Data values */
-       bool                    new_value;
-       knot_value_type         last_value;
-       u8_t                    *last_value_raw;
-       u8_t                    raw_length;
+	/* Data values */
+	bool			new_value;
+	knot_value_type		last_value;
+	u8_t			*last_value_raw;
+	u8_t			raw_length;
 
-       /* Config values */
-       knot_config             config;
+	/* Config values */
+	knot_config		config;
 
-       /* Time values */
-       u32_t                   last_timeout;
+	/* Time values */
+	u32_t			last_timeout;
 
-       kaio_callback_t		read_cb;
-       kaio_callback_t		write_cb;
+	kaio_callback_t		read_cb;
+	kaio_callback_t		write_cb;
 } aio[KNOT_THING_DATA_MAX];
-
 
 s8_t kaio_register(u8_t id, const char *name,
 		   u16_t type_id, u8_t value_type, u8_t unit,
@@ -57,11 +54,13 @@ s8_t kaio_register(u8_t id, const char *name,
 	io = &aio[id];
 
 	io->id = id;
-	io->name = name;
-	io->type_id = type_id;
-	io->unit = unit;
-	io->value_type = value_type;
+	io->schema.type_id = type_id;
+	io->schema.unit = unit;
+	io->schema.value_type = value_type;
 	io->new_value = false;
+
+	strncpy(io->schema.name, name,
+		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
 
 	/* Set default config */
 	io->config.event_flags = KNOT_EVT_FLAG_TIME;
@@ -71,5 +70,4 @@ s8_t kaio_register(u8_t id, const char *name,
 	io->write_cb = write_cb;
 
 	return 0;
-
 }
