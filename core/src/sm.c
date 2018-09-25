@@ -32,6 +32,7 @@ static bool to_exp;		/* Timeout expired */
 
 static char uuid[KNOT_PROTOCOL_UUID_LEN];	/* Device uuid */
 static char token[KNOT_PROTOCOL_TOKEN_LEN];	/* Device token */
+static uint64_t device_id = 0;			/* Device id */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -65,8 +66,7 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 		devname_len = strlen(devname);
 		memcpy(msg->reg.devName, devname, devname_len);
 		msg->reg.hdr.payload_len = devname_len + sizeof(msg->reg.id);
-		/* TODO: Use random id */
-		msg->reg.id = sys_cpu_to_be64(0x123456789abcdef);
+		msg->reg.id = sys_cpu_to_be64(device_id);
 
 		*len = sizeof(msg->reg.hdr) + msg->reg.hdr.payload_len;
 		goto done;
@@ -164,6 +164,13 @@ int sm_start(void)
 	NET_DBG("SM: State Machine start");
 
 	state = STATE_AUTH;
+	/* TODO: Check for id from storage */
+	if (device_id == 0) {
+		device_id = sys_rand32_get();
+		device_id *= device_id;
+		/* TODO: Save id to storage */
+	}
+
 	/* TODO: Read credentials from storage */
 	if (is_registered == false)
 		state = STATE_REG;
