@@ -14,7 +14,6 @@
 
 #include <zephyr.h>
 #include <net/net_core.h>
-#include <misc/byteorder.h>
 
 #include "sm.h"
 #include "knot_protocol.h"
@@ -66,7 +65,8 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 		devname_len = strlen(devname);
 		memcpy(msg->reg.devName, devname, devname_len);
 		msg->reg.hdr.payload_len = devname_len + sizeof(msg->reg.id);
-		msg->reg.id = sys_cpu_to_be64(device_id);
+		/* TODO: missing endianness */
+		msg->reg.id = device_id;
 
 		*len = sizeof(msg->reg.hdr) + msg->reg.hdr.payload_len;
 		goto done;
