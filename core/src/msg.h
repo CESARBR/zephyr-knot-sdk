@@ -4,4 +4,5 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-s8_t kaio_pdu_create_schema(u8_t id, knot_msg_schema *msg);
+void msg_create_schema(knot_msg_schema *msg, u8_t id,
+		       const knot_schema *schema, bool end);

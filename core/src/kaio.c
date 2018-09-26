@@ -8,8 +8,9 @@
 #include <string.h>
 
 #include "knot_protocol.h"
-#include "kaio_pdu.h"
+#include "msg.h"
 #include "kaio.h"
+#include "knot.h"
 
 #define KNOT_THING_DATA_MAX    3
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
@@ -33,13 +34,13 @@ static struct aio {
 	/* Time values */
 	u32_t			last_timeout;
 
-	kaio_callback_t		read_cb;
-	kaio_callback_t		write_cb;
+	knot_callback_t		read_cb;
+	knot_callback_t		write_cb;
 } aio[KNOT_THING_DATA_MAX];
 
-s8_t kaio_register(u8_t id, const char *name,
+s8_t knot_register(u8_t id, const char *name,
 		   u16_t type_id, u8_t value_type, u8_t unit,
-		   kaio_callback_t read_cb, kaio_callback_t write_cb)
+		   knot_callback_t read_cb, knot_callback_t write_cb)
 {
 	struct aio *io;
 
@@ -73,29 +74,10 @@ s8_t kaio_register(u8_t id, const char *name,
 	return 0;
 }
 
-s8_t kaio_pdu_create_schema(u8_t id, knot_msg_schema *msg)
+const knot_schema *kaio_get_schema(u8_t id)
 {
-	struct aio *io;
-
 	if (aio[id].id == -1)
-		return -EINVAL;
+		return NULL;
 
-	io = &aio[id];
-
-	if (id == KNOT_THING_DATA_MAX-1)
-		msg->hdr.type = KNOT_MSG_SCHEMA;
-	else
-		msg->hdr.type = KNOT_MSG_SCHEMA_END;
-
-	msg->sensor_id = id;
-
-	msg->values.value_type = io->schema.value_type;
-	msg->values.unit = io->schema.unit;
-	/* TODO: missing endianess */
-	msg->values.type_id = io->schema.type_id;
-	strncpy(msg->values.name, io->schema.name, KNOT_PROTOCOL_DATA_NAME_LEN);
-
-	msg->hdr.payload_len = sizeof(msg->values) + sizeof(msg->sensor_id);
-
-	return 0;
+	return &(aio[id].schema);
 }
