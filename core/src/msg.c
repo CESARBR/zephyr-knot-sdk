@@ -20,7 +20,7 @@ size_t msg_create_auth(knot_msg *msg, const char *uuid, const char *token)
 	return (sizeof(msg->hdr) + msg->hdr.payload_len);
 }
 
-void msg_create_schema(knot_msg_schema *msg, u8_t id,
+size_t msg_create_schema(knot_msg_schema *msg, u8_t id,
 		       const knot_schema *schema, bool end)
 {
 	msg->hdr.type = (end ? KNOT_MSG_SCHEMA_END : KNOT_MSG_SCHEMA);
@@ -33,4 +33,6 @@ void msg_create_schema(knot_msg_schema *msg, u8_t id,
 	strncpy(msg->values.name, schema->name, KNOT_PROTOCOL_DATA_NAME_LEN);
 
 	msg->hdr.payload_len = sizeof(msg->values) + sizeof(msg->sensor_id);
+
+	return (sizeof(msg->hdr) + msg->hdr.payload_len);
 }
