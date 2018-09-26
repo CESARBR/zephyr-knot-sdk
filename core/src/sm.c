@@ -264,12 +264,10 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
 		strcpy(opdu, "ONLINE");
-		len = strlen(opdu);
 		next = STATE_ERROR;
 		break;
 	default:
 		strcpy(opdu, "ERR");
-		len = strlen(opdu);
 		next = STATE_ERROR;
 		break;
 	}
