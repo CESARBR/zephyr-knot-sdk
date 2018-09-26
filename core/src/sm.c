@@ -98,10 +98,6 @@ static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 	knot_msg *msg;
 	enum sm_state next = STATE_AUTH;
 
-	/* Default UUID and TOKEN used for testing while NVM is not done */
-	const u8_t uuid[] = "365eb258-89d2-43b4-b011-f78a28910000";
-	const u8_t token[] = "9bcfa43050f37cd2635adb1d160ceb22c167e461";
-
 	/* Timeout expired (or new device), resend message */
 	if (resend) {
 		/* Send authentication request and waiting response */
@@ -130,12 +126,8 @@ static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 		goto done;
 	}
 
-	/* TODO: Retrieve from non-volatile memory if all schemas were sent */
-	/*
-	 * If all schemas were sent move to state online. Otherwise, resend
-	 * all the schemas.
-	 */
-	next = (schemas_done ? STATE_ONLINE : STATE_SCH);
+	/* Credentials are only saved on NVM after all the schemas are sent */
+	next = (strlen(uuid) && strlen(token) ? STATE_ONLINE : STATE_SCH);
 
 done:
 	return next;
@@ -206,6 +198,9 @@ done:
 int sm_start(void)
 {
 	NET_DBG("SM: State Machine start");
+
+	memset(uuid, 0, sizeof(uuid));
+	memset(token, 0, sizeof(token));
 
 	state = STATE_AUTH;
 	/* TODO: Check for id from storage */
