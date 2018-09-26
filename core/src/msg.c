@@ -11,6 +11,18 @@
 
 #include "msg.h"
 
+size_t msg_create_reg(knot_msg *msg, uint64_t id,
+		      const char *name, size_t name_len)
+{
+	msg->reg.hdr.type = KNOT_MSG_REGISTER_REQ;
+	memcpy(msg->reg.devName, name, name_len);
+	msg->reg.hdr.payload_len = name_len + sizeof(msg->reg.id);
+	/* TODO: missing endianness */
+	msg->reg.id = id;
+
+	return (sizeof(msg->reg.hdr) + msg->reg.hdr.payload_len);
+}
+
 size_t msg_create_auth(knot_msg *msg, const char *uuid, const char *token)
 {
 	strncpy(msg->auth.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);

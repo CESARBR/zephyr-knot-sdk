@@ -57,19 +57,11 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 	enum sm_state next = STATE_REG;
 	const char *devname = THING_NAME;
 	knot_msg *msg;
-	size_t devname_len;
 
 	/* Timeout expired, resend message */
 	if (resend) {
 		msg = (knot_msg *) opdu;
-		msg->reg.hdr.type = KNOT_MSG_REGISTER_REQ;
-		devname_len = strlen(devname);
-		memcpy(msg->reg.devName, devname, devname_len);
-		msg->reg.hdr.payload_len = devname_len + sizeof(msg->reg.id);
-		/* TODO: missing endianness */
-		msg->reg.id = device_id;
-
-		*len = sizeof(msg->reg.hdr) + msg->reg.hdr.payload_len;
+		*len = msg_create_reg(msg, device_id, devname, strlen(devname));
 		goto done;
 	}
 
