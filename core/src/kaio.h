@@ -6,4 +6,6 @@
 
 /* Internal(Private) functions */
 
+#define KNOT_THING_DATA_MAX    3
+
 const knot_schema *kaio_get_schema(u8_t id);

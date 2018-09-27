@@ -16,6 +16,7 @@
 #include <net/net_core.h>
 
 #include "knot_protocol.h"
+#include "kaio.h"
 #include "msg.h"
 #include "sm.h"
 
@@ -141,6 +142,64 @@ done:
 	return next;
 }
 
+static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
+				  u8_t *opdu, size_t olen, size_t *len)
+{
+	knot_msg *imsg = (knot_msg *) ipdu;
+	knot_msg *omsg = (knot_msg *) opdu;
+	enum sm_state next = STATE_SCH;
+	const knot_schema *schema;
+	static int id_index = 0;
+	bool end;
+
+	/* Timeout expired (or new device), resend message */
+	if (resend) {
+		/* Resend previous schema */
+		end = (id_index == (KNOT_THING_DATA_MAX - 1) ? true : false);
+		schema = kaio_get_schema(id_index);
+
+		*len = msg_create_schema(omsg, id_index, schema, end);
+		/* Stay at STATE_SCH waiting confirmation */
+		goto done;
+	}
+
+	/* Waiting response ... */
+	if (ilen == 0)
+		goto done;
+
+	switch (imsg->hdr.type) {
+	case KNOT_MSG_SCHEMA_RESP:
+		if (imsg->action.result == KNOT_SUCCESS)
+			id_index++;
+
+		end = (id_index == (KNOT_THING_DATA_MAX - 1) ? true : false);
+		schema = kaio_get_schema(id_index);
+
+		*len = msg_create_schema(omsg, id_index, schema, end);
+		/* Stay at STATE_SCH waiting confirmation */
+		break;
+	case KNOT_MSG_SCHEMA_END_RESP:
+		/* Last fragment confirmed? */
+		if (imsg->action.result == KNOT_SUCCESS) {
+			next = STATE_ONLINE;
+			schemas_done = true;
+			*len = 0;
+		} else {
+			/* Resending last fragment */
+			schema = kaio_get_schema(id_index);
+			*len = msg_create_schema(omsg, id_index, schema, true);
+		}
+		break;
+	default:
+		next = STATE_ERROR;
+		*len = 0;
+		break;
+	}
+
+done:
+	return next;
+}
+
 /*
  * Start state machine selecting the first state it should go to.
  * If the thing has credentials stored, send auth request.
@@ -206,9 +265,8 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	case STATE_SCH:
 		/* Send schemas */
-		strcpy(opdu, "SCHM");
-		len = strlen(opdu);
-		next = STATE_ONESHOOT;
+		resend = ((to_exp || to_on == false ) ? true : false);
+		next = state_schema(resend, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_ONESHOOT:
 		/* Sends the status of each item. */

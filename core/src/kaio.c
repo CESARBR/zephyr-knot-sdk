@@ -12,7 +12,6 @@
 #include "kaio.h"
 #include "knot.h"
 
-#define KNOT_THING_DATA_MAX    3
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
 static struct aio {
