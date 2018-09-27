@@ -38,6 +38,8 @@ static struct aio {
 	knot_callback_t		write_cb;
 } aio[KNOT_THING_DATA_MAX];
 
+static u8_t last_id = 0xff;
+
 void knot_start(void)
 {
 	int index;
@@ -58,6 +60,10 @@ s8_t knot_register(u8_t id, const char *name,
 		   knot_callback_t read_cb, knot_callback_t write_cb)
 {
 	struct aio *io;
+
+	/* Out of index? */
+	if (id >= KNOT_THING_DATA_MAX)
+		return -EINVAL;
 
 	/* Assigned already? */
 	if (aio[id].id != 0xff)
@@ -85,6 +91,9 @@ s8_t knot_register(u8_t id, const char *name,
 	io->read_cb = read_cb;
 	io->write_cb = write_cb;
 
+	if (id > last_id || last_id == 0xff)
+		last_id = id;
+
 	return 0;
 }
 
@@ -94,4 +103,9 @@ const knot_schema *kaio_get_schema(u8_t id)
 		return NULL;
 
 	return &(aio[id].schema);
+}
+
+u8_t kaio_get_last_id(void)
+{
+	return last_id;
 }

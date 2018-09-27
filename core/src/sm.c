@@ -148,18 +148,16 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 	knot_msg *omsg = (knot_msg *) opdu;
 	enum sm_state next = STATE_SCH;
 	const knot_schema *schema;
-	static int id_index = 0;
+	static u8_t id_index = 0;
+	u8_t last_id;
 	bool end;
+
+	*len = 0;
 
 	/* Timeout expired (or new device), resend message */
 	if (resend) {
-		/* Resend previous schema */
-		end = (id_index == (KNOT_THING_DATA_MAX - 1) ? true : false);
-		schema = kaio_get_schema(id_index);
-
-		*len = msg_create_schema(omsg, id_index, schema, end);
-		/* Stay at STATE_SCH waiting confirmation */
-		goto done;
+		id_index = 0;
+		goto send;
 	}
 
 	/* Waiting response ... */
@@ -168,33 +166,34 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 
 	switch (imsg->hdr.type) {
 	case KNOT_MSG_SCHEMA_RESP:
+		/* Resend last fragment if failed */
 		if (imsg->action.result == KNOT_SUCCESS)
 			id_index++;
-
-		end = (id_index == (KNOT_THING_DATA_MAX - 1) ? true : false);
-		schema = kaio_get_schema(id_index);
-
-		*len = msg_create_schema(omsg, id_index, schema, end);
-		/* Stay at STATE_SCH waiting confirmation */
-		break;
+		goto send;
 	case KNOT_MSG_SCHEMA_END_RESP:
-		/* Last fragment confirmed? */
-		if (imsg->action.result == KNOT_SUCCESS) {
-			next = STATE_ONLINE;
-			schemas_done = true;
-			*len = 0;
-		} else {
-			/* Resending last fragment */
-			schema = kaio_get_schema(id_index);
-			*len = msg_create_schema(omsg, id_index, schema, true);
-		}
-		break;
+		if (imsg->action.result != KNOT_SUCCESS)
+			goto send;
+		schemas_done = true;
+		/* TODO: Save credentials to NVS only after schemas done */
+		next = STATE_ONLINE;
 	default:
-		next = STATE_ERROR;
-		*len = 0;
-		break;
+		goto done;
 	}
 
+send:
+	/* Send schema */
+	last_id = kaio_get_last_id();
+	while (id_index <= last_id) {
+		schema = kaio_get_schema(id_index);
+		if (schema == NULL) {
+			/* Ignore invalid aio  */
+			id_index++;
+			continue;
+		}
+		end = ((id_index == last_id) ? true : false);
+		*len = msg_create_schema(omsg, id_index, schema, end);
+		break;
+	}
 done:
 	return next;
 }
