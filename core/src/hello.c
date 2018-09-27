@@ -19,7 +19,6 @@
 #include <net/net_core.h>
 
 #include "knot.h"
-#include "knot_app.h"
 
 void setup(void)
 {

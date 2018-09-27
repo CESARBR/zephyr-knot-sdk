@@ -19,7 +19,7 @@
 #include <net/net_core.h>
 #include <net/buf.h>
 
-#include "knot_app.h"
+#include "knot.h"
 #include "sm.h"
 #include "proto.h"
 
