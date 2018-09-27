@@ -5,6 +5,7 @@
  */
 
 #include <zephyr.h>
+
 #include <string.h>
 
 #include "knot_protocol.h"
@@ -37,6 +38,21 @@ static struct aio {
 	knot_callback_t		write_cb;
 } aio[KNOT_THING_DATA_MAX];
 
+void knot_start(void)
+{
+	int index;
+
+	memset(aio, 0, sizeof(aio));
+
+	for (index = 0; (index < sizeof(aio) / sizeof(struct aio)); index++)
+		aio[index].id = 0xff;
+}
+
+void knot_stop(void)
+{
+
+}
+
 s8_t knot_register(u8_t id, const char *name,
 		   u16_t type_id, u8_t value_type, u8_t unit,
 		   knot_callback_t read_cb, knot_callback_t write_cb)
@@ -44,14 +60,13 @@ s8_t knot_register(u8_t id, const char *name,
 	struct aio *io;
 
 	/* Assigned already? */
-	if (aio[id].id != -1)
+	if (aio[id].id != 0xff)
 		return -EACCES;
 
 	/* Basic field validation */
 	if (knot_schema_is_valid(type_id, value_type, unit) != 0 || !name)
 		return -EINVAL;
 
-	memset(&aio[id], 0, sizeof(aio[id]));
 	io = &aio[id];
 
 	io->id = id;
@@ -75,7 +90,7 @@ s8_t knot_register(u8_t id, const char *name,
 
 const knot_schema *kaio_get_schema(u8_t id)
 {
-	if (aio[id].id == -1)
+	if (aio[id].id == 0xff)
 		return NULL;
 
 	return &(aio[id].schema);

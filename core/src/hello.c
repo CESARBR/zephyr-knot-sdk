@@ -18,10 +18,12 @@
 #include <zephyr.h>
 #include <net/net_core.h>
 
+#include "knot.h"
 #include "knot_app.h"
 
 void setup(void)
 {
+	knot_start();
 }
 
 void loop(void)
