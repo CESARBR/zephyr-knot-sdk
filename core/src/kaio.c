@@ -139,3 +139,25 @@ s8_t kaio_read(u8_t id, knot_value_type *value)
 
 	return len;
 }
+
+s8_t kaio_write(u8_t id, knot_value_type *value)
+{
+	struct aio *io;
+
+	if (aio[id].id == 0xff)
+		return -EINVAL;
+
+	io = &aio[id];
+
+	if (io->write_cb == NULL)
+		return 0;
+
+	memcpy(&io->value, value, sizeof(*value));
+
+	/*
+	 * New values sent from cloud are informed to
+	 * the user app through write callback.
+	 */
+
+	return io->write_cb(id);
+}
