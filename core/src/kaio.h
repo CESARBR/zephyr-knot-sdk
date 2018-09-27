@@ -11,3 +11,5 @@
 const knot_schema *kaio_get_schema(u8_t id);
 
 u8_t kaio_get_last_id(void);
+
+s8_t kaio_read(u8_t id, knot_value_type *value);

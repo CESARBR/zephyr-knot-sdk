@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "knot_protocol.h"
+#include "knot_types.h"
 #include "msg.h"
 #include "kaio.h"
 #include "knot.h"
@@ -23,9 +24,8 @@ static struct aio {
 	knot_schema		schema;
 
 	/* Data values */
-	bool			new_value;
-	knot_value_type		last_value;
-	u8_t			*last_value_raw;
+	bool			refresh;
+	knot_value_type		value;
 	u8_t			raw_length;
 
 	/* Config values */
@@ -79,7 +79,7 @@ s8_t knot_register(u8_t id, const char *name,
 	io->schema.type_id = type_id;
 	io->schema.unit = unit;
 	io->schema.value_type = value_type;
-	io->new_value = false;
+	io->refresh = true;
 
 	strncpy(io->schema.name, name,
 		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
@@ -108,4 +108,34 @@ const knot_schema *kaio_get_schema(u8_t id)
 u8_t kaio_get_last_id(void)
 {
 	return last_id;
+}
+
+s8_t kaio_read(u8_t id, knot_value_type *value)
+{
+	struct aio *io;
+	s8_t len;
+
+	if (aio[id].id == 0xff)
+		return -EINVAL;
+
+	io = &aio[id];
+
+	if (io->read_cb == NULL)
+		return 0;
+
+	len = io->read_cb(id);
+	if(len < 0)
+		return -EIO;
+
+	/*
+	 * Read callback may set new values. When a
+	 * new value is set "refresh" field is true.
+	 */
+	if (io->refresh == false)
+		return 0;
+
+	len = MIN(len, sizeof(*value));
+	memcpy(value, &io->value, len);
+
+	return len;
 }
