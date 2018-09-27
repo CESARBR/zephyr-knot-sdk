@@ -39,7 +39,6 @@ enum sm_state {
 	STATE_REG,		/* Registers new device */
 	STATE_AUTH,		/* Authenticate known device */
 	STATE_SCH,		/* Sends schema */
-	STATE_ONESHOOT,		/* Sends data once */
 	STATE_ONLINE,		/* Default state: sends & receive */
 	STATE_ERROR,		/* Reg, auth, sch error */
 };
@@ -267,12 +266,6 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		/* Send schemas */
 		resend = ((to_exp || to_on == false ) ? true : false);
 		next = state_schema(resend, ipdu, ilen, opdu, olen, &len);
-		break;
-	case STATE_ONESHOOT:
-		/* Sends the status of each item. */
-		strcpy(opdu, "SHOOT");
-		len = strlen(opdu);
-		next = STATE_ONLINE;
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
