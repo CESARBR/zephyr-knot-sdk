@@ -246,3 +246,17 @@ static s8_t kaio_set_value(u8_t id, knot_value_type *value)
 
 	return 0;
 }
+
+static s8_t kaio_get_value(u8_t id, knot_value_type *value)
+{
+	struct aio *io;
+
+	if (aio[id].id == 0xff)
+		return -EINVAL;
+
+	io = &aio[id];
+
+	memcpy(&io->value, value, sizeof(*value));
+
+	return sizeof(*value);
+}
