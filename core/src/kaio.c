@@ -175,3 +175,74 @@ s8_t kaio_force_send(u8_t id)
 
 	return 0;
 }
+
+static s8_t kaio_set_value(u8_t id, knot_value_type *value)
+{
+	u32_t current_time;
+	struct aio *io;
+
+	if (aio[id].id == 0xff)
+		return -EINVAL;
+
+	io = &aio[id];
+
+	if (KNOT_EVT_FLAG_TIME & io->config.event_flags) {
+		current_time = k_uptime_get();
+		current_time -= io->last_timeout;
+		if (current_time >= (io->config.time_sec * 1000)) {
+			io->refresh = true;
+			io->last_timeout = current_time;
+		}
+	}
+
+	switch (io->schema.value_type) {
+	case KNOT_VALUE_TYPE_INT:
+		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
+				&& value->val_i.value != io->value.val_i.value)
+			io->refresh = true;
+
+		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags
+				&& value->val_i.value > io->value.val_i.value)
+			io->refresh = true;
+
+		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags
+				&& value->val_i.value < io->value.val_i.value)
+			io->refresh = true;
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		/* TODO: Include decimal float part to comparison */
+		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
+				&& value->val_f.value_int
+				!= io->value.val_f.value_int)
+			io->refresh = true;
+
+		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags
+				&& value->val_f.value_int
+				> io->value.val_f.value_int)
+			io->refresh = true;
+
+		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags
+				&& value->val_f.value_int
+				< io->value.val_f.value_int)
+			io->refresh = true;
+		break;
+	case KNOT_VALUE_TYPE_BOOL:
+		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
+				&& value->val_b != io->value.val_b)
+			io->refresh = true;
+		break;
+	case KNOT_VALUE_TYPE_RAW:
+		/* TODO: Deal with raw size */
+		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
+				&& !strcmp(value->raw, io->value.raw))
+			io->refresh = true;
+		break;
+	default:
+		return -1;
+	}
+
+	if (io->refresh == true)
+		memcpy(value, &io->value, sizeof(*value));
+
+	return 0;
+}
