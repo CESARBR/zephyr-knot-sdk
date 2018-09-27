@@ -19,10 +19,26 @@
 #include <net/net_core.h>
 
 #include "knot.h"
+#include "knot_types.h"
+
+static int dummy_function(u8_t id)
+{
+	return 0;
+}
 
 void setup(void)
 {
 	knot_start();
+
+	knot_register(0, "K0", KNOT_TYPE_ID_VOLTAGE,
+		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
+		      dummy_function, dummy_function);
+
+	/* id ONE left unassigned for testing purpose */
+
+	knot_register(2, "K2", KNOT_TYPE_ID_VOLTAGE,
+		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
+		      dummy_function, dummy_function);
 }
 
 void loop(void)
