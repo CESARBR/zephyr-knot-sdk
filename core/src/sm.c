@@ -25,8 +25,6 @@
 
 #define THING_NAME				"ZephyrThing0"
 
-static bool schemas_done = false;
-
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
 static bool to_exp;		/* Timeout expired */
@@ -162,8 +160,14 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 	case KNOT_MSG_SCHEMA_END_RESP:
 		if (imsg->action.result != KNOT_SUCCESS)
 			goto send;
-		schemas_done = true;
-		/* TODO: Save credentials to NVS only after schemas done */
+		if (storage_set(STORAGE_KEY_UUID, uuid)) {
+			next = STATE_ERROR;
+			goto done;
+		}
+		if (storage_set(STORAGE_KEY_TOKEN, token)) {
+			next = STATE_ERROR;
+			goto done;
+		}
 		next = STATE_ONLINE;
 	default:
 		goto done;
