@@ -24,7 +24,6 @@
 
 #define THING_NAME				"ZephyrThing0"
 
-static bool is_registered = false;
 static bool schemas_done = false;
 
 static struct k_timer to;	/* Re-send timeout */
@@ -84,9 +83,6 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 	memcpy(uuid, msg->cred.uuid, KNOT_PROTOCOL_UUID_LEN);
 	memcpy(token, msg->cred.token, KNOT_PROTOCOL_TOKEN_LEN);
 
-	/* TODO: Save credentials to NVS */
-
-	is_registered = true;
 	next = STATE_SCH;
 done:
 	return next;
@@ -202,7 +198,6 @@ int sm_start(void)
 	memset(uuid, 0, sizeof(uuid));
 	memset(token, 0, sizeof(token));
 
-	state = STATE_AUTH;
 	/* TODO: Check for id from storage */
 	if (device_id == 0) {
 		device_id = sys_rand32_get();
@@ -211,8 +206,12 @@ int sm_start(void)
 	}
 
 	/* TODO: Read credentials from storage */
-	if (is_registered == false)
+
+	if (strlen(uuid) != KNOT_PROTOCOL_UUID_LEN ||
+	    strlen(token) != KNOT_PROTOCOL_TOKEN_LEN)
 		state = STATE_REG;
+	else
+		state = STATE_AUTH;
 
 	k_timer_init(&to, timer_expired, NULL);
 	to_on = false;
