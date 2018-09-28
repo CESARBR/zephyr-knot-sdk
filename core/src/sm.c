@@ -122,7 +122,7 @@ static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 	}
 
 	/* Credentials are only saved on NVM after all the schemas are sent */
-	next = (strlen(uuid) && strlen(token) ? STATE_ONLINE : STATE_SCH);
+	next =  STATE_ONLINE;
 
 done:
 	return next;
