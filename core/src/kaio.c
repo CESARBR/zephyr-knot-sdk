@@ -24,7 +24,7 @@ static struct aio {
 	knot_schema		schema;
 
 	/* Data values */
-	bool			refresh;
+	bool			send;
 	knot_value_type		value;
 	u8_t			raw_length;
 
@@ -79,7 +79,7 @@ s8_t knot_register(u8_t id, const char *name,
 	io->schema.type_id = type_id;
 	io->schema.unit = unit;
 	io->schema.value_type = value_type;
-	io->refresh = true;
+	io->send = true;
 
 	strncpy(io->schema.name, name,
 		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
@@ -129,9 +129,9 @@ s8_t kaio_read(u8_t id, knot_value_type *value)
 
 	/*
 	 * Read callback may set new values. When a
-	 * new value is set "refresh" field is true.
+	 * new value is set "send" field is true.
 	 */
-	if (io->refresh == false)
+	if (io->send == false)
 		return 0;
 
 	len = MIN(len, sizeof(*value));
@@ -171,7 +171,7 @@ s8_t kaio_force_send(u8_t id)
 
 	io = &aio[id];
 
-	io->refresh = true;
+	io->send = true;
 
 	return 0;
 }
@@ -190,7 +190,7 @@ static s8_t kaio_set_value(u8_t id, knot_value_type *value)
 		current_time = k_uptime_get();
 		current_time -= io->last_timeout;
 		if (current_time >= (io->config.time_sec * 1000)) {
-			io->refresh = true;
+			io->send = true;
 			io->last_timeout = current_time;
 		}
 	}
@@ -199,49 +199,49 @@ static s8_t kaio_set_value(u8_t id, knot_value_type *value)
 	case KNOT_VALUE_TYPE_INT:
 		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
 				&& value->val_i.value != io->value.val_i.value)
-			io->refresh = true;
+			io->send = true;
 
 		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags
 				&& value->val_i.value > io->value.val_i.value)
-			io->refresh = true;
+			io->send = true;
 
 		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags
 				&& value->val_i.value < io->value.val_i.value)
-			io->refresh = true;
+			io->send = true;
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
 		/* TODO: Include decimal float part to comparison */
 		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
 				&& value->val_f.value_int
 				!= io->value.val_f.value_int)
-			io->refresh = true;
+			io->send = true;
 
 		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags
 				&& value->val_f.value_int
 				> io->value.val_f.value_int)
-			io->refresh = true;
+			io->send = true;
 
 		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags
 				&& value->val_f.value_int
 				< io->value.val_f.value_int)
-			io->refresh = true;
+			io->send = true;
 		break;
 	case KNOT_VALUE_TYPE_BOOL:
 		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
 				&& value->val_b != io->value.val_b)
-			io->refresh = true;
+			io->send = true;
 		break;
 	case KNOT_VALUE_TYPE_RAW:
 		/* TODO: Deal with raw size */
 		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
 				&& !strcmp(value->raw, io->value.raw))
-			io->refresh = true;
+			io->send = true;
 		break;
 	default:
 		return -1;
 	}
 
-	if (io->refresh == true)
+	if (io->send == true)
 		memcpy(value, &io->value, sizeof(*value));
 
 	return 0;
