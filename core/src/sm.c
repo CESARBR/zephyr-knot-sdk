@@ -19,6 +19,7 @@
 #include "kaio.h"
 #include "msg.h"
 #include "sm.h"
+#include "storage.h"
 
 #define TIMEOUT_WIN				15 /* 15 sec */
 
@@ -193,6 +194,8 @@ done:
  */
 int sm_start(void)
 {
+	int8_t err;
+
 	NET_DBG("SM: State Machine start");
 
 	memset(uuid, 0, sizeof(uuid));
@@ -205,10 +208,9 @@ int sm_start(void)
 		/* TODO: Save id to storage */
 	}
 
-	/* TODO: Read credentials from storage */
-
-	if (strlen(uuid) != KNOT_PROTOCOL_UUID_LEN ||
-	    strlen(token) != KNOT_PROTOCOL_TOKEN_LEN)
+	err = storage_get(STORAGE_KEY_UUID, uuid) ||
+					storage_get(STORAGE_KEY_TOKEN, token);
+	if (err)
 		state = STATE_REG;
 	else
 		state = STATE_AUTH;
