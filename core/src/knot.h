@@ -15,10 +15,6 @@
 void setup(void);
 void loop(void);
 
-/* Public functions: Used by KNoT apps */
-void knot_start(void);
-void knot_stop(void);
-
 typedef int (*knot_callback_t) (u8_t id);
 
 s8_t knot_register(u8_t id, const char *name,

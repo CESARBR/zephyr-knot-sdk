@@ -88,4 +88,3 @@ void proto_stop(void)
 {
 	NET_DBG("PROTO: Stop");
 }
-

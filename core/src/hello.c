@@ -28,8 +28,6 @@ static int dummy_function(u8_t id)
 
 void setup(void)
 {
-	knot_start();
-
 	knot_register(0, "K0", KNOT_TYPE_ID_VOLTAGE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
 		      dummy_function, dummy_function);

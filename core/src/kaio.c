@@ -40,7 +40,7 @@ static struct aio {
 
 static u8_t last_id = 0xff;
 
-void knot_start(void)
+void kaio_start(void)
 {
 	int index;
 
@@ -50,7 +50,7 @@ void knot_start(void)
 		aio[index].id = 0xff;
 }
 
-void knot_stop(void)
+void kaio_stop(void)
 {
 
 }

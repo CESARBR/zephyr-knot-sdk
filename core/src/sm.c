@@ -308,6 +308,9 @@ int sm_start(void)
 	memset(uuid, 0, sizeof(uuid));
 	memset(token, 0, sizeof(token));
 
+	/* Initializing kaio slots */
+	kaio_start();
+
 	/* TODO: Check for id from storage */
 	if (device_id == 0) {
 		device_id = sys_rand32_get();
@@ -335,6 +338,7 @@ void sm_stop(void)
 	if (to_on)
 		k_timer_stop(&to);
 
+	kaio_stop();
 }
 
 int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
