@@ -191,6 +191,109 @@ done:
 	return next;
 }
 
+static size_t process_event(const u8_t *ipdu, size_t ilen,
+			    u8_t *opdu, size_t olen)
+{
+	knot_msg *omsg = (knot_msg *) opdu;
+	knot_msg *imsg = (knot_msg *) ipdu;
+	knot_value_type value;
+	static u8_t id_index = 0;
+	u8_t last_id;
+	s8_t len = 0;
+
+	last_id = kaio_get_last_id();
+
+	/*
+	 * Send data related to the next entry? If knotd sends an
+	 * error simply ignore it and send data of the next sensor.
+	 */
+	if (imsg->hdr.type == KNOT_MSG_DATA_RESP) {
+		id_index = ((id_index + 1) > last_id ? 0 : id_index + 1);
+		if (imsg->action.result != KNOT_SUCCESS)
+			NET_ERR("DT RSP: %d", imsg->action.result);
+	}
+
+	while (id_index <= last_id) {
+		memset(&value, 0, sizeof(value));
+		len = kaio_read(id_index, &value);
+		if (len <= 0) {
+			id_index++;
+			continue;
+		}
+
+		len = msg_create_data(omsg, id_index, &value);
+		break;
+	}
+
+	/*
+	 * Reset index if there is nothing to send at this iteraction.
+	 * At the next step, all entries will be verified sequentially.
+	 */
+	if (len <= 0)
+		id_index = 0;
+
+	return len;
+}
+
+static size_t process_cmd(const u8_t *ipdu, size_t ilen,
+			       u8_t *opdu, size_t olen)
+{
+	knot_msg *imsg = (knot_msg *) ipdu;
+
+	switch (imsg->hdr.type) {
+	case KNOT_MSG_DATA_RESP:
+		/* Send next */
+		break;
+	case KNOT_MSG_UNREGISTER_REQ:
+		/* Clear NVM */
+		break;
+	case KNOT_MSG_GET_DATA:
+		/* TODO */
+		break;
+	case KNOT_MSG_SET_DATA:
+		/* TODO */
+		break;
+	case KNOT_MSG_GET_CONFIG:
+		/* TODO */
+		break;
+	case KNOT_MSG_SET_CONFIG:
+		/* TODO */
+		break;
+	case KNOT_MSG_GET_COMMAND:
+		/* TODO */
+		break;
+	case KNOT_MSG_SET_COMMAND:
+		/* TODO */
+		break;
+	default:
+		return -EINVAL;;
+	}
+
+	return 0;
+}
+
+static enum sm_state state_online(const u8_t *ipdu, size_t ilen,
+				  u8_t *opdu, size_t olen, size_t *len)
+{
+	enum sm_state next = STATE_ONLINE;
+	size_t ret_len = 0;
+
+	/* Incoming commands: higher priority */
+	if (ilen != 0)
+		/* Received command */
+		ret_len = process_cmd(ipdu, ilen, opdu, olen);
+
+	/* Local sensor/actuator */
+	if (ret_len == 0)
+		/* Local event */
+		ret_len = process_event(ipdu, ilen, opdu, olen);
+
+	if (ret_len > 0)
+		*len = ret_len;
+
+	return next;
+}
+
 /*
  * Start state machine selecting the first state it should go to.
  * If the thing has credentials stored, send auth request.
@@ -268,8 +371,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
-		strcpy(opdu, "ONLINE");
-		next = STATE_ERROR;
+		next = state_online(ipdu, ilen, opdu, olen, &len);
 		break;
 	default:
 		strcpy(opdu, "ERR");
