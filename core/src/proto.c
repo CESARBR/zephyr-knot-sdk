@@ -41,10 +41,11 @@ static void proto_thread(void)
 	/* Initializing KNoT storage */
 	storage_init();
 
+	/* Initializing SM and abstract IO internals */
+	sm_start();
+
 	/* Calling KNoT app: setup() */
 	setup();
-
-	sm_start();
 
 	while (1) {
 		/* Calling KNoT app: loop() */
