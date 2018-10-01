@@ -241,9 +241,6 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	knot_msg *imsg = (knot_msg *) ipdu;
 
 	switch (imsg->hdr.type) {
-	case KNOT_MSG_DATA_RESP:
-		/* Send next */
-		break;
 	case KNOT_MSG_UNREGISTER_REQ:
 		/* Clear NVM */
 		break;
@@ -266,7 +263,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* TODO */
 		break;
 	default:
-		return -EINVAL;;
+		break;
 	}
 
 	return 0;
