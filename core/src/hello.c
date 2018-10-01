@@ -21,22 +21,30 @@
 #include "knot.h"
 #include "knot_types.h"
 
-static int dummy_function(u8_t id)
+static int read_counter = 0;
+
+static void sensor_write(u8_t id)
 {
-	return 0;
+	return;
+}
+
+static void sensor_read(u8_t id)
+{
+	knot_set_int(id, read_counter++);
+	return;
 }
 
 void setup(void)
 {
 	knot_register(0, "K0", KNOT_TYPE_ID_VOLTAGE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
-		      dummy_function, dummy_function);
+		      sensor_read, sensor_write);
 
 	/* id ONE left unassigned for testing purpose */
 
 	knot_register(2, "K2", KNOT_TYPE_ID_VOLTAGE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
-		      dummy_function, dummy_function);
+		      sensor_read, sensor_write);
 }
 
 void loop(void)

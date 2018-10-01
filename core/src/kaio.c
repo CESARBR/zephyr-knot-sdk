@@ -16,6 +16,19 @@
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
+#define check_int_change(io, value)	\
+	(KNOT_EVT_FLAG_CHANGE & io->config.event_flags \
+	&& value != io->value.val_i.value)
+
+#define check_int_up_limit(io, value)	\
+	(KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags \
+	&& value > io->value.val_i.value)
+
+#define check_int_low_limit(io, value)	\
+	(KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags \
+	&& value < io->value.val_i.value)
+
+
 static struct aio {
 	/* KNoT identifier */
 	u8_t			id;
@@ -26,7 +39,7 @@ static struct aio {
 	/* Data values */
 	bool			send;
 	knot_value_type		value;
-	u8_t			raw_length;
+	u8_t			len;
 
 	/* Config values */
 	knot_config		config;
@@ -80,6 +93,7 @@ s8_t knot_register(u8_t id, const char *name,
 	io->schema.unit = unit;
 	io->schema.value_type = value_type;
 	io->send = true;
+	io->len = 0;
 
 	strncpy(io->schema.name, name,
 		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
@@ -113,7 +127,6 @@ u8_t kaio_get_last_id(void)
 s8_t kaio_read(u8_t id, knot_value_type *value)
 {
 	struct aio *io;
-	s8_t len;
 
 	if (aio[id].id == 0xff)
 		return -EINVAL;
@@ -123,21 +136,15 @@ s8_t kaio_read(u8_t id, knot_value_type *value)
 	if (io->read_cb == NULL)
 		return 0;
 
-	len = io->read_cb(id);
-	if(len < 0)
-		return -EIO;
+	io->len = 0;
+
+	io->read_cb(id);
 
 	/*
 	 * Read callback may set new values. When a
-	 * new value is set "send" field is true.
+	 * new value is set "len" field is set.
 	 */
-	if (io->send == false)
-		return 0;
-
-	len = MIN(len, sizeof(*value));
-	memcpy(value, &io->value, len);
-
-	return len;
+	return io->len;
 }
 
 s8_t kaio_write(u8_t id, knot_value_type *value)
@@ -159,7 +166,9 @@ s8_t kaio_write(u8_t id, knot_value_type *value)
 	 * the user app through write callback.
 	 */
 
-	return io->write_cb(id);
+	io->write_cb(id);
+
+	return io->len;
 }
 
 s8_t kaio_force_send(u8_t id)
@@ -178,7 +187,7 @@ s8_t kaio_force_send(u8_t id)
 
 static s8_t kaio_set_value(u8_t id, knot_value_type *value)
 {
-	u32_t current_time;
+	/* TODO: Split this function */
 	struct aio *io;
 
 	if (aio[id].id == 0xff)
@@ -186,29 +195,7 @@ static s8_t kaio_set_value(u8_t id, knot_value_type *value)
 
 	io = &aio[id];
 
-	if (KNOT_EVT_FLAG_TIME & io->config.event_flags) {
-		current_time = k_uptime_get();
-		current_time -= io->last_timeout;
-		if (current_time >= (io->config.time_sec * 1000)) {
-			io->send = true;
-			io->last_timeout = current_time;
-		}
-	}
-
 	switch (io->schema.value_type) {
-	case KNOT_VALUE_TYPE_INT:
-		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
-				&& value->val_i.value != io->value.val_i.value)
-			io->send = true;
-
-		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & io->config.event_flags
-				&& value->val_i.value > io->value.val_i.value)
-			io->send = true;
-
-		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & io->config.event_flags
-				&& value->val_i.value < io->value.val_i.value)
-			io->send = true;
-		break;
 	case KNOT_VALUE_TYPE_FLOAT:
 		/* TODO: Include decimal float part to comparison */
 		if (KNOT_EVT_FLAG_CHANGE & io->config.event_flags
@@ -260,3 +247,50 @@ static s8_t kaio_get_value(u8_t id, knot_value_type *value)
 
 	return sizeof(*value);
 }
+
+static bool check_timeout(u8_t id)
+{
+	u32_t current_time, elapsed_time;
+	struct aio *io;
+
+	io = &aio[id];
+
+	if (!(KNOT_EVT_FLAG_TIME & io->config.event_flags))
+		return false;
+
+	current_time = k_uptime_get();
+	elapsed_time = current_time - io->last_timeout;
+	if (elapsed_time >= (io->config.time_sec * 1000)) {
+		io->last_timeout = current_time;
+		return true;
+	}
+	return false;
+}
+
+/* TODO: Set bool data */
+
+s8_t knot_set_int(u8_t id, const int value)
+{
+	struct aio *io;
+
+	io = &aio[id];
+
+	if (io->id == 0xff || io->schema.value_type != KNOT_VALUE_TYPE_INT)
+		return -EINVAL;
+
+	/* Checking if should send data or not*/
+	if ( (io->send == true) ||
+	     check_timeout(id) ||
+	     check_int_change(io, value) ||
+	     check_int_up_limit(io, value) ||
+	     check_int_low_limit(io, value) )
+	{
+		io->len = sizeof(int);
+		io->value.val_i.value = value;
+	}
+	return io->len;
+}
+
+/* TODO: Set float data */
+
+/* TODO: Set raw data */
