@@ -269,14 +269,14 @@ static bool check_timeout(u8_t id)
 
 /* TODO: Set bool data */
 
-s8_t knot_set_int(u8_t id, const int value)
+void knot_set_int(u8_t id, const int value)
 {
 	struct aio *io;
 
 	io = &aio[id];
 
 	if (io->id == 0xff || io->schema.value_type != KNOT_VALUE_TYPE_INT)
-		return -EINVAL;
+		return;
 
 	/* Checking if should send data or not*/
 	if ( (io->send == true) ||
@@ -285,12 +285,22 @@ s8_t knot_set_int(u8_t id, const int value)
 	     check_int_up_limit(io, value) ||
 	     check_int_low_limit(io, value) )
 	{
+		io->send = true;
 		io->len = sizeof(int);
 		io->value.val_i.value = value;
 	}
-	return io->len;
+	return;
 }
 
 /* TODO: Set float data */
 
 /* TODO: Set raw data */
+
+s8_t knot_get_int(u8_t id, int *value)
+{
+	if (aio[id].id == 0xff)
+		return -EINVAL;
+
+	*value = (int) aio[id].value.val_i.value;
+	return sizeof(int);
+}

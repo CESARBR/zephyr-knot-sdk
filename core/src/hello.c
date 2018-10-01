@@ -21,7 +21,7 @@
 #include "knot.h"
 #include "knot_types.h"
 
-static int read_counter = 0;
+static unsigned int write_counter = 0;
 
 static void sensor_write(u8_t id)
 {
@@ -30,7 +30,9 @@ static void sensor_write(u8_t id)
 
 static void sensor_read(u8_t id)
 {
-	knot_set_int(id, read_counter++);
+	int read_value;
+	knot_get_int(id, &read_value);
+	NET_DBG("Got value for id %u: %u", id, read_value);
 	return;
 }
 
@@ -49,4 +51,14 @@ void setup(void)
 
 void loop(void)
 {
+	NET_DBG("Setting value for id %u: %u", 0, write_counter);
+	knot_set_int(0, write_counter);
+
+	/* Setting sensor 1 for error testing */
+	NET_DBG("Setting value for id %u: %u", 1, 123456);
+	knot_set_int(1, 123456);
+
+	NET_DBG("Setting value for id %u: %u", 2, ~write_counter);
+	knot_set_int(2, ~write_counter);
+	write_counter++;
 }

@@ -21,4 +21,6 @@ s8_t knot_register(u8_t id, const char *name,
 		   u16_t type_id, u8_t value_type, u8_t unit,
 		   knot_callback_t read_cb, knot_callback_t write_cb);
 
-s8_t knot_set_int(u8_t id, int value);
+void knot_set_int(u8_t id, int value);
+
+s8_t knot_get_int(u8_t id, int *value);
