@@ -298,9 +298,14 @@ void knot_set_int(u8_t id, const int value)
 
 s8_t knot_get_int(u8_t id, int *value)
 {
-	if (aio[id].id == 0xff)
+	struct aio *io;
+
+	io = &aio[id];
+
+	if (io->id == 0xff)
 		return -EINVAL;
 
-	*value = (int) aio[id].value.val_i.value;
+	*value = io->value.val_i.value;
+	io->len = sizeof(int);
 	return sizeof(int);
 }
