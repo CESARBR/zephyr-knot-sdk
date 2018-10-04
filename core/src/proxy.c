@@ -4,7 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#define SYS_LOG_DOMAIN "knot-hello"
+#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
+#define NET_LOG_ENABLED 1
+
 #include <zephyr.h>
+#include <net/net_core.h>
 
 #include <string.h>
 
@@ -16,17 +21,17 @@
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
-#define check_int_change(proxy, value)	\
+#define check_int_change(proxy, i32)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
-	&& value != proxy->value.val_i)
+	&& i32 != proxy->value.val_i)
 
-#define check_int_up_limit(proxy, value)	\
+#define check_int_upper_threshold(proxy, i32)	\
 	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
-	&& value > proxy->value.val_i)
+	&& i32 > proxy->value.val_i)
 
-#define check_int_low_limit(proxy, value)	\
+#define check_int_lower_threshold(proxy, i32)	\
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
-	&& value < proxy->value.val_i)
+	&& i32 < proxy->value.val_i)
 
 
 static struct knot_proxy {
@@ -148,13 +153,15 @@ s8_t proxy_read(u8_t id, knot_value_type *value)
 
 	proxy->len = 0;
 
-	/* FIXME: */
-	proxy->poll_cb(proxy, NULL);
+	proxy->poll_cb(proxy);
 
 	/*
 	 * Read callback may set new values. When a
 	 * new value is set "len" field is set.
 	 */
+	if (proxy->len > 0)
+		memcpy(value, &proxy->value, sizeof(*value));
+
 	return proxy->len;
 }
 
@@ -178,7 +185,7 @@ s8_t proxy_write(u8_t id, knot_value_type *value)
 	 */
 
 	/* FIXME: */
-	proxy->changed_cb(proxy, NULL);
+	proxy->changed_cb(proxy);
 
 	return proxy->len;
 }
@@ -260,12 +267,9 @@ static s8_t proxy_get_value(u8_t id, knot_value_type *value)
 	return sizeof(*value);
 }
 
-static bool check_timeout(u8_t id)
+static bool check_timeout(struct knot_proxy *proxy)
 {
 	u32_t current_time, elapsed_time;
-	struct knot_proxy *proxy;
-
-	proxy = &proxy_pool[id];
 
 	if (!(KNOT_EVT_FLAG_TIME & proxy->config.event_flags))
 		return false;
@@ -279,33 +283,43 @@ static bool check_timeout(u8_t id)
 	return false;
 }
 
-/* TODO: Set bool data */
 
-void knot_set_int(u8_t id, const int value)
+
+void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 {
-	struct knot_proxy *proxy;
+	bool change = false;
+	bool upper = false;
+	bool lower = false;
+	bool timeout = false;
+	int32_t i32;
 
-	proxy = &proxy_pool[id];
-
-	if (proxy->id == 0xff ||
-	    proxy->schema.value_type != KNOT_VALUE_TYPE_INT)
+	if (unlikely(!proxy))
 		return;
 
-	/* Checking if should send data or not*/
-	if ( (proxy->send == true) ||
-	     check_timeout(id) ||
-	     check_int_change(proxy, value) ||
-	     check_int_up_limit(proxy, value) ||
-	     check_int_low_limit(proxy, value) )
-	{
-		proxy->send = true;
-		proxy->len = sizeof(int);
-		proxy->value.val_i = value;
-	}
-	return;
-}
+	timeout = check_timeout(proxy);
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		/* TODO */
+		break;
+	case KNOT_VALUE_TYPE_INT:
+		i32 = *((int32_t *) value);
+		change = check_int_change(proxy, i32);
+		upper = check_int_upper_threshold(proxy, i32);
+		lower = check_int_lower_threshold(proxy, i32);
 
-/* TODO: Set float data */
+		if (proxy->send || timeout || change || upper || lower) {
+			proxy->len = sizeof(int);
+			proxy->value.val_i = i32;
+			proxy->send = true;
+		}
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		/* TODO */
+		break;
+	default:
+		return;
+	}
+}
 
 /* TODO: Set raw data */
 

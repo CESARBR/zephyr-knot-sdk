@@ -21,29 +21,43 @@
 #include "knot.h"
 #include "knot_types.h"
 
-static void sensor_write(struct knot_proxy *proxy,
-			 struct knot_proxy_value *pvalue)
-{
-	return;
-}
+int thermo[] = {0, 0, 0};
 
-static void sensor_read(struct knot_proxy *proxy,
-			struct knot_proxy_value *pvalue)
+static void poll_thermo(struct knot_proxy *proxy)
 {
+	u8_t id;
+
+	id = knot_proxy_get_id(proxy);
+	NET_DBG("Reading temperature of thermo %u", id);
+	/* Get current temperature from actual object */
+	thermo[id]++;
+
+	/* Pushing temperature to remote */
+	knot_proxy_value_set_basic(proxy, &thermo[id]);
+
 	return;
 }
 
 void setup(void)
 {
-	knot_proxy_register(0, "K0", KNOT_TYPE_ID_VOLTAGE,
-		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
-		      sensor_read, sensor_write);
+	if (knot_proxy_register(0, "THERMO_0", KNOT_TYPE_ID_TEMPERATURE,
+		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+		      NULL, poll_thermo)  == NULL) {
+		NET_ERR("THERMO_0 failed to register");
+	}
 
-	/* id ONE left unassigned for testing purpose */
+	/* id ONE assigned with wrong KNOT_VALUE TYPE for testing purpose */
+	if (knot_proxy_register(1, "THERMO_1", KNOT_TYPE_ID_TEMPERATURE,
+		      KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_TEMPERATURE_C,
+		      NULL, poll_thermo) == NULL) {
+		NET_ERR("THERMO_1 failed to register");
+	}
 
-	knot_proxy_register(2, "K2", KNOT_TYPE_ID_VOLTAGE,
-		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_VOLTAGE_V,
-		      sensor_read, sensor_write);
+	if (knot_proxy_register(2, "THERMO_2", KNOT_TYPE_ID_TEMPERATURE,
+		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+		      NULL, poll_thermo) == NULL) {
+		NET_DBG("THERMO_2 failed to register");
+	}
 }
 
 void loop(void)
