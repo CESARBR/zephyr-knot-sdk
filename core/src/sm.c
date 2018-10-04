@@ -16,7 +16,7 @@
 #include <net/net_core.h>
 
 #include "knot_protocol.h"
-#include "kaio.h"
+#include "proxy.h"
 #include "msg.h"
 #include "sm.h"
 #include "storage.h"
@@ -175,9 +175,9 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 
 send:
 	/* Send schema */
-	last_id = kaio_get_last_id();
+	last_id = proxy_get_last_id();
 	while (id_index <= last_id) {
-		schema = kaio_get_schema(id_index);
+		schema = proxy_get_schema(id_index);
 		if (schema == NULL) {
 			/* Ignore invalid aio  */
 			id_index++;
@@ -201,7 +201,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	u8_t last_id;
 	s8_t len = 0;
 
-	last_id = kaio_get_last_id();
+	last_id = proxy_get_last_id();
 
 	/*
 	 * Send data related to the next entry? If knotd sends an
@@ -215,7 +215,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 
 	while (id_index <= last_id) {
 		memset(&value, 0, sizeof(value));
-		len = kaio_read(id_index, &value);
+		len = proxy_read(id_index, &value);
 		if (len <= 0) {
 			id_index++;
 			continue;
@@ -305,8 +305,8 @@ int sm_start(void)
 	memset(uuid, 0, sizeof(uuid));
 	memset(token, 0, sizeof(token));
 
-	/* Initializing kaio slots */
-	kaio_start();
+	/* Initializing proxy slots */
+	proxy_start();
 
 	/* TODO: Check for id from storage */
 	if (device_id == 0) {
@@ -335,7 +335,7 @@ void sm_stop(void)
 	if (to_on)
 		k_timer_stop(&to);
 
-	kaio_stop();
+	proxy_stop();
 }
 
 int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)

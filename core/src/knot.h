@@ -15,12 +15,31 @@
 void setup(void);
 void loop(void);
 
-typedef void (*knot_callback_t) (u8_t id);
+/* Proxy: Virtual representation of the remote device */
+struct knot_proxy;
+struct knot_proxy_value;
 
-s8_t knot_register(u8_t id, const char *name,
-		   u16_t type_id, u8_t value_type, u8_t unit,
-		   knot_callback_t read_cb, knot_callback_t write_cb);
+typedef void (*knot_callback_t) (struct knot_proxy *proxy,
+				 struct knot_proxy_value *pvalue);
 
-void knot_set_int(u8_t id, int value);
+/* Creates & tracks device changes a remote device (cloud) */
+struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
+				       u16_t type_id, u8_t value_type,
+				       u8_t unit, knot_callback_t changed_cb,
+				       knot_callback_t pool_cb);
 
-s8_t knot_get_int(u8_t id, int *value);
+/* Proxy properties */
+u8_t knot_proxy_get_id(struct knot_proxy *proxy);
+
+/* Proxy helpers to get or set sensor data at the remote */
+void knot_proxy_value_set_basic(struct knot_proxy_value *pvalue,
+				int type, const void *value);
+void knot_proxy_value_set_string(struct knot_proxy_value *pvalue,
+				 const char *value, int len);
+
+void knot_proxy_value_get_basic(struct knot_proxy_value *pvalue,
+				int type, void *value);
+void knot_proxy_value_get_string(struct knot_proxy_value *pvalue,
+				 char **value, int *len);
+
+
