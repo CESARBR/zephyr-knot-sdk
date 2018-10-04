@@ -105,7 +105,6 @@ typedef struct __attribute__ ((packed)) {
 } knot_msg_item;
 
 typedef struct __attribute__ ((packed)) {
-	int32_t			multiplier;
 	int32_t			value_int;
 	uint32_t		value_dec;
 } knot_value_type_float;
