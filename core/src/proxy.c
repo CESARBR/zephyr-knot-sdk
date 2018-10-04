@@ -18,15 +18,15 @@
 
 #define check_int_change(proxy, value)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
-	&& value != proxy->value.val_i.value)
+	&& value != proxy->value.val_i)
 
 #define check_int_up_limit(proxy, value)	\
 	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
-	&& value > proxy->value.val_i.value)
+	&& value > proxy->value.val_i)
 
 #define check_int_low_limit(proxy, value)	\
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
-	&& value < proxy->value.val_i.value)
+	&& value < proxy->value.val_i)
 
 
 static struct knot_proxy {
@@ -300,7 +300,7 @@ void knot_set_int(u8_t id, const int value)
 	{
 		proxy->send = true;
 		proxy->len = sizeof(int);
-		proxy->value.val_i.value = value;
+		proxy->value.val_i = value;
 	}
 	return;
 }
@@ -318,7 +318,7 @@ s8_t knot_get_int(u8_t id, int *value)
 	if (proxy->id == 0xff)
 		return -EINVAL;
 
-	*value = proxy->value.val_i.value;
+	*value = proxy->value.val_i;
 	proxy->len = sizeof(int);
 	return sizeof(int);
 }
