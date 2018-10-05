@@ -21,7 +21,8 @@
 #include "knot.h"
 #include "knot_types.h"
 
-int thermo[] = {0, 0, 0};
+static int thermo[] = {0, 0, 0};
+static bool button = false;
 
 static void poll_thermo(struct knot_proxy *proxy)
 {
@@ -34,8 +35,28 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 	/* Pushing temperature to remote */
 	knot_proxy_value_set_basic(proxy, &thermo[id]);
+}
 
-	return;
+static void poll_button(struct knot_proxy *proxy)
+{
+	u8_t id;
+	static int button_count = 0;
+
+	id = knot_proxy_get_id(proxy);
+	NET_DBG("Reading status of button with id %u", id);
+
+	/* Simulate button toogle after 5 readings */
+	if (button_count%5 == 0) {
+		button = !button;
+		if (button)
+			NET_DBG("Button pressed");
+		else
+			NET_DBG("Button released");
+	}
+	button_count++;
+
+	/* Pushing status to remote */
+	knot_proxy_value_set_basic(proxy, &button);
 }
 
 void setup(void)
@@ -57,6 +78,12 @@ void setup(void)
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
 		      NULL, poll_thermo) == NULL) {
 		NET_DBG("THERMO_2 failed to register");
+	}
+
+	if (knot_proxy_register(3, "BUTTON", KNOT_TYPE_ID_SWITCH,
+		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+		      NULL, poll_button) == NULL) {
+		NET_DBG("BUTTON failed to register");
 	}
 }
 

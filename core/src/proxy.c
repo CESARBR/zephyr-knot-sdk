@@ -21,6 +21,10 @@
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
+#define check_bool_change(proxy, b_value) \
+	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
+	&& b_value != proxy->value.val_b)
+
 #define check_int_change(proxy, i32)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
 	&& i32 != proxy->value.val_i)
@@ -98,7 +102,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	proxy->schema.type_id = type_id;
 	proxy->schema.unit = unit;
 	proxy->schema.value_type = value_type;
-	proxy->send = true;
+	proxy->send = false;
 	proxy->len = 0;
 
 	strncpy(proxy->schema.name, name,
@@ -106,7 +110,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 
 	/* Set default config */
 	proxy->config.event_flags = KNOT_EVT_FLAG_TIME;
-	proxy->config.time_sec = 30;
+	proxy->config.time_sec = 10;
 
 	proxy->poll_cb = poll_cb;
 	proxy->changed_cb = changed_cb;
@@ -291,6 +295,8 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	bool upper = false;
 	bool lower = false;
 	bool timeout = false;
+
+	bool b_value;
 	int32_t i32;
 
 	if (unlikely(!proxy))
@@ -299,7 +305,14 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	timeout = check_timeout(proxy);
 	switch(proxy->schema.value_type) {
 	case KNOT_VALUE_TYPE_BOOL:
-		/* TODO */
+		b_value = *((bool *) value);
+		change = check_bool_change(proxy, b_value);
+
+		if (proxy->send || timeout || change) {
+			proxy->len = sizeof(bool);
+			proxy->value.val_b = b_value;
+			proxy->send = true;
+		}
 		break;
 	case KNOT_VALUE_TYPE_INT:
 		i32 = *((int32_t *) value);
