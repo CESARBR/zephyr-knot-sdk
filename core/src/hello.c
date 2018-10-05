@@ -23,6 +23,7 @@
 
 static int thermo[] = {0, 0, 0};
 static bool button = false;
+static char plate[] = "BRZ000";
 
 static void poll_thermo(struct knot_proxy *proxy)
 {
@@ -59,6 +60,22 @@ static void poll_button(struct knot_proxy *proxy)
 	knot_proxy_value_set_basic(proxy, &button);
 }
 
+static void random_plate(struct knot_proxy *proxy)
+{
+	u8_t id;
+	int num;
+
+	id = knot_proxy_get_id(proxy);
+
+	num = (sys_rand32_get() % 7);
+	plate[3] = '0' + num;
+	plate[4] = '1' + num;
+	plate[5] = '2' + num;
+	plate[6] = '3' + num;
+
+	knot_proxy_value_set_string(proxy, plate, sizeof(plate));
+}
+
 void setup(void)
 {
 	if (knot_proxy_register(0, "THERMO_0", KNOT_TYPE_ID_TEMPERATURE,
@@ -84,6 +101,12 @@ void setup(void)
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
 		      NULL, poll_button) == NULL) {
 		NET_DBG("BUTTON failed to register");
+	}
+
+	if (knot_proxy_register(4, "PLATE", KNOT_TYPE_ID_NONE,
+		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
+		      NULL, random_plate) == NULL) {
+		NET_DBG("PLATE failed to register");
 	}
 }
 

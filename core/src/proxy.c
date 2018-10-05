@@ -46,9 +46,12 @@ static struct knot_proxy {
 	knot_schema		schema;
 
 	/* Data values */
-	bool			send;
 	knot_value_type		value;
-	u8_t			len;
+
+	/* Control variable to send data */
+	bool			send; /* 'value' must be sent */
+	u8_t			olen; /* Amount to send / Output: temporary */
+	u8_t			rlen; /* Length RAW value */
 
 	/* Config values */
 	knot_config		config;
@@ -103,7 +106,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	proxy->schema.unit = unit;
 	proxy->schema.value_type = value_type;
 	proxy->send = false;
-	proxy->len = 0;
+	proxy->olen = 0;
 
 	strncpy(proxy->schema.name, name,
 		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
@@ -155,7 +158,7 @@ s8_t proxy_read(u8_t id, knot_value_type *value)
 	if (proxy->poll_cb == NULL)
 		return 0;
 
-	proxy->len = 0;
+	proxy->olen = 0;
 
 	proxy->poll_cb(proxy);
 
@@ -163,10 +166,10 @@ s8_t proxy_read(u8_t id, knot_value_type *value)
 	 * Read callback may set new values. When a
 	 * new value is set "len" field is set.
 	 */
-	if (proxy->len > 0)
+	if (proxy->olen > 0)
 		memcpy(value, &proxy->value, sizeof(*value));
 
-	return proxy->len;
+	return proxy->olen;
 }
 
 s8_t proxy_write(u8_t id, knot_value_type *value)
@@ -191,7 +194,7 @@ s8_t proxy_write(u8_t id, knot_value_type *value)
 	/* FIXME: */
 	proxy->changed_cb(proxy);
 
-	return proxy->len;
+	return proxy->olen;
 }
 
 s8_t proxy_force_send(u8_t id)
@@ -287,8 +290,6 @@ static bool check_timeout(struct knot_proxy *proxy)
 	return false;
 }
 
-
-
 void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 {
 	bool change = false;
@@ -309,7 +310,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		change = check_bool_change(proxy, b_value);
 
 		if (proxy->send || timeout || change) {
-			proxy->len = sizeof(bool);
+			proxy->olen = sizeof(bool);
 			proxy->value.val_b = b_value;
 			proxy->send = true;
 		}
@@ -321,7 +322,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		lower = check_int_lower_threshold(proxy, i32);
 
 		if (proxy->send || timeout || change || upper || lower) {
-			proxy->len = sizeof(int);
+			proxy->olen = sizeof(int);
 			proxy->value.val_i = i32;
 			proxy->send = true;
 		}
@@ -334,7 +335,37 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	}
 }
 
-/* TODO: Set raw data */
+bool knot_proxy_value_set_string(struct knot_proxy *proxy,
+				 const char *value, int len)
+{
+	bool change = true;
+	bool timeout = false;
+
+	if (unlikely(!proxy))
+		return false;
+
+	if (proxy->schema.value_type != KNOT_VALUE_TYPE_RAW)
+		return false;
+
+	timeout = check_timeout(proxy);
+
+	/* Match current value? */
+	if (proxy->rlen == len)
+		change = (memcmp(proxy->value.raw, value, len) == 0 ?
+			  false : true);
+
+	if (!change && !timeout)
+		return false;
+
+	/* len may not include null */
+	len = MIN(KNOT_DATA_RAW_SIZE, len);
+	proxy->olen = len; /* Amount to send */
+	proxy->rlen = len; /* RAW type length */
+	strncpy(proxy->value.raw, value, len);
+	proxy->send = true;
+
+	return true;
+}
 
 s8_t knot_get_int(u8_t id, int *value)
 {
@@ -346,6 +377,6 @@ s8_t knot_get_int(u8_t id, int *value)
 		return -EINVAL;
 
 	*value = proxy->value.val_i;
-	proxy->len = sizeof(int);
+	proxy->olen = sizeof(int);
 	return sizeof(int);
 }

@@ -32,7 +32,7 @@ u8_t knot_proxy_get_id(struct knot_proxy *proxy);
 /* Proxy helpers to get or set sensor data at the remote */
 void knot_proxy_value_set_basic(struct knot_proxy *proxy,
 				const void *value);
-void knot_proxy_value_set_string(struct knot_proxy *proxy,
+bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 				 const char *value, int len);
 
 void knot_proxy_value_get_basic(struct knot_proxy *proxy,
