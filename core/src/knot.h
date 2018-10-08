@@ -35,7 +35,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy,
 bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 				 const char *value, int len);
 
-void knot_proxy_value_get_basic(struct knot_proxy *proxy,
+bool knot_proxy_value_get_basic(struct knot_proxy *proxy,
 				void *value);
 void knot_proxy_value_get_string(struct knot_proxy *proxy,
 				 char **value, int *len);

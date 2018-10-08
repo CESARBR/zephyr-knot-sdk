@@ -303,3 +303,30 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 
 	return true;
 }
+
+bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
+{
+	bool *bval;
+	int32_t *i32val;
+
+	if (unlikely(!proxy))
+		return false;
+
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		bval = (bool *) value;
+		*bval = proxy->value.val_b;
+		break;
+	case KNOT_VALUE_TYPE_INT:
+		i32val = (int32_t *) value;
+		*i32val = proxy->value.val_i;
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		/* TODO */
+		break;
+	default:
+		return false;
+	}
+
+	return true;
+}
