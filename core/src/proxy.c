@@ -211,69 +211,6 @@ s8_t proxy_force_send(u8_t id)
 	return 0;
 }
 
-static s8_t proxy_set_value(u8_t id, knot_value_type *value)
-{
-	/* TODO: Split this function */
-	struct knot_proxy *proxy;
-
-	if (proxy_pool[id].id == 0xff)
-		return -EINVAL;
-
-	proxy = &proxy_pool[id];
-
-	switch (proxy->schema.value_type) {
-	case KNOT_VALUE_TYPE_FLOAT:
-		/* TODO: Include decimal float part to comparison */
-		if (KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags
-				&& value->val_f.value_int
-				!= proxy->value.val_f.value_int)
-			proxy->send = true;
-
-		if (KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags
-				&& value->val_f.value_int
-				> proxy->value.val_f.value_int)
-			proxy->send = true;
-
-		if (KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags
-				&& value->val_f.value_int
-				< proxy->value.val_f.value_int)
-			proxy->send = true;
-		break;
-	case KNOT_VALUE_TYPE_BOOL:
-		if (KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags
-				&& value->val_b != proxy->value.val_b)
-			proxy->send = true;
-		break;
-	case KNOT_VALUE_TYPE_RAW:
-		/* TODO: Deal with raw size */
-		if (KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags
-				&& !strcmp(value->raw, proxy->value.raw))
-			proxy->send = true;
-		break;
-	default:
-		return -1;
-	}
-
-	if (proxy->send == true)
-		memcpy(value, &proxy->value, sizeof(*value));
-
-	return 0;
-}
-
-static s8_t proxy_get_value(u8_t id, knot_value_type *value)
-{
-	struct knot_proxy *proxy;
-
-	if (proxy_pool[id].id == 0xff)
-		return -EINVAL;
-
-	proxy = &proxy_pool[id];
-
-	memcpy(&proxy->value, value, sizeof(*value));
-
-	return sizeof(*value);
-}
-
 static bool check_timeout(struct knot_proxy *proxy)
 {
 	u32_t current_time, elapsed_time;
@@ -365,18 +302,4 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 	proxy->send = true;
 
 	return true;
-}
-
-s8_t knot_get_int(u8_t id, int *value)
-{
-	struct knot_proxy *proxy;
-
-	proxy = &proxy_pool[id];
-
-	if (proxy->id == 0xff)
-		return -EINVAL;
-
-	*value = proxy->value.val_i;
-	proxy->olen = sizeof(int);
-	return sizeof(int);
 }
