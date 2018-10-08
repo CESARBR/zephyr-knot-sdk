@@ -21,21 +21,21 @@
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 
-#define check_bool_change(proxy, b_value) \
+#define check_bool_change(proxy, bval) \
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
-	&& b_value != proxy->value.val_b)
+	&& bval != proxy->value.val_b)
 
-#define check_int_change(proxy, i32)	\
+#define check_int_change(proxy, s32val)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
-	&& i32 != proxy->value.val_i)
+	&& s32val != proxy->value.val_i)
 
-#define check_int_upper_threshold(proxy, i32)	\
+#define check_int_upper_threshold(proxy, s32val)	\
 	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
-	&& i32 > proxy->value.val_i)
+	&& s32val > proxy->value.val_i)
 
-#define check_int_lower_threshold(proxy, i32)	\
+#define check_int_lower_threshold(proxy, s32val)	\
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
-	&& i32 < proxy->value.val_i)
+	&& s32val < proxy->value.val_i)
 
 
 static struct knot_proxy {
@@ -234,8 +234,8 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	bool lower = false;
 	bool timeout = false;
 
-	bool b_value;
-	int32_t i32;
+	bool bval;
+	s32_t s32val;
 
 	if (unlikely(!proxy))
 		return;
@@ -243,24 +243,24 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	timeout = check_timeout(proxy);
 	switch(proxy->schema.value_type) {
 	case KNOT_VALUE_TYPE_BOOL:
-		b_value = *((bool *) value);
-		change = check_bool_change(proxy, b_value);
+		bval = *((bool *) value);
+		change = check_bool_change(proxy, bval);
 
 		if (proxy->send || timeout || change) {
 			proxy->olen = sizeof(bool);
-			proxy->value.val_b = b_value;
+			proxy->value.val_b = bval;
 			proxy->send = true;
 		}
 		break;
 	case KNOT_VALUE_TYPE_INT:
-		i32 = *((int32_t *) value);
-		change = check_int_change(proxy, i32);
-		upper = check_int_upper_threshold(proxy, i32);
-		lower = check_int_lower_threshold(proxy, i32);
+		s32val = *((s32_t *) value);
+		change = check_int_change(proxy, s32val);
+		upper = check_int_upper_threshold(proxy, s32val);
+		lower = check_int_lower_threshold(proxy, s32val);
 
 		if (proxy->send || timeout || change || upper || lower) {
 			proxy->olen = sizeof(int);
-			proxy->value.val_i = i32;
+			proxy->value.val_i = s32val;
 			proxy->send = true;
 		}
 		break;
@@ -307,7 +307,7 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
 {
 	bool *bval;
-	int32_t *i32val;
+	s32_t *s32val;
 
 	if (unlikely(!proxy))
 		return false;
@@ -318,8 +318,8 @@ bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
 		*bval = proxy->value.val_b;
 		break;
 	case KNOT_VALUE_TYPE_INT:
-		i32val = (int32_t *) value;
-		*i32val = proxy->value.val_i;
+		s32val = (s32_t *) value;
+		*s32val = proxy->value.val_i;
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
 		/* TODO */
