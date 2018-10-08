@@ -239,6 +239,8 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			       u8_t *opdu, size_t olen)
 {
 	knot_msg *imsg = (knot_msg *) ipdu;
+	u8_t id = 0xff;
+	knot_value_type *value;
 
 	switch (imsg->hdr.type) {
 	case KNOT_MSG_UNREGISTER_REQ:
@@ -248,7 +250,11 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* TODO */
 		break;
 	case KNOT_MSG_SET_DATA:
-		/* TODO */
+		id = imsg->data.sensor_id;
+		value = &imsg->data.payload;
+		proxy_write(id, value);
+
+		/* TODO: Send answer */
 		break;
 	case KNOT_MSG_GET_CONFIG:
 		/* TODO */

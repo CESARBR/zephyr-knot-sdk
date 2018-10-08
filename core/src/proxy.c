@@ -176,10 +176,13 @@ s8_t proxy_write(u8_t id, knot_value_type *value)
 {
 	struct knot_proxy *proxy;
 
-	if (proxy_pool[id].id == 0xff)
+	if (id > last_id)
 		return -EINVAL;
 
 	proxy = &proxy_pool[id];
+
+	if (proxy->id == 0xff)
+		return -EINVAL;
 
 	if (proxy->changed_cb == NULL)
 		return 0;
@@ -191,7 +194,6 @@ s8_t proxy_write(u8_t id, knot_value_type *value)
 	 * the user app through write callback.
 	 */
 
-	/* FIXME: */
 	proxy->changed_cb(proxy);
 
 	return proxy->olen;

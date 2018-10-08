@@ -38,6 +38,15 @@ static void poll_thermo(struct knot_proxy *proxy)
 	knot_proxy_value_set_basic(proxy, &thermo[id]);
 }
 
+static void changed_button(struct knot_proxy *proxy)
+{
+	bool button_state;
+
+	knot_proxy_value_get_basic(proxy, &button_state);
+	NET_DBG("Value for id %u changed to %d",
+		knot_proxy_get_id(proxy), button_state);
+}
+
 static void poll_button(struct knot_proxy *proxy)
 {
 	u8_t id;
@@ -99,7 +108,7 @@ void setup(void)
 
 	if (knot_proxy_register(3, "BUTTON", KNOT_TYPE_ID_SWITCH,
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-		      NULL, poll_button) == NULL) {
+		      changed_button, poll_button) == NULL) {
 		NET_DBG("BUTTON failed to register");
 	}
 
