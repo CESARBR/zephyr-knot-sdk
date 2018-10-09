@@ -221,7 +221,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 			continue;
 		}
 
-		len = msg_create_data(omsg, id_index, &value);
+		len = msg_create_data(omsg, id_index, &value, false);
 		break;
 	}
 
