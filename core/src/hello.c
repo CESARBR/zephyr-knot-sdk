@@ -40,9 +40,9 @@ static void poll_thermo(struct knot_proxy *proxy)
 	u8_t id;
 
 	id = knot_proxy_get_id(proxy);
-	NET_DBG("Reading temperature of thermo %u", id);
 	/* Get current temperature from actual object */
 	thermo[id]++;
+	NET_DBG("Thermo %u read %d", id, thermo[id]);
 
 	/* Pushing temperature to remote */
 	knot_proxy_value_set_basic(proxy, &thermo[id]);
@@ -56,11 +56,7 @@ static void changed_button(struct knot_proxy *proxy)
 
 static void poll_button(struct knot_proxy *proxy)
 {
-	u8_t id;
 	static int button_count = 0;
-
-	id = knot_proxy_get_id(proxy);
-	NET_DBG("Reading status of button with id %u", id);
 
 	/* Simulate button toogle after 5 readings */
 	if (button_count%5 == 0) {
@@ -72,6 +68,7 @@ static void poll_button(struct knot_proxy *proxy)
 	}
 	button_count++;
 
+	NET_DBG("Button read %u", button);
 	/* Pushing status to remote */
 	knot_proxy_value_set_basic(proxy, &button);
 }
