@@ -239,6 +239,9 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			       u8_t *opdu, size_t olen)
 {
 	knot_msg *imsg = (knot_msg *) ipdu;
+	knot_msg *omsg = (knot_msg *) opdu;
+	size_t len = 0;
+
 	u8_t id = 0xff;
 	knot_value_type *value;
 
@@ -252,9 +255,12 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	case KNOT_MSG_SET_DATA:
 		id = imsg->data.sensor_id;
 		value = &imsg->data.payload;
+		/* TODO: Check for proxy write error */
 		proxy_write(id, value);
-
-		/* TODO: Send answer */
+		/* TODO: Change protocol to not require id nor value for
+		 * set data response messages
+		 */
+		len = msg_create_data(omsg, id, value, true);
 		break;
 	case KNOT_MSG_GET_CONFIG:
 		/* TODO */
@@ -272,7 +278,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		break;
 	}
 
-	return 0;
+	return len;
 }
 
 static enum sm_state state_online(const u8_t *ipdu, size_t ilen,

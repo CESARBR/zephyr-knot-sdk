@@ -25,6 +25,16 @@ static int thermo[] = {0, 0, 0};
 static bool button = false;
 static char plate[] = "BRZ000";
 
+static void changed_thermo(struct knot_proxy *proxy)
+{
+	u8_t id;
+
+	id = knot_proxy_get_id(proxy);
+	knot_proxy_value_get_basic(proxy, &thermo[id]);
+
+	NET_DBG("Value for thermo %u changed to %d", id, thermo[id]);
+}
+
 static void poll_thermo(struct knot_proxy *proxy)
 {
 	u8_t id;
@@ -40,11 +50,8 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 static void changed_button(struct knot_proxy *proxy)
 {
-	bool button_state;
-
-	knot_proxy_value_get_basic(proxy, &button_state);
-	NET_DBG("Value for id %u changed to %d",
-		knot_proxy_get_id(proxy), button_state);
+	knot_proxy_value_get_basic(proxy, &button);
+	NET_DBG("Value for button changed to %d", button);
 }
 
 static void poll_button(struct knot_proxy *proxy)
@@ -89,20 +96,20 @@ void setup(void)
 {
 	if (knot_proxy_register(0, "THERMO_0", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		      NULL, poll_thermo)  == NULL) {
+		      changed_thermo, poll_thermo)  == NULL) {
 		NET_ERR("THERMO_0 failed to register");
 	}
 
 	/* id ONE assigned with wrong KNOT_VALUE TYPE for testing purpose */
 	if (knot_proxy_register(1, "THERMO_1", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_TEMPERATURE_C,
-		      NULL, poll_thermo) == NULL) {
+		      changed_thermo, poll_thermo) == NULL) {
 		NET_ERR("THERMO_1 failed to register");
 	}
 
 	if (knot_proxy_register(2, "THERMO_2", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		      NULL, poll_thermo) == NULL) {
+		      changed_thermo, poll_thermo) == NULL) {
 		NET_DBG("THERMO_2 failed to register");
 	}
 
