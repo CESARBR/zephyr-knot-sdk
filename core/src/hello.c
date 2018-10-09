@@ -73,6 +73,14 @@ static void poll_button(struct knot_proxy *proxy)
 	knot_proxy_value_set_basic(proxy, &button);
 }
 
+static void plate_changed(struct knot_proxy *proxy)
+{
+	int len;
+
+	if (knot_proxy_value_get_string(proxy, plate, sizeof(plate), &len))
+		NET_DBG("Plate changed %s", plate);
+}
+
 static void random_plate(struct knot_proxy *proxy)
 {
 	u8_t id;
@@ -118,7 +126,7 @@ void setup(void)
 
 	if (knot_proxy_register(4, "PLATE", KNOT_TYPE_ID_NONE,
 		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
-		      NULL, random_plate) == NULL) {
+		      plate_changed, random_plate) == NULL) {
 		NET_DBG("PLATE failed to register");
 	}
 }

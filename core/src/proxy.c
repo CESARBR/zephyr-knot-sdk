@@ -332,3 +332,18 @@ bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
 
 	return true;
 }
+
+bool knot_proxy_value_get_string(struct knot_proxy *proxy,
+				 char *value, int len, int *olen)
+{
+	if (unlikely(!proxy))
+		return false;
+
+	if (proxy->schema.value_type != KNOT_VALUE_TYPE_RAW)
+		return false;
+
+	*olen = MIN(len, proxy->rlen);
+	strncpy(value, proxy->value.raw, *olen);
+
+	return true;
+}
