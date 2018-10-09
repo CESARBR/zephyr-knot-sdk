@@ -59,7 +59,7 @@ size_t msg_create_data(knot_msg *msg, u8_t id, knot_value_type *value)
 	msg->data.sensor_id = id;
 
 	/* FIXME: length based on type */
-	msg->hdr.payload_len = sizeof(*value);
+	msg->hdr.payload_len = sizeof(id) + sizeof(*value);
 	memcpy(&msg->data.payload, value, sizeof(*value));
 
 	return (sizeof(msg->hdr) + msg->hdr.payload_len);
