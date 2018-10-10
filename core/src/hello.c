@@ -95,6 +95,7 @@ static void random_plate(struct knot_proxy *proxy)
 	plate[6] = '3' + num;
 
 	knot_proxy_value_set_string(proxy, plate, sizeof(plate));
+	NET_DBG("Plate read %s", plate);
 }
 
 void setup(void)
