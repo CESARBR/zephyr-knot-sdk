@@ -11,6 +11,14 @@
 
 #include "msg.h"
 
+size_t msg_create_error(knot_msg *msg, uint8_t id, int8_t result)
+{
+	msg->action.hdr.type = id;
+	msg->action.result = result;
+
+	return (sizeof(knot_msg_result) - sizeof(msg->action.hdr));
+}
+
 size_t msg_create_reg(knot_msg *msg, uint64_t id,
 		      const char *name, size_t name_len)
 {

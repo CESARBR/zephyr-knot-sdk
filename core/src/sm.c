@@ -255,8 +255,12 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	case KNOT_MSG_SET_DATA:
 		id = imsg->data.sensor_id;
 		value = &imsg->data.payload;
-		/* TODO: Check for proxy write error */
-		proxy_write(id, value);
+		if (proxy_write(id, value) < 0) {
+			len = msg_create_error(omsg,
+					       KNOT_MSG_DATA_RESP,
+					       KNOT_INVALID_DATA);
+			break;
+		}
 		/* TODO: Change protocol to not require id nor value for
 		 * set data response messages
 		 */
