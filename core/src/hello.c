@@ -23,7 +23,7 @@
 
 static int thermo[] = {0, 0, 0};
 static bool button = false;
-static char plate[] = "BRZ000";
+static char plate[] = "BRZ0000";
 
 static void changed_thermo(struct knot_proxy *proxy)
 {
