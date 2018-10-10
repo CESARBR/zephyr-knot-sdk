@@ -27,11 +27,9 @@
 
 /* Lens */
 
-u8_t mac_buf[MAC_ADDR_LEN];
-u8_t uuid_buf[KNOT_PROTOCOL_UUID_LEN];
-u8_t token_buf[KNOT_PROTOCOL_TOKEN_LEN];
-
-u8_t print_buf[50];
+static u8_t mac_buf[MAC_ADDR_LEN];
+static u8_t uuid_buf[KNOT_PROTOCOL_UUID_LEN];
+static u8_t token_buf[KNOT_PROTOCOL_TOKEN_LEN];
 
 int8_t storage_init(void)
 {
