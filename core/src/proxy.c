@@ -172,7 +172,7 @@ s8_t proxy_read(u8_t id, knot_value_type *value)
 	return proxy->olen;
 }
 
-s8_t proxy_write(u8_t id, knot_value_type *value)
+s8_t proxy_write(u8_t id, knot_value_type *value, u8_t value_len)
 {
 	struct knot_proxy *proxy;
 
@@ -188,6 +188,12 @@ s8_t proxy_write(u8_t id, knot_value_type *value)
 		return 0;
 
 	memcpy(&proxy->value, value, sizeof(*value));
+	/*
+	 * Set string length if raw data. 'value_len' can be ignored for basic
+	 * types: knotd is responsible for encoding and setting payload_len.
+	 */
+	if (proxy->schema.value_type == KNOT_VALUE_TYPE_RAW)
+		proxy->rlen = value_len;
 
 	/*
 	 * New values sent from cloud are informed to

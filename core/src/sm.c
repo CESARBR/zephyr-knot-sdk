@@ -244,6 +244,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 	u8_t id = 0xff;
 	knot_value_type *value;
+	uint8_t value_len;
 
 	switch (imsg->hdr.type) {
 	case KNOT_MSG_UNREGISTER_REQ:
@@ -255,7 +256,11 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	case KNOT_MSG_SET_DATA:
 		id = imsg->data.sensor_id;
 		value = &imsg->data.payload;
-		if (proxy_write(id, value) < 0) {
+		/* value_len = payload_len - sensor_id_len */
+		value_len = imsg->hdr.payload_len;
+		value_len -= sizeof(id);
+
+		if (proxy_write(id, value, value_len) < 0) {
 			len = msg_create_error(omsg,
 					       KNOT_MSG_DATA_RESP,
 					       KNOT_INVALID_DATA);
