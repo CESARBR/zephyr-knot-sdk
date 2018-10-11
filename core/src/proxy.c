@@ -308,7 +308,7 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 	len = MIN(KNOT_DATA_RAW_SIZE, len);
 	proxy->olen = len; /* Amount to send */
 	proxy->rlen = len; /* RAW type length */
-	strncpy(proxy->value.raw, value, len);
+	memcpy(proxy->value.raw, value, len);
 	proxy->send = true;
 
 	return true;
@@ -351,7 +351,7 @@ bool knot_proxy_value_get_string(struct knot_proxy *proxy,
 		return false;
 
 	*olen = MIN(len, proxy->rlen);
-	strncpy(value, proxy->value.raw, *olen);
+	memcpy(value, proxy->value.raw, *olen);
 
 	return true;
 }
