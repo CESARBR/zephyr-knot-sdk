@@ -23,11 +23,11 @@
 #define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
 #define NET_LOG_ENABLED 1
 
-#define MAC_ADDR_LEN 12 // in bytes
+#define ID_HEX_STR_LEN 16 // in bytes
 
 /* Lens */
 
-static u8_t mac_buf[MAC_ADDR_LEN];
+static u8_t id_buf[ID_HEX_STR_LEN];
 static u8_t uuid_buf[KNOT_PROTOCOL_UUID_LEN];
 static u8_t token_buf[KNOT_PROTOCOL_TOKEN_LEN];
 
@@ -35,7 +35,7 @@ int8_t storage_init(void)
 {
 	NET_DBG("Initializing mock storage");
 
-	memset(mac_buf, 0, sizeof(mac_buf));
+	memset(id_buf, 0, sizeof(id_buf));
 	memset(uuid_buf, 0, sizeof(uuid_buf));
 	memset(token_buf, 0, sizeof(token_buf));
 
@@ -46,7 +46,7 @@ int8_t storage_reset(void)
 {
 	NET_DBG("Reseting mock storage");
 
-	memset(mac_buf, 0, sizeof(mac_buf));
+	memset(id_buf, 0, sizeof(id_buf));
 	memset(uuid_buf, 0, sizeof(uuid_buf));
 	memset(token_buf, 0, sizeof(token_buf));
 
@@ -66,10 +66,10 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 			goto err;
 		memcpy(value, token_buf, KNOT_PROTOCOL_TOKEN_LEN);
 		break;
-	case STORAGE_KEY_MAC:
-		if (!strlen(mac_buf))
+	case STORAGE_KEY_ID:
+		if (!strlen(id_buf))
 			goto err;
-		memcpy(value, mac_buf, MAC_ADDR_LEN);
+		memcpy(value, id_buf, ID_HEX_STR_LEN);
 		break;
 	}
 
@@ -89,8 +89,8 @@ int8_t storage_set(enum storage_key key, const u8_t *value)
 	case STORAGE_KEY_TOKEN:
 		memcpy(token_buf, value, KNOT_PROTOCOL_TOKEN_LEN);
 		break;
-	case STORAGE_KEY_MAC:
-		memcpy(mac_buf, value, MAC_ADDR_LEN);
+	case STORAGE_KEY_ID:
+		memcpy(id_buf, value, ID_HEX_STR_LEN);
 		break;
 	}
 

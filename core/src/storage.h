@@ -7,7 +7,7 @@
  */
 
 enum storage_key {
-	STORAGE_KEY_MAC		= 0xFFFF,
+	STORAGE_KEY_ID		= 0xFFFF,
 	STORAGE_KEY_UUID	= 0xFFFE,
 	STORAGE_KEY_TOKEN	= 0xFFFD,
 };
