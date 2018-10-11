@@ -31,7 +31,7 @@ static bool to_exp;		/* Timeout expired */
 
 static char uuid[KNOT_PROTOCOL_UUID_LEN];	/* Device uuid */
 static char token[KNOT_PROTOCOL_TOKEN_LEN];	/* Device token */
-static uint64_t device_id = 0;			/* Device id */
+static u64_t device_id;				/* Device id */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -168,6 +168,14 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 			next = STATE_ERROR;
 			goto done;
 		}
+		if (storage_set(STORAGE_KEY_ID, (const u8_t *) &device_id)) {
+			next = STATE_ERROR;
+			goto done;
+		}
+
+		NET_DBG("UUID: %s", uuid);
+		NET_DBG("token: %s", token);
+
 		next = STATE_ONLINE;
 	default:
 		goto done;
@@ -323,26 +331,33 @@ int sm_start(void)
 
 	NET_DBG("SM: State Machine start");
 
+	state = STATE_AUTH; /* Initial state */
+
+	device_id = 0;
 	memset(uuid, 0, sizeof(uuid));
 	memset(token, 0, sizeof(token));
 
 	/* Initializing proxy slots */
 	proxy_start();
 
-	/* TODO: Check for id from storage */
-	if (device_id == 0) {
+	/*
+	 * 'device_id' stored properly at NVM means that UUID
+	 * and token are also available.
+	 */
+	err = storage_get(STORAGE_KEY_ID, (u8_t *) &device_id);
+	if (err || device_id == 0) {
 		device_id = sys_rand32_get();
 		device_id *= device_id;
-		/* TODO: Save id to storage */
+		state = STATE_REG;
+		goto done;
 	}
 
 	err = storage_get(STORAGE_KEY_UUID, uuid) ||
-					storage_get(STORAGE_KEY_TOKEN, token);
+		storage_get(STORAGE_KEY_TOKEN, token);
 	if (err)
 		state = STATE_REG;
-	else
-		state = STATE_AUTH;
 
+done:
 	k_timer_init(&to, timer_expired, NULL);
 	to_on = false;
 	to_exp = false;

@@ -27,7 +27,7 @@
 
 /* Lens */
 
-static u8_t id_buf[ID_HEX_STR_LEN];
+static u64_t id_val;
 static u8_t uuid_buf[KNOT_PROTOCOL_UUID_LEN];
 static u8_t token_buf[KNOT_PROTOCOL_TOKEN_LEN];
 
@@ -35,9 +35,17 @@ int8_t storage_init(void)
 {
 	NET_DBG("Initializing mock storage");
 
-	memset(id_buf, 0, sizeof(id_buf));
+#if 1
+	/* New device testing */
+	memset(&id_val, 0, sizeof(id_val));
 	memset(uuid_buf, 0, sizeof(uuid_buf));
 	memset(token_buf, 0, sizeof(token_buf));
+#else
+	/* Set known credentials */
+	id_val = 0xDEADBEEFFEEDBABE;
+	strcpy(uuid_buf, "7599eaee-e006-455e-87c1-f9650be8c7cf");
+	strcpy(token_buf, "d2422c409fb5bfcf011292449d6638b480f643d8");
+#endif
 
 	return 0;
 }
@@ -46,7 +54,7 @@ int8_t storage_reset(void)
 {
 	NET_DBG("Reseting mock storage");
 
-	memset(id_buf, 0, sizeof(id_buf));
+	memset(&id_val, 0, sizeof(id_val));
 	memset(uuid_buf, 0, sizeof(uuid_buf));
 	memset(token_buf, 0, sizeof(token_buf));
 
@@ -67,9 +75,7 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 		memcpy(value, token_buf, KNOT_PROTOCOL_TOKEN_LEN);
 		break;
 	case STORAGE_KEY_ID:
-		if (!strlen(id_buf))
-			goto err;
-		memcpy(value, id_buf, ID_HEX_STR_LEN);
+		memcpy(value, &id_val, sizeof(id_val));
 		break;
 	}
 
@@ -90,7 +96,7 @@ int8_t storage_set(enum storage_key key, const u8_t *value)
 		memcpy(token_buf, value, KNOT_PROTOCOL_TOKEN_LEN);
 		break;
 	case STORAGE_KEY_ID:
-		memcpy(id_buf, value, ID_HEX_STR_LEN);
+		memcpy(&id_val, value, sizeof(id_val));
 		break;
 	}
 
