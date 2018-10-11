@@ -117,8 +117,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 		MIN(KNOT_PROTOCOL_DATA_NAME_LEN, strlen(name)));
 
 	/* Set default config */
-	proxy->config.event_flags = KNOT_EVT_FLAG_TIME;
-	proxy->config.time_sec = 10;
+	proxy->config.event_flags = KNOT_EVT_FLAG_NONE;
 
 	proxy->poll_cb = poll_cb;
 	proxy->changed_cb = changed_cb;
