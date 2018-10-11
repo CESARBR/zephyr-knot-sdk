@@ -62,7 +62,7 @@ size_t msg_create_schema(knot_msg *msg, u8_t id,
 }
 
 size_t msg_create_data(knot_msg *msg, u8_t id,
-		       knot_value_type *value, bool resp)
+		       const knot_value_type *value, bool resp)
 {
 	msg->hdr.type = resp ? KNOT_MSG_DATA_RESP : KNOT_MSG_DATA;
 	msg->data.sensor_id = id;

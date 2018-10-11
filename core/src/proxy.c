@@ -146,17 +146,17 @@ u8_t proxy_get_last_id(void)
 	return last_id;
 }
 
-s8_t proxy_read(u8_t id, knot_value_type *value)
+const knot_value_type *proxy_read(u8_t id)
 {
 	struct knot_proxy *proxy;
 
 	if (proxy_pool[id].id == 0xff)
-		return -EINVAL;
+		return NULL;
 
 	proxy = &proxy_pool[id];
 
 	if (proxy->poll_cb == NULL)
-		return 0;
+		return NULL;
 
 	proxy->olen = 0;
 
@@ -167,9 +167,9 @@ s8_t proxy_read(u8_t id, knot_value_type *value)
 	 * new value is set "len" field is set.
 	 */
 	if (proxy->olen > 0)
-		memcpy(value, &proxy->value, sizeof(*value));
+		return &proxy->value;
 
-	return proxy->olen;
+	return NULL;
 }
 
 s8_t proxy_write(u8_t id, knot_value_type *value, u8_t value_len)

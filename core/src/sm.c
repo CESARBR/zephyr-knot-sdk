@@ -204,7 +204,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 {
 	knot_msg *omsg = (knot_msg *) opdu;
 	knot_msg *imsg = (knot_msg *) ipdu;
-	knot_value_type value;
+	const knot_value_type *value;
 	static u8_t id_index = 0;
 	u8_t last_id;
 	s8_t len = 0;
@@ -222,14 +222,13 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	}
 
 	while (id_index <= last_id) {
-		memset(&value, 0, sizeof(value));
-		len = proxy_read(id_index, &value);
-		if (len <= 0) {
+		value = proxy_read(id_index);
+		if (unlikely(!value)) {
 			id_index++;
 			continue;
 		}
 
-		len = msg_create_data(omsg, id_index, &value, false);
+		len = msg_create_data(omsg, id_index, value, false);
 		break;
 	}
 
