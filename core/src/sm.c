@@ -250,7 +250,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	size_t len = 0;
 
 	u8_t id = 0xff;
-	knot_value_type *value;
+	const knot_value_type *value;
 	uint8_t value_len;
 
 	switch (imsg->hdr.type) {

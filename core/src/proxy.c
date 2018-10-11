@@ -172,7 +172,7 @@ const knot_value_type *proxy_read(u8_t id)
 	return NULL;
 }
 
-s8_t proxy_write(u8_t id, knot_value_type *value, u8_t value_len)
+s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 {
 	struct knot_proxy *proxy;
 
