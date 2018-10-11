@@ -37,6 +37,11 @@
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
 	&& s32val < proxy->value.val_i)
 
+#define check_raw_change(proxy, rawval, rawlen)	\
+	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
+	&& ( proxy->rlen != rawlen \
+	     || memcmp(proxy->value.raw, rawval, rawlen) != 0) \
+	   )
 
 static struct knot_proxy {
 	/* KNoT identifier */
@@ -283,8 +288,8 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 				 const char *value, int len)
 {
-	bool change = true;
-	bool timeout = false;
+	bool change;
+	bool timeout;
 
 	if (unlikely(!proxy))
 		return false;
@@ -295,10 +300,7 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 	timeout = check_timeout(proxy);
 
 	/* Match current value? */
-	if (proxy->rlen == len)
-		change = (memcmp(proxy->value.raw, value, len) == 0 ?
-			  false : true);
-
+	change = check_raw_change(proxy, value, len);
 	if (!change && !timeout)
 		return false;
 
