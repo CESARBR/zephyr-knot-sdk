@@ -12,7 +12,6 @@
  * To use with the nRF52840 board, use the storage.nrf52840 file.
  */
 
-#define ID_HEX_STR_LEN 16 // in bytes
 
 /* Lens */
 

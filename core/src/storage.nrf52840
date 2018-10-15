@@ -14,7 +14,7 @@
 #define NVS_SECTOR_COUNT 	2
 #define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET
 
-#define MAC_ADDR_LEN 12 // in bytes
+#define ID_VALUE_SIZE 		8 // in bytes (u64_t)
 
 static struct nvs_fs knot_fs = {
 	.sector_size = NVS_SECTOR_SIZE,
@@ -57,7 +57,7 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 		len = KNOT_PROTOCOL_TOKEN_LEN;
 		break;
 	case STORAGE_KEY_ID:
-		len = MAC_ADDR_LEN;
+		len = ID_VALUE_SIZE;
 		break;
 	default:
 		return -EINVAL;
@@ -78,7 +78,7 @@ int8_t storage_set(enum storage_key key, const u8_t *value)
 		len = KNOT_PROTOCOL_TOKEN_LEN;
 		break;
 	case STORAGE_KEY_ID:
-		len = MAC_ADDR_LEN;
+		len = ID_VALUE_SIZE;
 		break;
 	default:
 		return -1;
