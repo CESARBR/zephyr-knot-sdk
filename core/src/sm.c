@@ -217,14 +217,19 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	 * error simply ignore it and send data of the next sensor.
 	 */
 	if (imsg->hdr.type == KNOT_MSG_DATA_RESP) {
-		id_index = ((id_index + 1) > last_id ? 0 : id_index + 1);
+		/* TODO: If response timed-out, check next sensor
+		 * and retry later
+		 */
 		if (imsg->action.result != KNOT_SUCCESS)
 			NET_ERR("DT RSP: %d", imsg->action.result);
+		else
+			proxy_confirm_sent(id_index);
+		id_index = ((id_index + 1) > last_id ? 0 : id_index + 1);
 	}
 
 	while (id_index <= last_id) {
-		/* TODO: Set wait_resp flag for proxies */
-		value = proxy_read(id_index, &value_len);
+		/* Read value and wait for response if data is sent */
+		value = proxy_read(id_index, &value_len, true);
 		if (unlikely(!value)) {
 			id_index++;
 			continue;
@@ -273,7 +278,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 		/* Flag data to be sent and don't wait response */
 		proxy_force_send(id);
-		value = proxy_read(id, &value_len);
+		value = proxy_read(id, &value_len, false);
 
 		/* Couldn't read value */
 		if (unlikely(!value)) {

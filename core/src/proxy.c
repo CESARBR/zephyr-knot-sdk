@@ -152,7 +152,7 @@ u8_t proxy_get_last_id(void)
 }
 
 /* Return knot_value_type* so it can be flagged as const  */
-const knot_value_type *proxy_read(u8_t id, uint8_t *olen)
+const knot_value_type *proxy_read(u8_t id, uint8_t *olen, bool wait_resp)
 {
 	struct knot_proxy *proxy;
 
@@ -165,6 +165,9 @@ const knot_value_type *proxy_read(u8_t id, uint8_t *olen)
 		return NULL;
 
 	proxy->olen = 0;
+
+	/* Wait for response? */
+	proxy->wait_resp = wait_resp;
 
 	proxy->poll_cb(proxy);
 
@@ -223,7 +226,21 @@ s8_t proxy_force_send(u8_t id)
 
 	/* Flag 'value' to be sent, but don't wait response */
 	proxy->send = true;
-	proxy->wait_resp = false;
+
+	return 0;
+}
+
+s8_t proxy_confirm_sent(u8_t id)
+{
+	struct knot_proxy *proxy;
+
+	proxy = &proxy_pool[id];
+
+	if (proxy->id == 0xff)
+		return -EINVAL;
+
+	/* No need to resend */
+	proxy->send = false;
 
 	return 0;
 }
