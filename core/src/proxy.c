@@ -151,7 +151,8 @@ u8_t proxy_get_last_id(void)
 	return last_id;
 }
 
-const knot_value_type *proxy_read(u8_t id)
+/* Return knot_value_type* so it can be flagged as const  */
+const knot_value_type *proxy_read(u8_t id, uint8_t *olen)
 {
 	struct knot_proxy *proxy;
 
@@ -169,12 +170,13 @@ const knot_value_type *proxy_read(u8_t id)
 
 	/*
 	 * Read callback may set new values. When a
-	 * new value is set "len" field is set.
+	 * new value is set "olen" field is set.
 	 */
-	if (proxy->olen > 0)
-		return &proxy->value;
+	if (proxy->olen <= 0)
+		return NULL;
 
-	return NULL;
+	*olen = proxy->olen;
+	return &proxy->value;
 }
 
 s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)

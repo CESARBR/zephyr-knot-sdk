@@ -205,6 +205,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	knot_msg *omsg = (knot_msg *) opdu;
 	knot_msg *imsg = (knot_msg *) ipdu;
 	const knot_value_type *value;
+	uint8_t value_len = 0;
 	static u8_t id_index = 0;
 	u8_t last_id;
 	s8_t len = 0;
@@ -223,13 +224,13 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 
 	while (id_index <= last_id) {
 		/* TODO: Set wait_resp flag for proxies */
-		value = proxy_read(id_index);
+		value = proxy_read(id_index, &value_len);
 		if (unlikely(!value)) {
 			id_index++;
 			continue;
 		}
 
-		len = msg_create_data(omsg, id_index, value, false);
+		len = msg_create_data(omsg, id_index, value, value_len, false);
 		break;
 	}
 
@@ -272,7 +273,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 		/* Flag data to be sent and don't wait response */
 		proxy_force_send(id);
-		value = proxy_read(id);
+		value = proxy_read(id, &value_len);
 
 		/* Couldn't read value */
 		if (unlikely(!value)) {
@@ -283,7 +284,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			break;
 		}
 
-		len = msg_create_data(omsg, id, value, false);
+		len = msg_create_data(omsg, id, value, value_len, false);
 		break;
 	case KNOT_MSG_SET_DATA:
 		id = imsg->data.sensor_id;
@@ -301,7 +302,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* TODO: Change protocol to not require id nor value for
 		 * set data response messages
 		 */
-		len = msg_create_data(omsg, id, value, true);
+		len = msg_create_data(omsg, id, value, value_len, true);
 		break;
 	case KNOT_MSG_GET_CONFIG:
 		/* TODO */
