@@ -55,6 +55,7 @@ static struct knot_proxy {
 
 	/* Control variable to send data */
 	bool			send; /* 'value' must be sent */
+	bool			wait_resp; /* Will send 'value' until resp */
 	u8_t			olen; /* Amount to send / Output: temporary */
 	u8_t			rlen; /* Length RAW value */
 
@@ -218,7 +219,9 @@ s8_t proxy_force_send(u8_t id)
 
 	proxy = &proxy_pool[id];
 
+	/* Flag 'value' to be sent, but don't wait response */
 	proxy->send = true;
+	proxy->wait_resp = false;
 
 	return 0;
 }
@@ -241,10 +244,10 @@ static bool check_timeout(struct knot_proxy *proxy)
 
 void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 {
-	bool change = false;
-	bool upper = false;
-	bool lower = false;
-	bool timeout = false;
+	bool change;
+	bool upper;
+	bool lower;
+	bool timeout;
 
 	bool bval;
 	s32_t s32val;
@@ -261,7 +264,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		if (proxy->send || timeout || change) {
 			proxy->olen = sizeof(bool);
 			proxy->value.val_b = bval;
-			proxy->send = true;
+			proxy->send = proxy->wait_resp;
 		}
 		break;
 	case KNOT_VALUE_TYPE_INT:
@@ -273,7 +276,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		if (proxy->send || timeout || change || upper || lower) {
 			proxy->olen = sizeof(int);
 			proxy->value.val_i = s32val;
-			proxy->send = true;
+			proxy->send = proxy->wait_resp;
 		}
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
@@ -300,7 +303,8 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 
 	/* Match current value? */
 	change = check_raw_change(proxy, value, len);
-	if (!change && !timeout)
+
+	if (!proxy->send && !change && !timeout)
 		return false;
 
 	/* len may not include null */
@@ -308,7 +312,7 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 	proxy->olen = len; /* Amount to send */
 	proxy->rlen = len; /* RAW type length */
 	memcpy(proxy->value.raw, value, len);
-	proxy->send = true;
+	proxy->send = proxy->wait_resp;
 
 	return true;
 }

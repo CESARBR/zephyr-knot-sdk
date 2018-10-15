@@ -222,6 +222,7 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	}
 
 	while (id_index <= last_id) {
+		/* TODO: Set wait_resp flag for proxies */
 		value = proxy_read(id_index);
 		if (unlikely(!value)) {
 			id_index++;
@@ -258,7 +259,31 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* Clear NVM */
 		break;
 	case KNOT_MSG_GET_DATA:
-		/* TODO */
+		id = imsg->data.sensor_id;
+
+		/* Invalid id */
+		if (id > KNOT_THING_DATA_MAX) {
+			len = msg_create_error(omsg,
+					       KNOT_MSG_DATA,
+					       KNOT_INVALID_DATA);
+			NET_WARN("Invalid Id!");
+			break;
+		}
+
+		/* Flag data to be sent and don't wait response */
+		proxy_force_send(id);
+		value = proxy_read(id);
+
+		/* Couldn't read value */
+		if (unlikely(!value)) {
+			len = msg_create_error(omsg,
+					       KNOT_MSG_DATA,
+					       KNOT_INVALID_DATA);
+			NET_WARN("Can't read requested value");
+			break;
+		}
+
+		len = msg_create_data(omsg, id, value, false);
 		break;
 	case KNOT_MSG_SET_DATA:
 		id = imsg->data.sensor_id;
