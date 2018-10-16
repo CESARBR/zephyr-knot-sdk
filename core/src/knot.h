@@ -26,6 +26,10 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 				       u8_t unit, knot_callback_t changed_cb,
 				       knot_callback_t pool_cb);
 
+/* Configure which events should send proxy value to cloud */
+bool knot_proxy_set_config(u8_t id, uint8_t event_flags, uint16_t timeout_sec,
+			  void *lower_limit, void *upper_limit);
+
 /* Proxy properties */
 u8_t knot_proxy_get_id(struct knot_proxy *proxy);
 

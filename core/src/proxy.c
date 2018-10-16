@@ -12,6 +12,7 @@
 #include <net/net_core.h>
 
 #include <string.h>
+#include <limits.h>
 
 #include "knot_protocol.h"
 #include "knot_types.h"
@@ -139,6 +140,66 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 		last_id = id;
 
 	return proxy;
+}
+
+bool knot_proxy_set_config(u8_t id, uint8_t event_flags, uint16_t timeout_sec,
+			  void *lower_limit, void *upper_limit)
+{
+	struct knot_proxy *proxy;
+	knot_value_type upper_buf, lower_buf;
+
+	if (id >= KNOT_THING_DATA_MAX)
+		return false;
+
+	proxy = &proxy_pool[id];
+
+	if (proxy->id != id)
+		return false;
+
+	/* Event by limits */
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_INT:
+		/* Lower */
+		if (event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD) {
+			if (unlikely(!lower_limit))
+				return false;
+			lower_buf.val_i = *((int32_t *) lower_limit);
+		} else {
+			lower_buf.val_i = INT_MIN;
+		}
+		/* Upper */
+		if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD) {
+			if (unlikely(!upper_limit))
+				return false;
+			upper_buf.val_i = *((int32_t *) upper_limit);
+		} else {
+			upper_buf.val_i = INT_MAX;
+		}
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		/* TODO */
+		break;
+	default:
+		/* Event by limits is only available for int and float */
+		if (event_flags & (KNOT_EVT_FLAG_LOWER_THRESHOLD |
+				   KNOT_EVT_FLAG_UPPER_THRESHOLD))
+			return false;
+	}
+
+	/* TODO: Fix limit bugs from knot_protocol.c */
+	if (knot_config_is_valid(event_flags, timeout_sec,
+				 &lower_buf, &upper_buf) != KNOT_SUCCESS)
+		return false;
+
+	/* Set upper and lower limits */
+	memcpy(&proxy->config.upper_limit, &upper_buf, sizeof(upper_buf));
+	memcpy(&proxy->config.lower_limit, &lower_buf, sizeof(lower_buf));
+
+	/* Set event flags and timeout */
+	proxy->config.event_flags = event_flags;
+	proxy->config.time_sec = timeout_sec;
+
+	return true;
 }
 
 /* Proxy properties */
