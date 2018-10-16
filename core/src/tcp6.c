@@ -32,6 +32,16 @@
 static struct net_app_ctx tcp6;
 static net_recv_t recv;
 
+static void tcp6_close(struct net_app_ctx *ctx,
+			 int status,
+			 void *user_data)
+{
+	net_close_t net_close_cb = user_data;
+
+	NET_DBG("TCP(%p) disconnected", ctx);
+	net_close_cb();
+}
+
 static void tcp6_received(struct net_app_ctx *ctx,
 			 struct net_pkt *ipkt,
 			 int status,
@@ -62,20 +72,24 @@ static void tcp6_connected(struct net_app_ctx *ctx,
 	NET_DBG("TCP(%p) connected", ctx);
 }
 
-static int connect_tcp6(struct net_app_ctx *ctx, const char *peer, int port)
+static int connect_tcp6(struct net_app_ctx *ctx,
+			const char *peer,
+			int port,
+			void *user_data)
 {
 	int ret;
 
 	NET_DBG("TCP(%p) Connecting to %s %d ...", ctx, peer, port);
 
 	ret = net_app_init_tcp_client(ctx, NULL, NULL, peer, port,
-				      WAIT_TIME, NULL);
+				      WAIT_TIME, user_data);
 	if (ret < 0) {
 		NET_ERR("Cannot init %s TCP client (%d)", peer, ret);
 		goto fail;
 	}
 
-	ret = net_app_set_cb(ctx, tcp6_connected, tcp6_received, NULL, NULL);
+	ret = net_app_set_cb(ctx, tcp6_connected, tcp6_received, NULL,
+								tcp6_close);
 	if (ret < 0) {
 		NET_ERR("Cannot set callbacks (%d)", ret);
 		goto fail;
@@ -91,7 +105,7 @@ fail:
 	return ret;
 }
 
-int tcp6_start(net_recv_t recv_cb)
+int tcp6_start(net_recv_t recv_cb, net_close_t close_cb)
 {
 	int ret = -EPERM;
 
@@ -101,7 +115,7 @@ int tcp6_start(net_recv_t recv_cb)
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
 		ret = connect_tcp6(&tcp6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR,
-				  PEER_IPV6_PORT);
+				  PEER_IPV6_PORT, close_cb);
 		if (ret < 0)
 			NET_ERR("Cannot init IPv6 TCP client (%d)", ret);
 	}

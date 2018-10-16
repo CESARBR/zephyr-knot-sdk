@@ -27,6 +27,13 @@ static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
 static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
+static bool connected;
+
+static void close_cb(void)
+{
+	if (connected)
+		connected = false;
+}
 
 static bool recv_cb(struct net_buf *netbuf)
 {
@@ -57,28 +64,47 @@ static bool recv_cb(struct net_buf *netbuf)
 	return true;
 }
 
+static void connection_start(void)
+{
+	int ret;
+
+	ret = tcp6_start(recv_cb, close_cb);
+	if (ret < 0) {
+		NET_DBG("NET: TCP start failure");
+		tcp6_stop();
+		return;
+	}
+
+	connected = true;
+}
+
 static void net_thread(void)
 {
 	u8_t ipdu[128];
 	size_t ilen;
 	int ret;
 
-	ret = tcp6_start(recv_cb);
-	if (ret < 0) {
-		NET_DBG("NET: TCP start failure");
-		return;
-	}
-
 	memset(ipdu, 0, sizeof(ipdu));
+	connection_start();
 
+	/*
+	 * Reading data from PROTO before checking connection to avoid pipe
+	 * having multiple KNoT messages, what would break knotd.
+	 */
 	while (1) {
 		ilen = 0;
 		/* Reading data from PROTO thread */
 		ret = k_pipe_get(proto2net, ipdu, sizeof(ipdu),
 				 &ilen, 0U, K_NO_WAIT);
+
+		if (!connected) {
+			connection_start();
+			goto done;
+		}
+
 		if (ret == 0 && ilen)
 			ret = tcp6_send(ipdu, ilen);
-
+done:
 		k_sleep(1000);
 	}
 
@@ -91,6 +117,7 @@ int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
 
 	proto2net = p2n;
 	net2proto = n2p;
+	connected = false;
 
 	k_thread_create(&rx_thread_data, rx_stack,
 			K_THREAD_STACK_SIZEOF(rx_stack),
