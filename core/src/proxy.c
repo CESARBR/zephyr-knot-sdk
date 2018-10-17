@@ -37,6 +37,18 @@
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
 	&& s32val < proxy->value.val_i)
 
+#define check_float_change(proxy, fval)	\
+	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
+	&& fval != proxy->value.val_f)
+
+#define check_float_upper_threshold(proxy, fval)	\
+	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
+	&& fval > proxy->value.val_f)
+
+#define check_float_lower_threshold(proxy, fval)	\
+	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
+	&& fval < proxy->value.val_f)
+
 #define check_raw_change(proxy, rawval, rawlen)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
 	&& ( proxy->rlen != rawlen \
@@ -270,6 +282,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 
 	bool bval;
 	s32_t s32val;
+	float fval;
 
 	if (unlikely(!proxy))
 		return;
@@ -299,7 +312,16 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		}
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
-		/* TODO */
+		fval = *((float *) value);
+		change = check_int_change(proxy, fval);
+		upper = check_float_upper_threshold(proxy, fval);
+		lower = check_float_lower_threshold(proxy, fval);
+
+		if (proxy->send || timeout || change || upper || lower) {
+			proxy->olen = sizeof(float);
+			proxy->value.val_f = fval;
+			proxy->send = true;
+		}
 		break;
 	default:
 		return;
@@ -340,6 +362,7 @@ bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
 {
 	bool *bval;
 	s32_t *s32val;
+	float *fval;
 
 	if (unlikely(!proxy))
 		return false;
@@ -354,7 +377,8 @@ bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
 		*s32val = proxy->value.val_i;
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
-		/* TODO */
+		fval = (float *) value;
+		*fval = proxy->value.val_f;
 		break;
 	default:
 		return false;

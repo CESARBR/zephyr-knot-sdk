@@ -15,6 +15,11 @@
 #define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
 #define NET_LOG_ENABLED 1
 
+#if (!defined(CONFIG_X86) && !defined(CONFIG_CPU_CORTEX_M4))
+	#warning "Floating point services are currently available only for boards \
+			based on the ARM Cortex-M4 or the Intel x86 architectures."
+#endif
+
 #include <zephyr.h>
 #include <net/net_core.h>
 #include <net/buf.h>
@@ -79,7 +84,8 @@ int proto_start(struct k_pipe *p2n, struct k_pipe *n2p)
 	k_thread_create(&rx_thread_data, rx_stack,
 			K_THREAD_STACK_SIZEOF(rx_stack),
 			(k_thread_entry_t) proto_thread,
-			NULL, NULL, NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
+			NULL, NULL, NULL, K_PRIO_COOP(7),
+			K_FP_REGS, K_NO_WAIT);
 
 	return 0;
 }
