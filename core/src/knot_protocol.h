@@ -104,10 +104,8 @@ typedef struct __attribute__ ((packed)) {
 	uint8_t			sensor_id;	// App defined sensor id
 } knot_msg_item;
 
-typedef struct __attribute__ ((packed)) {
-	int32_t			value_int;
-	uint32_t		value_dec;
-} knot_value_type_float;
+/* Considering the IEEE 754 single-precision floating-point Standard */
+typedef float knot_value_type_float;
 
 typedef int32_t knot_value_type_int;
 

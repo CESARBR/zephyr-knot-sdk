@@ -198,7 +198,7 @@ int knot_config_is_valid(uint8_t event_flags, uint16_t time_sec,
 		knot_value_type *lower_limit, knot_value_type *upper_limit)
 {
 
-	int diff_int, diff_dec;
+	int diff;
 
 	/* Check if event_flags are valid */
 	if ((event_flags | KNOT_EVT_FLAG_NONE) &&
@@ -231,25 +231,16 @@ int knot_config_is_valid(uint8_t event_flags, uint16_t time_sec,
 	if (event_flags & (KNOT_EVT_FLAG_LOWER_THRESHOLD |
 			KNOT_EVT_FLAG_UPPER_THRESHOLD)) {
 
-		diff_int = upper_limit->val_f.value_int -
-			lower_limit->val_f.value_int;
+		diff = upper_limit->val_f -
+			lower_limit->val_f;
 
-		diff_dec = upper_limit->val_f.value_dec -
-			lower_limit->val_f.value_dec;
-
-		if (diff_int < 0)
+		if (diff < 0)
 			/*
 			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 			 * KNOT_INVALID_CONFIG in new protocol
 			 */
 			return KNOT_ERROR_UNKNOWN;
 
-		else if (diff_int == 0 && diff_dec <= 0)
-			/*
-			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
-			 * KNOT_INVALID_CONFIG in new protocol
-			 */
-			return KNOT_ERROR_UNKNOWN;
 	}
 
 	return KNOT_SUCCESS;
