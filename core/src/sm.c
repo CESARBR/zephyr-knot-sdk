@@ -73,6 +73,7 @@ static enum sm_state state_register(u8_t *exp_opcode, bool to_exp,
 	/* Decode received message */
 	msg = (knot_msg *) ipdu;
 
+	/* Unexpected PDU opcode */
 	if (msg->cred.hdr.type != *exp_opcode)
 		goto done;
 
@@ -132,7 +133,8 @@ done:
 	return next;
 }
 
-static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
+static enum sm_state state_schema(u8_t *exp_opcode, bool to_exp,
+				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
 	knot_msg *imsg = (knot_msg *) ipdu;
@@ -145,8 +147,8 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 
 	*len = 0;
 
-	/* Timeout expired (or new device), resend message */
-	if (resend) {
+	/* First attempt or timeout expired, resend schemas */
+	if (*exp_opcode == 0xff || to_exp) {
 		id_index = 0;
 		goto send;
 	}
@@ -155,7 +157,10 @@ static enum sm_state state_schema(bool resend, const u8_t *ipdu, size_t ilen,
 	if (ilen == 0)
 		goto done;
 
-	switch (imsg->hdr.type) {
+	if (imsg->hdr.type != *exp_opcode)
+		goto done;
+
+	switch (*exp_opcode) {
 	case KNOT_MSG_SCHEMA_RESP:
 		/* Resend last fragment if failed */
 		if (imsg->action.result == KNOT_SUCCESS)
@@ -196,6 +201,8 @@ send:
 			continue;
 		}
 		end = ((id_index == last_id) ? true : false);
+		*exp_opcode = (end ? KNOT_MSG_SCHEMA_END_RESP :
+				     KNOT_MSG_SCHEMA_RESP);
 		*len = msg_create_schema(omsg, id_index, schema, end);
 		break;
 	}
@@ -412,7 +419,6 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 {
 	enum sm_state next;
 	size_t len = 0;
-	bool resend;
 
 	/* Expected OPCODE response. Initially not expecting response*/
 	static u8_t exp_opcode = 0xff;
@@ -438,8 +444,8 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	case STATE_SCH:
 		/* Send schemas */
-		resend = ((to_exp || to_on == false ) ? true : false);
-		next = state_schema(resend, ipdu, ilen, opdu, olen, &len);
+		next = state_schema(&exp_opcode, to_exp,
+				    ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
@@ -463,7 +469,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	}
 
 	/* At same state: Waiting RSP or Resending (timeout expired) */
-	if (len && to_on == false) {
+	if (exp_opcode != 0xff && to_on == false) {
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
 		to_exp = false;
