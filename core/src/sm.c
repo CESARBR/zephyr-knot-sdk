@@ -49,17 +49,19 @@ static void timer_expired(struct k_timer *to)
 	to_on = false;
 }
 
-static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
+static enum sm_state state_register(u8_t *exp_opcode, bool to_exp,
+				    const u8_t *ipdu, size_t ilen,
 				    u8_t *opdu, size_t olen, size_t *len)
 {
 	enum sm_state next = STATE_REG;
 	const char *devname = THING_NAME;
 	knot_msg *msg;
 
-	/* Timeout expired, resend message */
-	if (resend) {
+	/* First attempt or timeout expired, send register request */
+	if (*exp_opcode == 0xff || to_exp) {
 		msg = (knot_msg *) opdu;
 		*len = msg_create_reg(msg, device_id, devname, strlen(devname));
+		*exp_opcode = KNOT_MSG_REGISTER_RESP;
 		goto done;
 	}
 
@@ -71,7 +73,7 @@ static enum sm_state state_register(bool resend, const u8_t *ipdu, size_t ilen,
 	/* Decode received message */
 	msg = (knot_msg *) ipdu;
 
-	if (msg->cred.hdr.type != KNOT_MSG_REGISTER_RESP)
+	if (msg->cred.hdr.type != *exp_opcode)
 		goto done;
 
 	if (msg->cred.result != KNOT_SUCCESS) {
@@ -87,18 +89,20 @@ done:
 	return next;
 }
 
-static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
+static enum sm_state state_auth(u8_t *exp_opcode, bool to_exp,
+				const u8_t *ipdu, size_t ilen,
 				u8_t *opdu, size_t olen, size_t *len)
 {
 	knot_msg *msg;
 	enum sm_state next = STATE_AUTH;
 
-	/* Timeout expired (or new device), resend message */
-	if (resend) {
+	/* First attempt or timeout expired, send auth request */
+	if (*exp_opcode == 0xff || to_exp) {
 		/* Send authentication request and waiting response */
 		msg = (knot_msg *) opdu;
 		/* TODO: Read credentials from non-volatile memory */
 		*len = msg_create_auth(msg, uuid, token);
+		*exp_opcode = KNOT_MSG_AUTH_RESP;
 		goto done;
 	}
 
@@ -113,7 +117,7 @@ static enum sm_state state_auth(bool resend, const u8_t *ipdu, size_t ilen,
 	*len = 0;
 
 	/* Unexpected PDU opcode */
-	if (msg->hdr.type != KNOT_MSG_AUTH_RESP)
+	if (msg->hdr.type != *exp_opcode)
 		goto done;
 
 	if (msg->action.result != KNOT_SUCCESS) {
@@ -410,7 +414,8 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	size_t len = 0;
 	bool resend;
 
-	/* TODO: Check if timeout expired */
+	/* Expected OPCODE response. Initially not expecting response*/
+	static u8_t exp_opcode = 0xff;
 
 	/*
 	 * In the first states (reg, auth and sch) timeout is enabled, if no
@@ -423,13 +428,13 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	switch (state) {
 	case STATE_REG:
 		/* Register new device */
-		resend = ((to_exp || to_on == false ) ? true : false);
-		next = state_register(resend, ipdu, ilen, opdu, olen, &len);
+		next = state_register(&exp_opcode, to_exp,
+				      ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_AUTH:
 		/* Authenticate if registed previously */
-		resend = ((to_exp || to_on == false ) ? true : false);
-		next = state_auth(resend, ipdu, ilen, opdu, olen, &len);
+		next = state_auth(&exp_opcode, to_exp,
+				  ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_SCH:
 		/* Send schemas */
@@ -453,6 +458,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			to_on = false;
 			to_exp = false;
 		}
+		exp_opcode = 0xff;
 		goto done;
 	}
 
