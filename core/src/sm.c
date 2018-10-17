@@ -457,18 +457,22 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	}
 
-	/* State has changed: Stop timer */
+	/* State has changed: Don't wait response */
 	if (next != state) {
+		exp_opcode = 0xff;
+	}
+
+	/* Not waiting response: Stop timer */
+	if (exp_opcode == 0xff) {
 		if (to_on) {
 			k_timer_stop(&to);
 			to_on = false;
 			to_exp = false;
 		}
-		exp_opcode = 0xff;
 		goto done;
 	}
 
-	/* At same state: Waiting RSP or Resending (timeout expired) */
+	/* Waiting response: Run timer */
 	if (exp_opcode != 0xff && to_on == false) {
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
