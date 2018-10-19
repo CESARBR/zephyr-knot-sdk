@@ -8,6 +8,7 @@
 
 /* KNoT State Machine */
 
+void sm_init(void);
 int sm_start(void);
 void sm_stop(void);
 

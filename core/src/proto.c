@@ -51,6 +51,7 @@ static void proto_thread(void)
 	peripheral_init();
 
 	/* Initializing SM and abstract IO internals */
+	sm_init();
 	sm_start();
 
 	/* Calling KNoT app: setup() */

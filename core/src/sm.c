@@ -410,9 +410,6 @@ int sm_start(void)
 	memset(uuid, 0, sizeof(uuid));
 	memset(token, 0, sizeof(token));
 
-	/* Initializing proxy slots */
-	proxy_start();
-
 	/*
 	 * 'device_id' stored properly at NVM means that UUID
 	 * and token are also available.
@@ -434,7 +431,6 @@ int sm_start(void)
 		state = STATE_REG;
 
 done:
-	k_timer_init(&to, timer_expired, NULL);
 	to_on = false;
 	to_exp = false;
 
@@ -448,6 +444,16 @@ void sm_stop(void)
 		k_timer_stop(&to);
 
 	proxy_stop();
+}
+
+void sm_init(void)
+{
+	NET_DBG("SM: Init");
+
+	k_timer_init(&to, timer_expired, NULL);
+
+	/* Initializing proxy slots */
+	proxy_start();
 }
 
 int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
