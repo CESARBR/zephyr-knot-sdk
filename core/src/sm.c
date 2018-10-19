@@ -402,7 +402,7 @@ int sm_start(void)
 {
 	int8_t err;
 
-	NET_DBG("SM: State Machine start");
+	NET_DBG("SM: Start");
 
 	state = STATE_AUTH; /* Initial state */
 
