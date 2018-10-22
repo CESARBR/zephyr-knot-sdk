@@ -453,7 +453,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		next = state_online(ipdu, ilen, opdu, olen, &len);
 		break;
 	default:
-		strcpy(opdu, "ERR");
+		NET_ERR("ERROR");
 		next = STATE_ERROR;
 		break;
 	}
