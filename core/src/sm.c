@@ -169,15 +169,16 @@ static enum sm_state state_schema(u8_t *exp_opcode, bool to_exp,
 	case KNOT_MSG_SCHEMA_END_RESP:
 		if (imsg->action.result != KNOT_SUCCESS)
 			goto send;
-		if (storage_set(STORAGE_KEY_UUID, uuid)) {
+		if (storage_set(STORAGE_KEY_UUID, uuid) < 0) {
 			next = STATE_ERROR;
 			goto done;
 		}
-		if (storage_set(STORAGE_KEY_TOKEN, token)) {
+		if (storage_set(STORAGE_KEY_TOKEN, token) < 0) {
 			next = STATE_ERROR;
 			goto done;
 		}
-		if (storage_set(STORAGE_KEY_ID, (const u8_t *) &device_id)) {
+		if (storage_set(STORAGE_KEY_ID,
+				(const u8_t *) &device_id) < 0) {
 			next = STATE_ERROR;
 			goto done;
 		}
