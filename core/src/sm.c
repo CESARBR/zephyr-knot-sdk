@@ -49,7 +49,7 @@ static void timer_expired(struct k_timer *to)
 	to_on = false;
 }
 
-static enum sm_state state_register(u8_t *exp_opcode, bool to_exp,
+static enum sm_state state_register(u8_t *exp_opcode,
 				    const u8_t *ipdu, size_t ilen,
 				    u8_t *opdu, size_t olen, size_t *len)
 {
@@ -90,7 +90,7 @@ done:
 	return next;
 }
 
-static enum sm_state state_auth(u8_t *exp_opcode, bool to_exp,
+static enum sm_state state_auth(u8_t *exp_opcode,
 				const u8_t *ipdu, size_t ilen,
 				u8_t *opdu, size_t olen, size_t *len)
 {
@@ -133,7 +133,7 @@ done:
 	return next;
 }
 
-static enum sm_state state_schema(u8_t *exp_opcode, bool to_exp,
+static enum sm_state state_schema(u8_t *exp_opcode,
 				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
@@ -435,18 +435,16 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	switch (state) {
 	case STATE_REG:
 		/* Register new device */
-		next = state_register(&exp_opcode, to_exp,
-				      ipdu, ilen, opdu, olen, &len);
+		next = state_register(&exp_opcode, ipdu, ilen,
+				      opdu, olen, &len);
 		break;
 	case STATE_AUTH:
 		/* Authenticate if registed previously */
-		next = state_auth(&exp_opcode, to_exp,
-				  ipdu, ilen, opdu, olen, &len);
+		next = state_auth(&exp_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_SCH:
 		/* Send schemas */
-		next = state_schema(&exp_opcode, to_exp,
-				    ipdu, ilen, opdu, olen, &len);
+		next = state_schema(&exp_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
