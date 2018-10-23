@@ -47,7 +47,8 @@ int8_t storage_reset(void)
 
 int8_t storage_get(enum storage_key key, u8_t *value)
 {
-	size_t len;
+	ssize_t len;
+	ssize_t read_len;
 
 	switch (key) {
 	case STORAGE_KEY_UUID:
@@ -62,8 +63,14 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 	default:
 		return -EINVAL;
 	}
-	/* TODO: Fix return value */
-	return nvs_read(&knot_fs, key, value, len);
+
+	read_len = nvs_read(&knot_fs, key, value, len);
+
+	if (read_len != len)
+		return -EINVAL;
+
+	/* Successful read */
+	return 0;
 }
 
 int8_t storage_set(enum storage_key key, const u8_t *value)

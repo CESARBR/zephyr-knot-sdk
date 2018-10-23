@@ -387,16 +387,19 @@ int sm_start(void)
 	 * and token are also available.
 	 */
 	err = storage_get(STORAGE_KEY_ID, (u8_t *) &device_id);
-	if (err || device_id == 0) {
+	if (err < 0 || device_id == 0) {
 		device_id = sys_rand32_get();
 		device_id *= device_id;
 		state = STATE_REG;
 		goto done;
 	}
 
-	err = storage_get(STORAGE_KEY_UUID, uuid) ||
-		storage_get(STORAGE_KEY_TOKEN, token);
-	if (err)
+	err = storage_get(STORAGE_KEY_UUID, uuid);
+	if (err < 0)
+		state = STATE_REG;
+
+	err = storage_get(STORAGE_KEY_TOKEN, token);
+	if (err < 0)
 		state = STATE_REG;
 
 done:
