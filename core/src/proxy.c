@@ -80,7 +80,7 @@ static struct knot_proxy {
 
 	knot_callback_t		poll_cb; /* Poll for local changes */
 	knot_callback_t		changed_cb; /* Report new value to user app */
-} proxy_pool[KNOT_THING_DATA_MAX];
+} proxy_pool[CONFIG_KNOT_THING_DATA_MAX];
 
 static u8_t last_id = 0xff;
 
@@ -107,7 +107,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	struct knot_proxy *proxy;
 
 	/* Out of index? */
-	if (id >= KNOT_THING_DATA_MAX)
+	if (id >= CONFIG_KNOT_THING_DATA_MAX)
 		return NULL;
 
 	/* Assigned already? */
@@ -148,7 +148,7 @@ bool knot_proxy_set_config(u8_t id, uint8_t event_flags, uint16_t timeout_sec,
 	struct knot_proxy *proxy;
 	knot_value_type upper_buf, lower_buf;
 
-	if (id >= KNOT_THING_DATA_MAX)
+	if (id >= CONFIG_KNOT_THING_DATA_MAX)
 		return false;
 
 	proxy = &proxy_pool[id];

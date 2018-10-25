@@ -6,8 +6,6 @@
 
 /* Internal(Private) functions */
 
-#define KNOT_THING_DATA_MAX    5
-
 const knot_schema *proxy_get_schema(u8_t id);
 
 void proxy_start(void);

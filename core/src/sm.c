@@ -23,8 +23,6 @@
 
 #define TIMEOUT_WIN				15 /* 15 sec */
 
-#define THING_NAME				"ZephyrThing0"
-
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
 static bool to_exp;		/* Timeout expired */
@@ -54,7 +52,7 @@ static enum sm_state state_register(u8_t *exp_opcode,
 				    u8_t *opdu, size_t olen, size_t *len)
 {
 	enum sm_state next = STATE_REG;
-	const char *devname = THING_NAME;
+	const char *devname = CONFIG_KNOT_NAME;
 	knot_msg *msg;
 
 	/* First attempt or timeout expired, send register request */
@@ -280,7 +278,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		id = imsg->data.sensor_id;
 
 		/* Invalid id */
-		if (id > KNOT_THING_DATA_MAX) {
+		if (id > CONFIG_KNOT_THING_DATA_MAX) {
 			len = msg_create_error(omsg,
 					       KNOT_MSG_DATA,
 					       KNOT_INVALID_DATA);
