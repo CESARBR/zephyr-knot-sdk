@@ -14,12 +14,14 @@
 
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <misc/reboot.h>
 
 #include "knot_protocol.h"
 #include "proxy.h"
 #include "msg.h"
 #include "sm.h"
 #include "storage.h"
+#include "peripheral.h"
 
 #define TIMEOUT_WIN				15 /* 15 sec */
 
@@ -421,10 +423,20 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 {
 	enum sm_state next;
 	size_t len = 0;
+	bool reset;
 
 	/* Expected OPCODE response. Initially not expecting response*/
 	static u8_t exp_opcode = 0xff;
 
+	/* Handle reset flag */
+	reset = peripheral_get_reset();
+	/* TODO: Consider current state before reseting */
+	if (reset) {
+		/* TODO: Unregister before reseting */
+		NET_INFO("Reseting system...");
+		storage_reset();
+		sys_reboot(SYS_REBOOT_WARM);
+	}
 	/*
 	 * In the first states (reg, auth and sch) timeout is enabled, if no
 	 *  data is received, it is not necessary to run the state machine.

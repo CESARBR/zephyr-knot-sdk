@@ -28,6 +28,7 @@
 #include "sm.h"
 #include "proto.h"
 #include "storage.h"
+#include "peripheral.h"
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
@@ -45,6 +46,9 @@ static void proto_thread(void)
 
 	/* Initializing KNoT storage */
 	storage_init();
+
+	/* Initializing KNoT peripherals control */
+	peripheral_init();
 
 	/* Initializing SM and abstract IO internals */
 	sm_start();
