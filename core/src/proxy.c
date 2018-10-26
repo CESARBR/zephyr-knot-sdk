@@ -32,11 +32,11 @@
 
 #define check_int_upper_threshold(proxy, s32val)	\
 	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
-	&& s32val > proxy->value.val_i)
+	&& s32val > proxy->config.upper_limit.val_i)
 
 #define check_int_lower_threshold(proxy, s32val)	\
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
-	&& s32val < proxy->value.val_i)
+	&& s32val < proxy->config.lower_limit.val_i)
 
 #define check_float_change(proxy, fval)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
@@ -44,11 +44,11 @@
 
 #define check_float_upper_threshold(proxy, fval)	\
 	(KNOT_EVT_FLAG_UPPER_THRESHOLD & proxy->config.event_flags \
-	&& fval > proxy->value.val_f)
+	&& fval > proxy->config.upper_limit.val_f)
 
 #define check_float_lower_threshold(proxy, fval)	\
 	(KNOT_EVT_FLAG_LOWER_THRESHOLD & proxy->config.event_flags \
-	&& fval < proxy->value.val_f)
+	&& fval < proxy->config.lower_limit.val_f)
 
 #define check_raw_change(proxy, rawval, rawlen)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
