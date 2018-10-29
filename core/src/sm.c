@@ -23,7 +23,7 @@
 #include "storage.h"
 #include "peripheral.h"
 
-#define TIMEOUT_WIN				15 /* 15 sec */
+#define TIMEOUT_WIN				3 /* 3 sec */
 
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
@@ -47,6 +47,26 @@ static void timer_expired(struct k_timer *to)
 {
 	to_exp = true;
 	to_on = false;
+	NET_WARN("TO");
+}
+
+static bool cmp_opcode(const u8_t exp_opcode, const u8_t *ipdu, size_t ilen)
+{
+	const knot_msg *imsg;
+	/* No response found */
+	if (ilen == 0)
+		return false;
+
+	/* No response expected */
+	if (exp_opcode == 0xff)
+		return false;
+
+	imsg = (knot_msg *) ipdu;
+	if (imsg->hdr.type != exp_opcode)
+		return false;
+
+	/* Return 0 if found expected response */
+	return true;
 }
 
 static enum sm_state state_register(u8_t *exp_opcode,
@@ -427,6 +447,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 
 	/* Expected OPCODE response. Initially not expecting response*/
 	static u8_t exp_opcode = 0xff;
+	bool got_resp; /* Got right response */
 
 	/* Handle reset flag */
 	reset = peripheral_get_reset();
@@ -442,8 +463,18 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	 *  data is received, it is not necessary to run the state machine.
 	 */
 
-	if (to_on && ilen == 0)
-		return 0; /* Waiting RSP */
+	/* Compare expected response */
+	if (to_on) {
+		got_resp = cmp_opcode(exp_opcode, ipdu, ilen);
+
+		if (got_resp == false)
+			return 0; /* Waiting response */
+
+		/* Stop timer if response found */
+		k_timer_stop(&to);
+		to_on = false;
+		to_exp = false;
+	}
 
 	switch (state) {
 	case STATE_REG:
@@ -485,7 +516,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	}
 
 	/* Waiting response: Run timer */
-	if (exp_opcode != 0xff && to_on == false) {
+	if (to_on == false) {
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
 		to_exp = false;
