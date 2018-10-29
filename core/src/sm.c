@@ -62,11 +62,9 @@ static bool cmp_opcode(const u8_t exp_opcode, const u8_t *ipdu, size_t ilen)
 		return false;
 
 	imsg = (knot_msg *) ipdu;
-	if (imsg->hdr.type != exp_opcode)
-		return false;
 
-	/* Return 0 if found expected response */
-	return true;
+	/* Return true if found expected response */
+	return imsg->hdr.type == exp_opcode;
 }
 
 static enum sm_state state_register(u8_t *exp_opcode,
@@ -86,17 +84,11 @@ static enum sm_state state_register(u8_t *exp_opcode,
 	}
 
 	*len = 0;
-	/* Finish if no message was received */
-	if (ilen == 0)
-		goto done;
 
 	/* Decode received message */
 	msg = (knot_msg *) ipdu;
 
-	/* Unexpected PDU opcode */
-	if (msg->cred.hdr.type != *exp_opcode)
-		goto done;
-
+	/* OPCODE verified before entering state. Checking result */
 	if (msg->cred.result != KNOT_SUCCESS) {
 		next = STATE_ERROR;
 		goto done;
@@ -127,20 +119,11 @@ static enum sm_state state_auth(u8_t *exp_opcode,
 		goto done;
 	}
 
-	/*
-	 * If the ipdu is not error nor auth, it is some async message
-	 * and it is ignored
-	 */
-	if (ilen == 0)
-		goto done;
-
+	/* Decode received message */
 	msg = (knot_msg *) ipdu;
 	*len = 0;
 
-	/* Unexpected PDU opcode */
-	if (msg->hdr.type != *exp_opcode)
-		goto done;
-
+	/* OPCODE verified before entering state. Checking result */
 	if (msg->action.result != KNOT_SUCCESS) {
 		next = STATE_ERROR;
 		goto done;
@@ -173,13 +156,7 @@ static enum sm_state state_schema(u8_t *exp_opcode,
 		goto send;
 	}
 
-	/* Waiting response ... */
-	if (ilen == 0)
-		goto done;
-
-	if (imsg->hdr.type != *exp_opcode)
-		goto done;
-
+	/* OPCODE verified before entering state. Checking result */
 	switch (*exp_opcode) {
 	case KNOT_MSG_SCHEMA_RESP:
 		/* Resend last fragment if failed */
