@@ -67,6 +67,33 @@ static bool cmp_opcode(const u8_t exp_opcode, const u8_t *ipdu, size_t ilen)
 	return imsg->hdr.type == exp_opcode;
 }
 
+/* Check if received OPCODE belongs to white list of actual state */
+static bool wl_opcode(const enum sm_state state, const u8_t *ipdu, size_t ilen)
+{
+	const knot_msg *imsg;
+	/* No response found */
+	if (ilen == 0)
+		return false;
+
+	/* White list is only for ONLINE state */
+	if (state != STATE_ONLINE)
+		return false;
+
+	imsg = (knot_msg *) ipdu;
+
+	/* Return true if find expected response */
+	switch (imsg->hdr.type) {
+	/* TODO: Add, after implement,
+	 * UNREGISTER_REQ, SET_CONFIG, and GET_CONFIG
+	 */
+	case KNOT_MSG_SET_DATA:
+	case KNOT_MSG_GET_DATA:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static enum sm_state state_register(u8_t *exp_opcode,
 				    const u8_t *ipdu, size_t ilen,
 				    u8_t *opdu, size_t olen, size_t *len)
@@ -208,7 +235,8 @@ done:
 	return next;
 }
 
-static size_t process_event(const u8_t *ipdu, size_t ilen,
+static size_t process_event(u8_t *exp_opcode,
+			    const u8_t *ipdu, size_t ilen,
 			    u8_t *opdu, size_t olen)
 {
 	knot_msg *omsg = (knot_msg *) opdu;
@@ -216,44 +244,49 @@ static size_t process_event(const u8_t *ipdu, size_t ilen,
 	const knot_value_type *value;
 	uint8_t value_len = 0;
 	static u8_t id_index = 0;
+	u8_t old_id;
 	u8_t last_id;
 	s8_t len = 0;
 
 	last_id = proxy_get_last_id();
 
-	/*
-	 * Send data related to the next entry? If knotd sends an
-	 * error simply ignore it and send data of the next sensor.
-	 */
-	if (imsg->hdr.type == KNOT_MSG_DATA_RESP) {
-		/* TODO: If response timed-out, check next sensor
-		 * and retry later
-		 */
-		if (imsg->action.result != KNOT_SUCCESS)
-			NET_ERR("DT RSP: %d", imsg->action.result);
-		else
-			proxy_confirm_sent(id_index);
-		id_index = ((id_index + 1) > last_id ? 0 : id_index + 1);
-	}
+	/* No response expected. Continue polling */
+	if (*exp_opcode == 0xff)
+		goto polling;
 
-	while (id_index <= last_id) {
-		/* Read value and wait for response if data is sent */
+	/*
+	 * OPCODE and timeout verified before entering state.
+	 * If timeout expired or received an error message simply ignore it
+	 * and send data of the next sensor.
+	 */
+	if (to_exp || imsg->action.result != KNOT_SUCCESS)
+		NET_ERR("FAIL SEND FOR ID: %d", id_index);
+	else
+		proxy_confirm_sent(id_index);
+
+polling:
+	/*
+	 * The polling is finished when a message to be sent is found or when
+	 * finish reading all sensors
+	 */
+	old_id = id_index; /* Old sensor id */
+	do {
+		id_index = (id_index < last_id ? id_index + 1 : 0);
+
 		value = proxy_read(id_index, &value_len, true);
-		if (unlikely(!value)) {
-			id_index++;
+		/* Check next sensor if no data is to be sent */
+		if (!value) {
 			continue;
 		}
 
+		/* Send data and wait for response */
 		len = msg_create_data(omsg, id_index, value, value_len, false);
+		*exp_opcode = KNOT_MSG_DATA_RESP;
 		break;
-	}
+	} while (id_index != old_id);
 
-	/*
-	 * Reset index if there is nothing to send at this iteraction.
-	 * At the next step, all entries will be verified sequentially.
-	 */
 	if (len <= 0)
-		id_index = 0;
+		*exp_opcode = 0xff;
 
 	return len;
 }
@@ -337,7 +370,8 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	return len;
 }
 
-static enum sm_state state_online(const u8_t *ipdu, size_t ilen,
+static enum sm_state state_online(u8_t *exp_opcode,
+				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
 	enum sm_state next = STATE_ONLINE;
@@ -351,7 +385,7 @@ static enum sm_state state_online(const u8_t *ipdu, size_t ilen,
 	/* Local sensor/actuator */
 	if (ret_len == 0)
 		/* Local event */
-		ret_len = process_event(ipdu, ilen, opdu, olen);
+		ret_len = process_event(exp_opcode, ipdu, ilen, opdu, olen);
 
 	if (ret_len > 0)
 		*len = ret_len;
@@ -435,22 +469,24 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		storage_reset();
 		sys_reboot(SYS_REBOOT_WARM);
 	}
-	/*
-	 * In the first states (reg, auth and sch) timeout is enabled, if no
-	 *  data is received, it is not necessary to run the state machine.
-	 */
 
-	/* Compare expected response */
+	/*
+	 * When the timer is enabled, if no data is received or the expected
+	 * response was not matched, it is not necessary to run the state
+	 * machine.
+	 * In case of a white listed command, proceed so command can be handled.
+	 */
 	if (to_on) {
 		got_resp = cmp_opcode(exp_opcode, ipdu, ilen);
+		if (got_resp) {
+			/* Stop timer if response found */
+			k_timer_stop(&to);
+			to_on = false;
+			to_exp = false;
 
-		if (got_resp == false)
-			return 0; /* Waiting response */
-
-		/* Stop timer if response found */
-		k_timer_stop(&to);
-		to_on = false;
-		to_exp = false;
+		} else if (wl_opcode(state, ipdu, ilen) == false)
+			/* OPCODE doesn't belong to white list. Wait */
+			return 0;
 	}
 
 	switch (state) {
@@ -469,7 +505,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
-		next = state_online(ipdu, ilen, opdu, olen, &len);
+		next = state_online(&exp_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	default:
 		NET_ERR("ERROR");
