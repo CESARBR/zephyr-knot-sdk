@@ -1,0 +1,27 @@
+/* peripheral.c - KNoT Application Client */
+
+/*
+ * Copyright (c) 2018, CESAR. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This file works as a mock-up for the peripheral control. It is intended to be
+ * used for testing only.
+ * To use with the nRF52840 board, use the peripheral.nrf52840 file.
+ */
+
+#include "peripheral.h"
+
+int peripheral_init(void)
+{
+	/* Successful init */
+	return 0;
+}
+
+bool peripheral_get_reset(void)
+{
+	/* Never reseting */
+	return false;
+}
