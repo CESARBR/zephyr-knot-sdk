@@ -467,7 +467,9 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		/* TODO: Unregister before reseting */
 		NET_INFO("Reseting system...");
 		storage_reset();
-		sys_reboot(SYS_REBOOT_WARM);
+		#if !CONFIG_BOARD_QEMU_X86
+			sys_reboot(SYS_REBOOT_WARM);
+		#endif
 	}
 
 	/*
