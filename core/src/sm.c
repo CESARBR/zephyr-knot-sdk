@@ -29,8 +29,12 @@ static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
 static bool to_exp;		/* Timeout expired */
 
-static char uuid[KNOT_PROTOCOL_UUID_LEN];	/* Device uuid */
-static char token[KNOT_PROTOCOL_TOKEN_LEN];	/* Device token */
+/*
+ * Internally uuid and token must be null terminated. When copying or
+ * or sending over the network, null should not be included.
+ */
+static char uuid[KNOT_PROTOCOL_UUID_LEN + 1];	/* Device uuid */
+static char token[KNOT_PROTOCOL_TOKEN_LEN + 1];	/* Device token */
 static u64_t device_id;				/* Device id */
 
 enum sm_state {
