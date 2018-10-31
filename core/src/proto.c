@@ -37,14 +37,20 @@ static struct k_pipe *net2proto;
 extern struct k_alert connection_lost;
 extern struct k_alert connection_established;
 
+/*
+ * Handle connection and disconnection events. Return true if connected.
+ */
 static bool check_connection()
 {
-	static bool connected = false; /* Keep old state if no alert found */
-
-	if(k_alert_recv(&connection_established, K_NO_WAIT) == 0)
-		connected = true;
-	if(k_alert_recv(&connection_lost, K_NO_WAIT) == 0)
+	static bool connected = false;
+	if (k_alert_recv(&connection_lost, K_NO_WAIT) == 0) {
 		connected = false;
+		sm_stop();
+	}
+	if (k_alert_recv(&connection_established, K_NO_WAIT) == 0) {
+		connected = true;
+		sm_start();
+	}
 
 	return connected;
 }
@@ -66,7 +72,6 @@ static void proto_thread(void)
 
 	/* Initializing SM and abstract IO internals */
 	sm_init();
-	sm_start();
 
 	/* Calling KNoT app: setup() */
 	setup();
@@ -74,6 +79,10 @@ static void proto_thread(void)
 	while (1) {
 		/* Calling KNoT app: loop() */
 		loop();
+
+		/* Ignore net and SM if disconnected */
+		if (check_connection() == false)
+			goto done;
 
 		ilen = 0;
 		memset(&ipdu, 0, sizeof(ipdu));
@@ -88,6 +97,7 @@ static void proto_thread(void)
 			k_pipe_put(proto2net, opdu, olen,
 				   &olen, olen, K_NO_WAIT);
 
+done:
 		k_sleep(1000);
 	}
 
