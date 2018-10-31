@@ -84,7 +84,7 @@ static struct knot_proxy {
 
 static u8_t last_id = 0xff;
 
-void proxy_start(void)
+void proxy_init(void)
 {
 	int i;
 

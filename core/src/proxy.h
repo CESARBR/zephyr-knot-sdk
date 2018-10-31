@@ -8,7 +8,7 @@
 
 const knot_schema *proxy_get_schema(u8_t id);
 
-void proxy_start(void);
+void proxy_init(void);
 
 void proxy_stop(void);
 

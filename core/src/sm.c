@@ -453,7 +453,7 @@ void sm_init(void)
 	k_timer_init(&to, timer_expired, NULL);
 
 	/* Initializing proxy slots */
-	proxy_start();
+	proxy_init();
 }
 
 int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
