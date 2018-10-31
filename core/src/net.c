@@ -28,11 +28,15 @@ static K_THREAD_STACK_DEFINE(rx_stack, 1024);
 static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
 static bool connected;
+K_ALERT_DEFINE(connection_lost, NULL, 1);
+K_ALERT_DEFINE(connection_established, NULL, 1);
 
 static void close_cb(void)
 {
-	if (connected)
+	if (connected) {
 		connected = false;
+		k_alert_send(&connection_lost);
+	}
 }
 
 static bool recv_cb(struct net_buf *netbuf)
@@ -76,6 +80,7 @@ static void connection_start(void)
 	}
 
 	connected = true;
+	k_alert_send(&connection_established);
 }
 
 static void net_thread(void)
