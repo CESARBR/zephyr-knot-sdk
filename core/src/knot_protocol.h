@@ -213,8 +213,9 @@ int knot_schema_is_valid(uint16_t type_id, uint8_t value_type, uint8_t unit);
 /*
  * Helper function to validate the config
  */
-int knot_config_is_valid(uint8_t event_flags, uint16_t time_sec,
-		knot_value_type *lower_limit, knot_value_type *upper_limit);
+int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
+			 uint16_t time_sec, const knot_value_type *lower_limit,
+			 const knot_value_type *upper_limit);
 
 
 #endif //KNOT_PROTOCOL_H

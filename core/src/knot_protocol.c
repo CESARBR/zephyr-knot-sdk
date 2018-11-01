@@ -194,11 +194,10 @@ int knot_schema_is_valid(uint16_t type_id, uint8_t value_type, uint8_t unit)
 	return KNOT_INVALID_SCHEMA;
 }
 
-int knot_config_is_valid(uint8_t event_flags, uint16_t time_sec,
-		knot_value_type *lower_limit, knot_value_type *upper_limit)
+int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
+			 uint16_t time_sec, const knot_value_type *lower_limit,
+			 const knot_value_type *upper_limit)
 {
-
-	int diff;
 
 	/* Check if event_flags are valid */
 	if ((event_flags | KNOT_EVT_FLAG_NONE) &&
@@ -226,21 +225,53 @@ int knot_config_is_valid(uint8_t event_flags, uint16_t time_sec,
 			return KNOT_ERROR_UNKNOWN;
 	}
 
-
 	/* Check consistency of limits */
-	if (event_flags & (KNOT_EVT_FLAG_LOWER_THRESHOLD |
-			KNOT_EVT_FLAG_UPPER_THRESHOLD)) {
+	if (event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD &&
+			(!lower_limit ||
+			value_type == KNOT_VALUE_TYPE_BOOL ||
+			value_type == KNOT_VALUE_TYPE_RAW))
+		/*
+		 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
+		 * KNOT_INVALID_CONFIG in new protocol
+		 */
+		return KNOT_ERROR_UNKNOWN;
+	if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD &&
+			(!upper_limit ||
+			value_type == KNOT_VALUE_TYPE_BOOL ||
+			value_type == KNOT_VALUE_TYPE_RAW))
+		/*
+		 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
+		 * KNOT_INVALID_CONFIG in new protocol
+		 */
+		return KNOT_ERROR_UNKNOWN;
 
-		diff = upper_limit->val_f -
-			lower_limit->val_f;
-
-		if (diff < 0)
+	if ((event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD) &&
+			(event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD)) {
+		/* Event by limits is only available for int and float */
+		switch(value_type) {
+		case KNOT_VALUE_TYPE_INT:
+			if( (upper_limit->val_i - lower_limit->val_i) < 0)
+				/*
+				 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
+				 * KNOT_INVALID_CONFIG in new protocol
+				 */
+				return KNOT_ERROR_UNKNOWN;
+			break;
+		case KNOT_VALUE_TYPE_FLOAT:
+			if( (upper_limit->val_f - lower_limit->val_f) < 0)
+				/*
+				 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
+				 * KNOT_INVALID_CONFIG in new protocol
+				 */
+				return KNOT_ERROR_UNKNOWN;
+			break;
+		default:
 			/*
 			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 			 * KNOT_INVALID_CONFIG in new protocol
 			 */
 			return KNOT_ERROR_UNKNOWN;
-
+		}
 	}
 
 	return KNOT_SUCCESS;
