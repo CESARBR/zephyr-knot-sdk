@@ -171,7 +171,7 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
-	knot_msg *imsg = (knot_msg *) ipdu;
+	const knot_msg *imsg = (knot_msg *) ipdu;
 	knot_msg *omsg = (knot_msg *) opdu;
 	enum sm_state next = STATE_SCH;
 	const knot_schema *schema;
@@ -244,7 +244,7 @@ static size_t process_event(u8_t *xpt_opcode,
 			    u8_t *opdu, size_t olen)
 {
 	knot_msg *omsg = (knot_msg *) opdu;
-	knot_msg *imsg = (knot_msg *) ipdu;
+	const knot_msg *imsg = (knot_msg *) ipdu;
 	const knot_value_type *value;
 	uint8_t value_len = 0;
 	static u8_t id_index = 0;
@@ -298,7 +298,7 @@ polling:
 static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			       u8_t *opdu, size_t olen)
 {
-	knot_msg *imsg = (knot_msg *) ipdu;
+	const knot_msg *imsg = (knot_msg *) ipdu;
 	knot_msg *omsg = (knot_msg *) opdu;
 	size_t len = 0;
 
