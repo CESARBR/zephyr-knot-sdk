@@ -54,7 +54,7 @@ static void timer_expired(struct k_timer *to)
 	NET_WARN("TO");
 }
 
-static bool cmp_opcode(const u8_t exp_opcode, const u8_t *ipdu, size_t ilen)
+static bool cmp_opcode(const u8_t xpt_opcode, const u8_t *ipdu, size_t ilen)
 {
 	const knot_msg *imsg;
 	/* No response found */
@@ -62,13 +62,13 @@ static bool cmp_opcode(const u8_t exp_opcode, const u8_t *ipdu, size_t ilen)
 		return false;
 
 	/* No response expected */
-	if (exp_opcode == 0xff)
+	if (xpt_opcode == 0xff)
 		return false;
 
 	imsg = (knot_msg *) ipdu;
 
 	/* Return true if found expected response */
-	return imsg->hdr.type == exp_opcode;
+	return imsg->hdr.type == xpt_opcode;
 }
 
 /* Check if received OPCODE belongs to white list of actual state */
@@ -98,7 +98,7 @@ static bool wl_opcode(const enum sm_state state, const u8_t *ipdu, size_t ilen)
 	}
 }
 
-static enum sm_state state_register(u8_t *exp_opcode,
+static enum sm_state state_register(u8_t *xpt_opcode,
 				    const u8_t *ipdu, size_t ilen,
 				    u8_t *opdu, size_t olen, size_t *len)
 {
@@ -107,10 +107,10 @@ static enum sm_state state_register(u8_t *exp_opcode,
 	knot_msg *msg;
 
 	/* First attempt or timeout expired, send register request */
-	if (*exp_opcode == 0xff || to_xpr) {
+	if (*xpt_opcode == 0xff || to_xpr) {
 		msg = (knot_msg *) opdu;
 		*len = msg_create_reg(msg, device_id, devname, strlen(devname));
-		*exp_opcode = KNOT_MSG_REGISTER_RESP;
+		*xpt_opcode = KNOT_MSG_REGISTER_RESP;
 		goto done;
 	}
 
@@ -133,7 +133,7 @@ done:
 	return next;
 }
 
-static enum sm_state state_auth(u8_t *exp_opcode,
+static enum sm_state state_auth(u8_t *xpt_opcode,
 				const u8_t *ipdu, size_t ilen,
 				u8_t *opdu, size_t olen, size_t *len)
 {
@@ -141,12 +141,12 @@ static enum sm_state state_auth(u8_t *exp_opcode,
 	enum sm_state next = STATE_AUTH;
 
 	/* First attempt or timeout expired, send auth request */
-	if (*exp_opcode == 0xff || to_xpr) {
+	if (*xpt_opcode == 0xff || to_xpr) {
 		/* Send authentication request and waiting response */
 		msg = (knot_msg *) opdu;
 		/* TODO: Read credentials from non-volatile memory */
 		*len = msg_create_auth(msg, uuid, token);
-		*exp_opcode = KNOT_MSG_AUTH_RESP;
+		*xpt_opcode = KNOT_MSG_AUTH_RESP;
 		goto done;
 	}
 
@@ -167,7 +167,7 @@ done:
 	return next;
 }
 
-static enum sm_state state_schema(u8_t *exp_opcode,
+static enum sm_state state_schema(u8_t *xpt_opcode,
 				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
@@ -182,13 +182,13 @@ static enum sm_state state_schema(u8_t *exp_opcode,
 	*len = 0;
 
 	/* First attempt or timeout expired, resend schemas */
-	if (*exp_opcode == 0xff || to_xpr) {
+	if (*xpt_opcode == 0xff || to_xpr) {
 		id_index = 0;
 		goto send;
 	}
 
 	/* OPCODE verified before entering state. Checking result */
-	switch (*exp_opcode) {
+	switch (*xpt_opcode) {
 	case KNOT_MSG_SCHEMA_RESP:
 		/* Resend last fragment if failed */
 		if (imsg->action.result == KNOT_SUCCESS)
@@ -230,7 +230,7 @@ send:
 			continue;
 		}
 		end = ((id_index == last_id) ? true : false);
-		*exp_opcode = (end ? KNOT_MSG_SCHEMA_END_RESP :
+		*xpt_opcode = (end ? KNOT_MSG_SCHEMA_END_RESP :
 				     KNOT_MSG_SCHEMA_RESP);
 		*len = msg_create_schema(omsg, id_index, schema, end);
 		break;
@@ -239,7 +239,7 @@ done:
 	return next;
 }
 
-static size_t process_event(u8_t *exp_opcode,
+static size_t process_event(u8_t *xpt_opcode,
 			    const u8_t *ipdu, size_t ilen,
 			    u8_t *opdu, size_t olen)
 {
@@ -255,7 +255,7 @@ static size_t process_event(u8_t *exp_opcode,
 	last_id = proxy_get_last_id();
 
 	/* No response expected. Continue polling */
-	if (*exp_opcode == 0xff)
+	if (*xpt_opcode == 0xff)
 		goto polling;
 
 	/*
@@ -285,12 +285,12 @@ polling:
 
 		/* Send data and wait for response */
 		len = msg_create_data(omsg, id_index, value, value_len, false);
-		*exp_opcode = KNOT_MSG_DATA_RESP;
+		*xpt_opcode = KNOT_MSG_DATA_RESP;
 		break;
 	} while (id_index != old_id);
 
 	if (len <= 0)
-		*exp_opcode = 0xff;
+		*xpt_opcode = 0xff;
 
 	return len;
 }
@@ -374,7 +374,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	return len;
 }
 
-static enum sm_state state_online(u8_t *exp_opcode,
+static enum sm_state state_online(u8_t *xpt_opcode,
 				  const u8_t *ipdu, size_t ilen,
 				  u8_t *opdu, size_t olen, size_t *len)
 {
@@ -389,7 +389,7 @@ static enum sm_state state_online(u8_t *exp_opcode,
 	/* Local sensor/actuator */
 	if (ret_len == 0)
 		/* Local event */
-		ret_len = process_event(exp_opcode, ipdu, ilen, opdu, olen);
+		ret_len = process_event(xpt_opcode, ipdu, ilen, opdu, olen);
 
 	if (ret_len > 0)
 		*len = ret_len;
@@ -467,7 +467,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	bool reset;
 
 	/* Expected OPCODE response. Initially not expecting response*/
-	static u8_t exp_opcode = 0xff;
+	static u8_t xpt_opcode = 0xff;
 	bool got_resp; /* Got right response */
 
 	/* Handle reset flag */
@@ -489,7 +489,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	 * In case of a white listed command, proceed so command can be handled.
 	 */
 	if (to_on) {
-		got_resp = cmp_opcode(exp_opcode, ipdu, ilen);
+		got_resp = cmp_opcode(xpt_opcode, ipdu, ilen);
 		if (got_resp) {
 			/* Stop timer if response found */
 			k_timer_stop(&to);
@@ -504,20 +504,20 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	switch (state) {
 	case STATE_REG:
 		/* Register new device */
-		next = state_register(&exp_opcode, ipdu, ilen,
+		next = state_register(&xpt_opcode, ipdu, ilen,
 				      opdu, olen, &len);
 		break;
 	case STATE_AUTH:
 		/* Authenticate if registed previously */
-		next = state_auth(&exp_opcode, ipdu, ilen, opdu, olen, &len);
+		next = state_auth(&xpt_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_SCH:
 		/* Send schemas */
-		next = state_schema(&exp_opcode, ipdu, ilen, opdu, olen, &len);
+		next = state_schema(&xpt_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_ONLINE:
 		/* Incoming messages and/or changes on sensors */
-		next = state_online(&exp_opcode, ipdu, ilen, opdu, olen, &len);
+		next = state_online(&xpt_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	default:
 		NET_ERR("ERROR");
@@ -527,11 +527,11 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 
 	/* State has changed: Don't wait response */
 	if (next != state) {
-		exp_opcode = 0xff;
+		xpt_opcode = 0xff;
 	}
 
 	/* Not waiting response: Stop timer */
-	if (exp_opcode == 0xff) {
+	if (xpt_opcode == 0xff) {
 		if (to_on) {
 			k_timer_stop(&to);
 			to_on = false;
