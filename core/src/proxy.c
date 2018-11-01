@@ -142,11 +142,19 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	return proxy;
 }
 
-bool knot_proxy_set_config(u8_t id, uint8_t event_flags, uint16_t timeout_sec,
-			  void *lower_limit, void *upper_limit)
+bool knot_proxy_set_config(u8_t id, ...)
 {
+	va_list event_args;
+
 	struct knot_proxy *proxy;
-	knot_value_type upper_buf, lower_buf;
+	u8_t event;
+	u8_t event_flags = KNOT_EVT_FLAG_NONE;
+	u16_t timeout_sec = 0;
+	knot_value_type lower_limit;
+	knot_value_type upper_limit;
+
+	lower_limit.val_i = 0;
+	upper_limit.val_i = 0;
 
 	if (id >= CONFIG_KNOT_THING_DATA_MAX)
 		return false;
@@ -156,44 +164,58 @@ bool knot_proxy_set_config(u8_t id, uint8_t event_flags, uint16_t timeout_sec,
 	if (proxy->id != id)
 		return false;
 
-	/* Event by limits */
-	switch(proxy->schema.value_type) {
-	case KNOT_VALUE_TYPE_INT:
-		/* Lower */
-		if (event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD) {
-			if (unlikely(!lower_limit))
-				return false;
-			lower_buf.val_i = *((int32_t *) lower_limit);
-		} else {
-			lower_buf.val_i = INT_MIN;
-		}
-		/* Upper */
-		if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD) {
-			if (unlikely(!upper_limit))
-				return false;
-			upper_buf.val_i = *((int32_t *) upper_limit);
-		} else {
-			upper_buf.val_i = INT_MAX;
-		}
-		break;
-	case KNOT_VALUE_TYPE_FLOAT:
-		/* TODO */
-		break;
-	default:
-		/* Event by limits is only available for int and float */
-		if (event_flags & (KNOT_EVT_FLAG_LOWER_THRESHOLD |
-				   KNOT_EVT_FLAG_UPPER_THRESHOLD))
+	/* Read arguments and set event_flags */
+	va_start(event_args, id);
+	do {
+		event = (u8_t) va_arg(event_args, int);
+		switch(event) {
+		case KNOT_EVT_FLAG_NONE:
+			break;
+		case KNOT_EVT_FLAG_CHANGE:
+			event_flags |= KNOT_EVT_FLAG_CHANGE;
+			break;
+		case KNOT_EVT_FLAG_TIME:
+			timeout_sec = (u16_t) va_arg(event_args, int);
+			event_flags |= KNOT_EVT_FLAG_TIME;
+			break;
+		case KNOT_EVT_FLAG_UPPER_THRESHOLD:
+			if(proxy->schema.value_type == KNOT_VALUE_TYPE_INT)
+				upper_limit.val_i = (s32_t) va_arg(event_args,
+							 int);
+			if(proxy->schema.value_type == KNOT_VALUE_TYPE_FLOAT)
+				upper_limit.val_f = (float) va_arg(event_args,
+							 double);
+			event_flags |= KNOT_EVT_FLAG_UPPER_THRESHOLD;
+			break;
+		case KNOT_EVT_FLAG_LOWER_THRESHOLD:
+			if(proxy->schema.value_type == KNOT_VALUE_TYPE_INT)
+				lower_limit.val_i = (s32_t) va_arg(event_args,
+							 int);
+			if(proxy->schema.value_type == KNOT_VALUE_TYPE_FLOAT)
+				lower_limit.val_f = (float) va_arg(event_args,
+							 double);
+			event_flags |= KNOT_EVT_FLAG_LOWER_THRESHOLD;
+			break;
+		default:
+			va_end(event_args);
 			return false;
-	}
+		}
 
-	/* TODO: Fix limit bugs from knot_protocol.c */
-	if (knot_config_is_valid(event_flags, timeout_sec,
-				 &lower_buf, &upper_buf) != KNOT_SUCCESS)
+	} while(event);
+	va_end(event_args);
+
+	if (knot_config_is_valid(event_flags, proxy->schema.value_type,
+		 timeout_sec, &lower_limit, &upper_limit) != KNOT_SUCCESS)
 		return false;
 
 	/* Set upper and lower limits */
-	memcpy(&proxy->config.upper_limit, &upper_buf, sizeof(upper_buf));
-	memcpy(&proxy->config.lower_limit, &lower_buf, sizeof(lower_buf));
+	if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD)
+		memcpy(&proxy->config.upper_limit,
+		       &upper_limit, sizeof(upper_limit));
+
+	if (event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD)
+		memcpy(&proxy->config.lower_limit,
+		       &lower_limit, sizeof(lower_limit));
 
 	/* Set event flags and timeout */
 	proxy->config.event_flags = event_flags;

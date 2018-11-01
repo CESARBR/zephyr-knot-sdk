@@ -112,9 +112,9 @@ void setup(void)
 		NET_ERR("THERMO_0 failed to register");
 	}
 	success = knot_proxy_set_config(0,
-					KNOT_EVT_FLAG_TIME |
+					KNOT_EVT_FLAG_TIME, 5,
 					KNOT_EVT_FLAG_UPPER_THRESHOLD,
-					5, NULL, &high_temp);
+					high_temp, NULL);
 	if (!success)
 		NET_ERR("THERMO_0 failed to configure");
 
@@ -125,7 +125,7 @@ void setup(void)
 		      changed_thermo, poll_thermo) == NULL) {
 		NET_ERR("THERMO_1 failed to register");
 	}
-	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_TIME, 5, NULL, NULL);
+	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_TIME, 5, NULL);
 	if (!success)
 		NET_ERR("THERMO_1 failed to configure");
 
@@ -135,7 +135,7 @@ void setup(void)
 		      changed_thermo, poll_thermo) == NULL) {
 		NET_ERR("THERMO_2 failed to register");
 	}
-	success = knot_proxy_set_config(2, KNOT_EVT_FLAG_TIME, 30, NULL, NULL);
+	success = knot_proxy_set_config(2, KNOT_EVT_FLAG_TIME, 30, NULL);
 	if (!success)
 		NET_ERR("THERMO_2 failed to configure");
 
@@ -145,7 +145,7 @@ void setup(void)
 		      changed_button, poll_button) == NULL) {
 		NET_ERR("BUTTON failed to register");
 	}
-	success = knot_proxy_set_config(3, KNOT_EVT_FLAG_CHANGE, 0, NULL, NULL);
+	success = knot_proxy_set_config(3, KNOT_EVT_FLAG_CHANGE, NULL);
 	if (!success)
 		NET_ERR("BUTTON failed to configure");
 
@@ -157,9 +157,9 @@ void setup(void)
 	}
 	/* Limit flag added for raw type variable for testing purposes */
 	success = knot_proxy_set_config(4,
-				   KNOT_EVT_FLAG_UPPER_THRESHOLD |
-				   KNOT_EVT_FLAG_TIME,
-				   2, NULL, &plate_upper);
+				   KNOT_EVT_FLAG_TIME, 2,
+				   KNOT_EVT_FLAG_UPPER_THRESHOLD, plate_upper,
+				   NULL);
 	if (!success)
 		NET_ERR("PLATE failed to configure");
 
