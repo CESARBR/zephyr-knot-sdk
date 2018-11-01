@@ -27,7 +27,7 @@
 
 static struct k_timer to;	/* Re-send timeout */
 static bool to_on;		/* Timeout active */
-static bool to_exp;		/* Timeout expired */
+static bool to_xpr;		/* Timeout expired */
 
 /*
  * Internally uuid and token must be null terminated. When copying or
@@ -49,7 +49,7 @@ static enum sm_state state;
 
 static void timer_expired(struct k_timer *to)
 {
-	to_exp = true;
+	to_xpr = true;
 	to_on = false;
 	NET_WARN("TO");
 }
@@ -107,7 +107,7 @@ static enum sm_state state_register(u8_t *exp_opcode,
 	knot_msg *msg;
 
 	/* First attempt or timeout expired, send register request */
-	if (*exp_opcode == 0xff || to_exp) {
+	if (*exp_opcode == 0xff || to_xpr) {
 		msg = (knot_msg *) opdu;
 		*len = msg_create_reg(msg, device_id, devname, strlen(devname));
 		*exp_opcode = KNOT_MSG_REGISTER_RESP;
@@ -141,7 +141,7 @@ static enum sm_state state_auth(u8_t *exp_opcode,
 	enum sm_state next = STATE_AUTH;
 
 	/* First attempt or timeout expired, send auth request */
-	if (*exp_opcode == 0xff || to_exp) {
+	if (*exp_opcode == 0xff || to_xpr) {
 		/* Send authentication request and waiting response */
 		msg = (knot_msg *) opdu;
 		/* TODO: Read credentials from non-volatile memory */
@@ -182,7 +182,7 @@ static enum sm_state state_schema(u8_t *exp_opcode,
 	*len = 0;
 
 	/* First attempt or timeout expired, resend schemas */
-	if (*exp_opcode == 0xff || to_exp) {
+	if (*exp_opcode == 0xff || to_xpr) {
 		id_index = 0;
 		goto send;
 	}
@@ -263,7 +263,7 @@ static size_t process_event(u8_t *exp_opcode,
 	 * If timeout expired or received an error message simply ignore it
 	 * and send data of the next sensor.
 	 */
-	if (to_exp || imsg->action.result != KNOT_SUCCESS)
+	if (to_xpr || imsg->action.result != KNOT_SUCCESS)
 		NET_ERR("FAIL SEND FOR ID: %d", id_index);
 	else
 		proxy_confirm_sent(id_index);
@@ -436,7 +436,7 @@ int sm_start(void)
 
 done:
 	to_on = false;
-	to_exp = false;
+	to_xpr = false;
 
 	return 0;
 }
@@ -494,7 +494,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			/* Stop timer if response found */
 			k_timer_stop(&to);
 			to_on = false;
-			to_exp = false;
+			to_xpr = false;
 
 		} else if (wl_opcode(state, ipdu, ilen) == false)
 			/* OPCODE doesn't belong to white list. Wait */
@@ -535,7 +535,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		if (to_on) {
 			k_timer_stop(&to);
 			to_on = false;
-			to_exp = false;
+			to_xpr = false;
 		}
 		goto done;
 	}
@@ -544,7 +544,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	if (to_on == false) {
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
-		to_exp = false;
+		to_xpr = false;
 		goto done;
 	}
 done:
