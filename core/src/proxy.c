@@ -247,7 +247,7 @@ u8_t proxy_get_last_id(void)
 }
 
 /* Return knot_value_type* so it can be flagged as const  */
-const knot_value_type *proxy_read(u8_t id, uint8_t *olen, bool wait_resp)
+const knot_value_type *proxy_read(u8_t id, u8_t *olen, bool wait_resp)
 {
 	struct knot_proxy *proxy;
 

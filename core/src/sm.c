@@ -246,7 +246,7 @@ static size_t process_event(u8_t *xpt_opcode,
 	knot_msg *omsg = (knot_msg *) opdu;
 	const knot_msg *imsg = (knot_msg *) ipdu;
 	const knot_value_type *value;
-	uint8_t value_len = 0;
+	u8_t value_len = 0;
 	static u8_t id_index = 0;
 	u8_t old_id;
 	u8_t last_id;
@@ -296,7 +296,7 @@ polling:
 }
 
 static size_t process_cmd(const u8_t *ipdu, size_t ilen,
-			       u8_t *opdu, size_t olen)
+			  u8_t *opdu, size_t olen)
 {
 	const knot_msg *imsg = (knot_msg *) ipdu;
 	knot_msg *omsg = (knot_msg *) opdu;
@@ -304,7 +304,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 	u8_t id = 0xff;
 	const knot_value_type *value;
-	uint8_t value_len;
+	u8_t value_len;
 
 	switch (imsg->hdr.type) {
 	case KNOT_MSG_UNREGISTER_REQ:
