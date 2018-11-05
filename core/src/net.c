@@ -62,8 +62,8 @@ static bool recv_cb(struct net_buf *netbuf)
 		olen += frag_len;
 	}
 
-	/* Sending PROTO to NET thread */
-	k_pipe_put(net2proto, opdu, olen, &olen, 0, K_NO_WAIT);
+	/* Sending recv data to PROTO thread */
+	k_pipe_put(net2proto, opdu, olen, &olen, olen, K_NO_WAIT);
 
 	return true;
 }
@@ -92,25 +92,21 @@ static void net_thread(void)
 	memset(ipdu, 0, sizeof(ipdu));
 	connection_start();
 
-	/*
-	 * Reading data from PROTO before checking connection to avoid pipe
-	 * having multiple KNoT messages, what would break knotd.
-	 */
 	while (1) {
-		ilen = 0;
-		/* Reading data from PROTO thread */
-		ret = k_pipe_get(proto2net, ipdu, sizeof(ipdu),
-				 &ilen, 0U, K_NO_WAIT);
-
 		if (!connected) {
 			connection_start();
 			goto done;
 		}
 
+		ilen = 0;
+		/* Reading data from PROTO thread */
+		ret = k_pipe_get(proto2net, ipdu, sizeof(ipdu),
+				 &ilen, 0U, K_NO_WAIT);
+
 		if (ret == 0 && ilen)
 			ret = tcp6_send(ipdu, ilen);
 done:
-		k_sleep(1000);
+		k_yield();
 	}
 
 	tcp6_stop();
@@ -127,7 +123,7 @@ int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
 	k_thread_create(&rx_thread_data, rx_stack,
 			K_THREAD_STACK_SIZEOF(rx_stack),
 			(k_thread_entry_t) net_thread,
-			NULL, NULL, NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
+			NULL, NULL, NULL, K_PRIO_COOP(10), 0, K_NO_WAIT);
 
 	return 0;
 }
