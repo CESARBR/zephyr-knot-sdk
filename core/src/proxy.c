@@ -408,7 +408,7 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		if (proxy->send || timeout || change || upper || lower) {
 			proxy->olen = sizeof(float);
 			proxy->value.val_f = fval;
-			proxy->send = true;
+			proxy->send = proxy->wait_resp;
 			ret = true;
 		}
 		break;
