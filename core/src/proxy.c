@@ -69,6 +69,8 @@ static struct knot_proxy {
 	/* Control variable to send data */
 	bool			send; /* 'value' must be sent */
 	bool			wait_resp; /* Will send 'value' until resp */
+	bool 			upper_flag; /* Upper limit crossed */
+	bool 			lower_flag; /* Lower limit crossed */
 	u8_t			olen; /* Amount to send / Output: temporary */
 	u8_t			rlen; /* Length RAW value */
 
@@ -125,6 +127,8 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	proxy->schema.unit = unit;
 	proxy->schema.value_type = value_type;
 	proxy->send = false;
+	proxy->upper_flag = false;
+	proxy->lower_flag = false;
 	proxy->olen = 0;
 
 	strncpy(proxy->schema.name, name,
@@ -392,12 +396,16 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		upper = check_int_upper_threshold(proxy, s32val);
 		lower = check_int_lower_threshold(proxy, s32val);
 
-		if (proxy->send || timeout || change || upper || lower) {
+		if ( proxy->send || timeout || change ||
+		    (upper && proxy->upper_flag == false) ||
+		    (lower && proxy->lower_flag == false)) {
 			proxy->olen = sizeof(int);
 			proxy->value.val_i = s32val;
 			proxy->send = proxy->wait_resp;
 			ret = true;
 		}
+		proxy->upper_flag = upper; /* Send only at crossing */
+		proxy->lower_flag = lower; /* Send only at crossing */
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
 		fval = *((float *) value);
@@ -405,12 +413,16 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		upper = check_float_upper_threshold(proxy, fval);
 		lower = check_float_lower_threshold(proxy, fval);
 
-		if (proxy->send || timeout || change || upper || lower) {
+		if ( proxy->send || timeout || change ||
+		    (upper && proxy->upper_flag == false) ||
+		    (lower && proxy->lower_flag == false)) {
 			proxy->olen = sizeof(float);
 			proxy->value.val_f = fval;
 			proxy->send = proxy->wait_resp;
 			ret = true;
 		}
+		proxy->upper_flag = upper; /* Send only at crossing */
+		proxy->lower_flag = lower; /* Send only at crossing */
 		break;
 	default:
 		goto done;
