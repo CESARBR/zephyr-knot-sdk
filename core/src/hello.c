@@ -23,7 +23,7 @@
 #include "knot_protocol.h"
 
 static int thermo[] = {0, 0, 0};
-static int high_temp = 100;
+static int high_temp = 100000;
 static bool button = false;
 static char plate[] = "BRZ0000";
 static int plate_upper = 99999;
@@ -41,14 +41,19 @@ static void changed_thermo(struct knot_proxy *proxy)
 static void poll_thermo(struct knot_proxy *proxy)
 {
 	u8_t id;
+	bool res;
 
 	id = knot_proxy_get_id(proxy);
 	/* Get current temperature from actual object */
 	thermo[id]++;
-	NET_DBG("Thermo %u read %d", id, thermo[id]);
 
 	/* Pushing temperature to remote */
-	knot_proxy_value_set_basic(proxy, &thermo[id]);
+	res = knot_proxy_value_set_basic(proxy, &thermo[id]);
+
+	/* Notify if sent */
+	if (res)
+		NET_DBG("Sending value %d for thermo %u", thermo[id], id);
+
 }
 
 static void changed_button(struct knot_proxy *proxy)
@@ -60,20 +65,23 @@ static void changed_button(struct knot_proxy *proxy)
 static void poll_button(struct knot_proxy *proxy)
 {
 	static int button_count = 0;
+	bool res;
 
-	/* Simulate button toogle after 5 readings */
-	if (button_count%5 == 0) {
+	/* Simulate button toogle after 5000 readings */
+	if (button_count%5000 == 0)
 		button = !button;
-		if (button)
-			NET_DBG("Button pressed");
-		else
-			NET_DBG("Button released");
-	}
 	button_count++;
 
-	NET_DBG("Button read %u", button);
 	/* Pushing status to remote */
-	knot_proxy_value_set_basic(proxy, &button);
+	res = knot_proxy_value_set_basic(proxy, &button);
+
+	/* Notify if sent */
+	if (res) {
+		if (button)
+			NET_DBG("Sending value true for button");
+		else
+			NET_DBG("Sending value false for button");
+	}
 }
 
 static void plate_changed(struct knot_proxy *proxy)
@@ -88,7 +96,7 @@ static void random_plate(struct knot_proxy *proxy)
 {
 	u8_t id;
 	int num;
-
+	bool res;
 	id = knot_proxy_get_id(proxy);
 
 	num = (sys_rand32_get() % 7);
@@ -97,8 +105,11 @@ static void random_plate(struct knot_proxy *proxy)
 	plate[5] = '2' + num;
 	plate[6] = '3' + num;
 
-	knot_proxy_value_set_string(proxy, plate, sizeof(plate));
-	NET_DBG("Plate read %s", plate);
+	res = knot_proxy_value_set_string(proxy, plate, sizeof(plate));
+
+	/* Notify if sent */
+	if (res)
+		NET_DBG("Sent plate %s", plate);
 }
 
 void setup(void)

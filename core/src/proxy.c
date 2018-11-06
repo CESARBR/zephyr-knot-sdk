@@ -356,19 +356,22 @@ static bool check_timeout(struct knot_proxy *proxy)
 	return false;
 }
 
-void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
+bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 {
 	bool change;
 	bool upper;
 	bool lower;
 	bool timeout;
+	bool ret;
 
 	bool bval;
 	s32_t s32val;
 	float fval;
 
+	ret = false; /* Default not sending */
+
 	if (unlikely(!proxy))
-		return;
+		goto done;
 
 	timeout = check_timeout(proxy);
 	switch(proxy->schema.value_type) {
@@ -380,6 +383,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 			proxy->olen = sizeof(bool);
 			proxy->value.val_b = bval;
 			proxy->send = proxy->wait_resp;
+			ret = true;
 		}
 		break;
 	case KNOT_VALUE_TYPE_INT:
@@ -392,6 +396,7 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 			proxy->olen = sizeof(int);
 			proxy->value.val_i = s32val;
 			proxy->send = proxy->wait_resp;
+			ret = true;
 		}
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
@@ -404,11 +409,14 @@ void knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 			proxy->olen = sizeof(float);
 			proxy->value.val_f = fval;
 			proxy->send = true;
+			ret = true;
 		}
 		break;
 	default:
-		return;
+		goto done;
 	}
+done:
+	return ret;
 }
 
 bool knot_proxy_value_set_string(struct knot_proxy *proxy,
