@@ -8,7 +8,7 @@ config KNOT_NAME
 
 config KNOT_THING_DATA_MAX
 	int "Max number of KNoT items (sensors)"
-	default 5
+	default 3
 
 endmenu
 

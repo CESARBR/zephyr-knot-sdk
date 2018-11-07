@@ -22,7 +22,7 @@
 #include "knot_types.h"
 #include "knot_protocol.h"
 
-static int thermo[] = {0, 0, 0};
+static int thermo = 0;
 static int high_temp = 100000;
 static bool button = false;
 static char plate[] = "BRZ0000";
@@ -33,9 +33,9 @@ static void changed_thermo(struct knot_proxy *proxy)
 	u8_t id;
 
 	id = knot_proxy_get_id(proxy);
-	knot_proxy_value_get_basic(proxy, &thermo[id]);
+	knot_proxy_value_get_basic(proxy, &thermo);
 
-	NET_DBG("Value for thermo %u changed to %d", id, thermo[id]);
+	NET_DBG("Value for thermo with id %u changed to %d", id, thermo);
 }
 
 static void poll_thermo(struct knot_proxy *proxy)
@@ -45,14 +45,14 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 	id = knot_proxy_get_id(proxy);
 	/* Get current temperature from actual object */
-	thermo[id]++;
+	thermo++;
 
 	/* Pushing temperature to remote */
-	res = knot_proxy_value_set_basic(proxy, &thermo[id]);
+	res = knot_proxy_value_set_basic(proxy, &thermo);
 
 	/* Notify if sent */
 	if (res)
-		NET_DBG("Sending value %d for thermo %u", thermo[id], id);
+		NET_DBG("Sending value %d for thermo with id %u", thermo, id);
 
 }
 
@@ -116,8 +116,8 @@ void setup(void)
 {
 	bool success;
 
-	/* THERMO_0 - Sent every 5 seconds or at high temperatures */
-	if (knot_proxy_register(0, "THERMO_0", KNOT_TYPE_ID_TEMPERATURE,
+	/* THERMO - Sent every 5 seconds or at high temperatures */
+	if (knot_proxy_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
 		      changed_thermo, poll_thermo) == NULL) {
 		NET_ERR("THERMO_0 failed to register");
@@ -127,47 +127,26 @@ void setup(void)
 					KNOT_EVT_FLAG_UPPER_THRESHOLD,
 					high_temp, NULL);
 	if (!success)
-		NET_ERR("THERMO_0 failed to configure");
-
-	/* THERMO_1 - Sent every 5 seconds */
-	/* id ONE assigned with wrong KNOT_VALUE TYPE for testing purpose */
-	if (knot_proxy_register(1, "THERMO_1", KNOT_TYPE_ID_TEMPERATURE,
-		      KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_TEMPERATURE_C,
-		      changed_thermo, poll_thermo) == NULL) {
-		NET_ERR("THERMO_1 failed to register");
-	}
-	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_TIME, 5, NULL);
-	if (!success)
-		NET_ERR("THERMO_1 failed to configure");
-
-	/* THERMO_2 - Sent every 30 seconds */
-	if (knot_proxy_register(2, "THERMO_2", KNOT_TYPE_ID_TEMPERATURE,
-		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		      changed_thermo, poll_thermo) == NULL) {
-		NET_ERR("THERMO_2 failed to register");
-	}
-	success = knot_proxy_set_config(2, KNOT_EVT_FLAG_TIME, 30, NULL);
-	if (!success)
-		NET_ERR("THERMO_2 failed to configure");
+		NET_ERR("THERMO failed to configure");
 
 	/* BUTTON - Sent after change */
-	if (knot_proxy_register(3, "BUTTON", KNOT_TYPE_ID_SWITCH,
+	if (knot_proxy_register(1, "BUTTON", KNOT_TYPE_ID_SWITCH,
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
 		      changed_button, poll_button) == NULL) {
 		NET_ERR("BUTTON failed to register");
 	}
-	success = knot_proxy_set_config(3, KNOT_EVT_FLAG_CHANGE, NULL);
+	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
 	if (!success)
 		NET_ERR("BUTTON failed to configure");
 
 	/* PLATE - Will fail to configure */
-	if (knot_proxy_register(4, "PLATE", KNOT_TYPE_ID_NONE,
+	if (knot_proxy_register(2, "PLATE", KNOT_TYPE_ID_NONE,
 		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
 		      plate_changed, random_plate) == NULL) {
 		NET_ERR("PLATE failed to register");
 	}
 	/* Limit flag added for raw type variable for testing purposes */
-	success = knot_proxy_set_config(4,
+	success = knot_proxy_set_config(2,
 				   KNOT_EVT_FLAG_TIME, 2,
 				   KNOT_EVT_FLAG_UPPER_THRESHOLD, plate_upper,
 				   NULL);
