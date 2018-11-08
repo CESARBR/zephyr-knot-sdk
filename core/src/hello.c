@@ -22,11 +22,32 @@
 #include "knot_types.h"
 #include "knot_protocol.h"
 
+/* Tracked values */
 static int thermo = 0;
 static int high_temp = 100000;
-static bool button = false;
+static bool led = true;
 static char plate[] = "BRZ0000";
 static int plate_upper = 99999;
+
+/*
+ * Use GPIO only for real boards.
+ */
+#if CONFIG_BOARD_NRF52840_PCA10056
+#include <device.h>
+#include <board.h>
+#include <gpio.h>
+#define GPIO_PORT		SW0_GPIO_NAME /* General GPIO Controller */
+#define BUTTON_PIN		SW0_GPIO_PIN /* User button */
+
+static struct device *gpiob;		/* GPIO device */
+static struct gpio_callback button_cb; /* Button pressed callback */
+
+static void btn_press(struct device *gpiob,
+		       struct gpio_callback *cb, u32_t pins)
+{
+	led = !led;
+}
+#endif
 
 static void changed_thermo(struct knot_proxy *proxy)
 {
@@ -56,31 +77,24 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 }
 
-static void changed_button(struct knot_proxy *proxy)
+static void changed_led(struct knot_proxy *proxy)
 {
-	knot_proxy_value_get_basic(proxy, &button);
-	NET_DBG("Value for button changed to %d", button);
+	knot_proxy_value_get_basic(proxy, &led);
+	NET_DBG("Value for led changed to %d", led);
 }
 
-static void poll_button(struct knot_proxy *proxy)
+static void poll_led(struct knot_proxy *proxy)
 {
-	static int button_count = 0;
-	bool res;
-
-	/* Simulate button toogle after 5000 readings */
-	if (button_count%5000 == 0)
-		button = !button;
-	button_count++;
-
 	/* Pushing status to remote */
-	res = knot_proxy_value_set_basic(proxy, &button);
+	bool res;
+	res = knot_proxy_value_set_basic(proxy, &led);
 
 	/* Notify if sent */
 	if (res) {
-		if (button)
-			NET_DBG("Sending value true for button");
+		if (led)
+			NET_DBG("Sending value true for led");
 		else
-			NET_DBG("Sending value false for button");
+			NET_DBG("Sending value false for led");
 	}
 }
 
@@ -130,14 +144,14 @@ void setup(void)
 		NET_ERR("THERMO failed to configure");
 
 	/* BUTTON - Sent after change */
-	if (knot_proxy_register(1, "BUTTON", KNOT_TYPE_ID_SWITCH,
+	if (knot_proxy_register(1, "LED", KNOT_TYPE_ID_SWITCH,
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-		      changed_button, poll_button) == NULL) {
-		NET_ERR("BUTTON failed to register");
+		      changed_led, poll_led) == NULL) {
+		NET_ERR("LED failed to register");
 	}
 	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
 	if (!success)
-		NET_ERR("BUTTON failed to configure");
+		NET_ERR("LED failed to configure");
 
 	/* PLATE - Will fail to configure */
 	if (knot_proxy_register(2, "PLATE", KNOT_TYPE_ID_NONE,
@@ -152,6 +166,19 @@ void setup(void)
 				   NULL);
 	if (!success)
 		NET_ERR("PLATE failed to configure");
+
+	/* Peripherals control */
+#if CONFIG_BOARD_NRF52840_PCA10056
+	/* Read button */
+	gpiob = device_get_binding(GPIO_PORT);
+	/* Button Pin has pull up, interruption on low edge and debounce */
+	gpio_pin_configure(gpiob, BUTTON_PIN,
+			   GPIO_DIR_IN | GPIO_PUD_PULL_UP | GPIO_INT_DEBOUNCE |
+			   GPIO_INT | GPIO_INT_EDGE | GPIO_INT_ACTIVE_LOW);
+	gpio_init_callback(&button_cb, btn_press, BIT(BUTTON_PIN));
+	gpio_add_callback(gpiob, &button_cb);
+	gpio_pin_enable_callback(gpiob, BUTTON_PIN);
+#endif
 
 }
 
