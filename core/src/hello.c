@@ -39,6 +39,7 @@ static int plate_upper = 99999;
 #include <gpio.h>
 #define GPIO_PORT		SW0_GPIO_NAME /* General GPIO Controller */
 #define BUTTON_PIN		SW0_GPIO_PIN /* User button */
+#define LED_PIN			LED0_GPIO_PIN /* User button */
 
 static struct device *gpiob;		/* GPIO device */
 static struct gpio_callback button_cb; /* Button pressed callback */
@@ -47,6 +48,8 @@ static void btn_press(struct device *gpiob,
 		       struct gpio_callback *cb, u32_t pins)
 {
 	led = !led;
+	gpio_pin_write(gpiob, LED_PIN, !led); /* Update GPIO */
+
 }
 #elif CONFIG_BOARD_QEMU_X86
 
@@ -91,6 +94,10 @@ static void changed_led(struct knot_proxy *proxy)
 {
 	knot_proxy_value_get_basic(proxy, &led);
 	NET_DBG("Value for led changed to %d", led);
+
+#if CONFIG_BOARD_NRF52840_PCA10056
+	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
+#endif
 }
 
 static void poll_led(struct knot_proxy *proxy)
@@ -188,6 +195,10 @@ void setup(void)
 	gpio_init_callback(&button_cb, btn_press, BIT(BUTTON_PIN));
 	gpio_add_callback(gpiob, &button_cb);
 	gpio_pin_enable_callback(gpiob, BUTTON_PIN);
+
+	/* Led pin */
+	gpio_pin_configure(gpiob, LED_PIN, GPIO_DIR_OUT);
+
 #elif CONFIG_BOARD_QEMU_X86
 	k_timer_start(&val_update_timer, UPDATE_PERIOD, UPDATE_PERIOD);
 #endif
