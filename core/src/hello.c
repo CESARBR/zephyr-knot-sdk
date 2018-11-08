@@ -31,6 +31,7 @@ static int plate_upper = 99999;
 
 /*
  * Use GPIO only for real boards.
+ * Use timer to mock values change if using qemu.
  */
 #if CONFIG_BOARD_NRF52840_PCA10056
 #include <device.h>
@@ -47,6 +48,15 @@ static void btn_press(struct device *gpiob,
 {
 	led = !led;
 }
+#elif CONFIG_BOARD_QEMU_X86
+
+#define UPDATE_PERIOD K_SECONDS(3) /* Update values each 3 seconds */
+static void val_update(struct k_timer *timer_id)
+{
+	led = !led;
+	k_timer_start(timer_id, UPDATE_PERIOD, UPDATE_PERIOD);
+}
+K_TIMER_DEFINE(val_update_timer, val_update, NULL);
 #endif
 
 static void changed_thermo(struct knot_proxy *proxy)
@@ -178,6 +188,8 @@ void setup(void)
 	gpio_init_callback(&button_cb, btn_press, BIT(BUTTON_PIN));
 	gpio_add_callback(gpiob, &button_cb);
 	gpio_pin_enable_callback(gpiob, BUTTON_PIN);
+#elif CONFIG_BOARD_QEMU_X86
+	k_timer_start(&val_update_timer, UPDATE_PERIOD, UPDATE_PERIOD);
 #endif
 
 }
