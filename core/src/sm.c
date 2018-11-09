@@ -491,6 +491,8 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			k_timer_stop(&to);
 			to_on = false;
 			to_xpr = false;
+			NET_DBG("Got expected resp");
+
 
 		} else if (wl_opcode(state, ipdu, ilen) == false)
 			/* OPCODE doesn't belong to white list. Wait */
@@ -504,7 +506,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 				      opdu, olen, &len);
 		break;
 	case STATE_AUTH:
-		/* Authenticate if registed previously */
+		/* Authenticate if registered previously */
 		next = state_auth(&xpt_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	case STATE_SCH:
@@ -546,6 +548,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			k_timer_stop(&to);
 			to_on = false;
 			to_xpr = false;
+			NET_DBG("Timer off");
 		}
 		goto done;
 	}
@@ -555,6 +558,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
 		to_xpr = false;
+		NET_DBG("Timer on");
 		goto done;
 	}
 done:
