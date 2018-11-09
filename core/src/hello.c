@@ -69,7 +69,7 @@ static void changed_thermo(struct knot_proxy *proxy)
 	id = knot_proxy_get_id(proxy);
 	knot_proxy_value_get_basic(proxy, &thermo);
 
-	NET_DBG("Value for thermo with id %u changed to %d", id, thermo);
+	NET_INFO("Value for thermo with id %u changed to %d", id, thermo);
 }
 
 static void poll_thermo(struct knot_proxy *proxy)
@@ -86,14 +86,14 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 	/* Notify if sent */
 	if (res)
-		NET_DBG("Sending value %d for thermo with id %u", thermo, id);
+		NET_INFO("Sending value %d for thermo with id %u", thermo, id);
 
 }
 
 static void changed_led(struct knot_proxy *proxy)
 {
 	knot_proxy_value_get_basic(proxy, &led);
-	NET_DBG("Value for led changed to %d", led);
+	NET_INFO("Value for led changed to %d", led);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
@@ -109,9 +109,9 @@ static void poll_led(struct knot_proxy *proxy)
 	/* Notify if sent */
 	if (res) {
 		if (led)
-			NET_DBG("Sending value true for led");
+			NET_INFO("Sending value true for led");
 		else
-			NET_DBG("Sending value false for led");
+			NET_INFO("Sending value false for led");
 	}
 }
 
@@ -120,7 +120,7 @@ static void plate_changed(struct knot_proxy *proxy)
 	int len;
 
 	if (knot_proxy_value_get_string(proxy, plate, sizeof(plate), &len))
-		NET_DBG("Plate changed %s", plate);
+		NET_INFO("Plate changed %s", plate);
 }
 
 static void random_plate(struct knot_proxy *proxy)
@@ -140,7 +140,7 @@ static void random_plate(struct knot_proxy *proxy)
 
 	/* Notify if sent */
 	if (res)
-		NET_DBG("Sent plate %s", plate);
+		NET_INFO("Sent plate %s", plate);
 }
 
 void setup(void)

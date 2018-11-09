@@ -161,6 +161,7 @@ static enum sm_state state_auth(u8_t *xpt_opcode,
 	}
 
 	/* Credentials are only saved on NVM after all the schemas are sent */
+	NET_INFO("Successfully authenticated!");
 	next =  STATE_ONLINE;
 
 done:
@@ -210,9 +211,9 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 			next = STATE_ERROR;
 			goto done;
 		}
-
-		NET_DBG("UUID: %s", uuid);
-		NET_DBG("token: %s", token);
+		NET_INFO("Successfully registered!");
+		NET_INFO("UUID: %s", uuid);
+		NET_INFO("token: %s", token);
 
 		next = STATE_ONLINE;
 	default:
