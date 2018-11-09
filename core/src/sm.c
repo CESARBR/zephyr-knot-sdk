@@ -51,7 +51,7 @@ static void timer_expired(struct k_timer *to)
 {
 	to_xpr = true;
 	to_on = false;
-	NET_WARN("TO");
+	NET_WARN("Timeout expired!");
 }
 
 static bool cmp_opcode(const u8_t xpt_opcode, const u8_t *ipdu, size_t ilen)
