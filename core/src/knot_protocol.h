@@ -37,8 +37,6 @@
 #define KNOT_PROTOCOL_UUID_LEN			36
 // A human readable name for each device
 #define KNOT_PROTOCOL_DEVICE_NAME_LEN		64
-// A human readint8_table name for each data source/sink in the device
-#define KNOT_PROTOCOL_DATA_NAME_LEN		64
 
 #define KNOT_PROTOCOL_DATA_ID_MAX		0xFE
 #define KNOT_PROTOCOL_DATA_ID_NA		0xFF
@@ -66,6 +64,7 @@
 // KNoT response messages (from device)
 #define KNOT_MSG_PUSH_DATA_REQ			0x20
 #define KNOT_MSG_PUSH_DATA_RSP			0x21
+
 #define KNOT_MSG_PUSH_CONFIG_REQ		0x22
 #define KNOT_MSG_PUSH_CONFIG_RSP		0x23
 
@@ -161,12 +160,13 @@ typedef struct __attribute__ ((packed)) {
 	char			token[KNOT_PROTOCOL_TOKEN_LEN];
 } knot_msg_authentication;
 
+#define KNOT_PROTOCOL_DATA_NAME_LEN		23
 typedef struct __attribute__ ((packed)) {
 	uint8_t			value_type;	// KNOT_VALUE_TYPE_* (int, float, bool, raw)
 	uint8_t			unit;		// KNOT_UNIT_*
 	uint16_t		type_id;	// KNOT_TYPE_ID_*
 	char			name[KNOT_PROTOCOL_DATA_NAME_LEN];
-} knot_schema; // 69 bytes
+} knot_schema; // 30 octets
 
 typedef struct __attribute__ ((packed)) {
 	knot_msg_header		hdr;
