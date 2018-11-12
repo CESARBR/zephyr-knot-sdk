@@ -11,25 +11,10 @@
 #ifndef KNOT_PROTOCOL_H
 #define KNOT_PROTOCOL_H
 
-#define KNOT_NO_DATA				2
-#define KNOT_DONE				1
-#define KNOT_SUCCESS				0
-#define KNOT_ERROR_UNKNOWN			-1
-#define KNOT_INVALID_DEVICE			-2
-#define KNOT_INVALID_DATA			-3
-#define KNOT_INVALID_DATA_RAW			-4
-#define KNOT_DEVICE_NOT_FOUND			-5
-#define KNOT_GW_FAILURE				-6
-#define KNOT_CLOUD_FAILURE			-7
-#define KNOT_CLOUD_OFFLINE			-8
-#define KNOT_INVALID_UUID			-9
-#define KNOT_INVALID_UUID_CLOUD			-10
-#define KNOT_REGISTER_INVALID_DEVICENAME	-11
-#define KNOT_INVALID_SCHM			-12
-#define KNOT_SCHM_NOT_FOUND			-13
-#define KNOT_SCHM_EMPTY				-14
-#define KNOT_INVALID_CREDENTIAL			-15
-#define KNOT_CREDENTIAL_UNAUTHORIZED		-16
+#define KNOT_ERR_INVALID			-1
+#define KNOT_ERR_PERM				-2
+#define KNOT_ERR_SCHEMA_EMPTY			-3
+#define KNOT_ERR_CLOUD_FAILURE			-4
 
 // Each KNoT Device or user has a unique ID and token as identification
 // mechanism
@@ -41,7 +26,6 @@
 #define KNOT_PROTOCOL_DATA_ID_MAX		0xFE
 #define KNOT_PROTOCOL_DATA_ID_NA		0xFF
 
-#define KNOT_MSG_INVALID			0x00
 // KNoT connect/register messages (from device)
 #define KNOT_MSG_REG_REQ			0x10
 #define KNOT_MSG_REG_RSP			0x11

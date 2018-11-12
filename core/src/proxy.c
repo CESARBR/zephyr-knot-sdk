@@ -209,7 +209,7 @@ bool knot_proxy_set_config(u8_t id, ...)
 	va_end(event_args);
 
 	if (knot_config_is_valid(event_flags, proxy->schema.value_type,
-		 timeout_sec, &lower_limit, &upper_limit) != KNOT_SUCCESS)
+		 timeout_sec, &lower_limit, &upper_limit) != 0)
 		return false;
 
 	/* Set upper and lower limits */

@@ -120,7 +120,7 @@ static enum sm_state state_register(u8_t *xpt_opcode,
 	msg = (knot_msg *) ipdu;
 
 	/* OPCODE verified before entering state. Checking result */
-	if (msg->cred.result != KNOT_SUCCESS) {
+	if (msg->cred.result != 0) {
 		next = STATE_ERROR;
 		goto done;
 	}
@@ -155,7 +155,7 @@ static enum sm_state state_auth(u8_t *xpt_opcode,
 	*len = 0;
 
 	/* OPCODE verified before entering state. Checking result */
-	if (msg->action.result != KNOT_SUCCESS) {
+	if (msg->action.result != 0) {
 		next = STATE_ERROR;
 		goto done;
 	}
@@ -191,11 +191,11 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 	switch (*xpt_opcode) {
 	case KNOT_MSG_SCHM_FRAG_RSP:
 		/* Resend last fragment if failed */
-		if (imsg->action.result == KNOT_SUCCESS)
+		if (imsg->action.result == 0)
 			id_index++;
 		goto send;
 	case KNOT_MSG_SCHM_END_RSP:
-		if (imsg->action.result != KNOT_SUCCESS)
+		if (imsg->action.result != 0)
 			goto send;
 		if (storage_set(STORAGE_KEY_UUID, uuid) < 0) {
 			next = STATE_ERROR;
@@ -263,7 +263,7 @@ static size_t process_event(u8_t *xpt_opcode,
 	 * If timeout expired or received an error message simply ignore it
 	 * and send data of the next sensor.
 	 */
-	if (to_xpr || imsg->action.result != KNOT_SUCCESS)
+	if (to_xpr || imsg->action.result != 0)
 		NET_ERR("FAIL SEND FOR ID: %d", id_index);
 	else
 		proxy_confirm_sent(id_index);
@@ -317,7 +317,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		if (id > CONFIG_KNOT_THING_DATA_MAX) {
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_REQ,
-					       KNOT_INVALID_DATA);
+					       KNOT_ERR_INVALID);
 			NET_WARN("Invalid Id!");
 			break;
 		}
@@ -331,7 +331,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		if (unlikely(!value)) {
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_REQ,
-					       KNOT_INVALID_DATA);
+					       KNOT_ERR_INVALID);
 			NET_WARN("Can't read requested value");
 			break;
 		}
@@ -348,7 +348,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		if (proxy_write(id, value, value_len) < 0) {
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_RSP,
-					       KNOT_INVALID_DATA);
+					       KNOT_ERR_INVALID);
 			break;
 		}
 		/* TODO: Change protocol to not require id nor value for

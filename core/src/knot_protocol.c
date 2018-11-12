@@ -139,59 +139,59 @@ static const uint8_t generic_types[] = {
 int knot_value_type_is_valid(uint8_t type)
 {
 	if (type >= KNOT_VALUE_TYPE_MIN || type < KNOT_VALUE_TYPE_MAX)
-		return KNOT_SUCCESS;
+		return 0;
 
-	return KNOT_INVALID_DATA;
+	return KNOT_ERR_INVALID;
 }
 
 int knot_type_id_is_basic(uint16_t type_id)
 {
 	if (type_id < KNOT_TYPE_ID_BASIC_MAX)
-		return KNOT_SUCCESS;
+		return 0;
 
-	return KNOT_INVALID_DATA;
+	return KNOT_ERR_INVALID;
 }
 
 int knot_type_id_is_logic(uint16_t type_id)
 {
 	if (type_id >= KNOT_TYPE_ID_LOGIC_MIN &&
 	    type_id < KNOT_TYPE_ID_LOGIC_MAX)
-		return KNOT_SUCCESS;
+		return 0;
 
-	return KNOT_INVALID_DATA;
+	return KNOT_ERR_INVALID;
 }
 
 int knot_type_id_is_generic(uint16_t type_id)
 {
 	if (type_id >= KNOT_TYPE_ID_GENERIC_MIN &&
 	    type_id < KNOT_TYPE_ID_GENERIC_MAX)
-		return KNOT_SUCCESS;
+		return 0;
 
-	return KNOT_INVALID_DATA;
+	return KNOT_ERR_INVALID;
 }
 
 int knot_schema_is_valid(uint16_t type_id, uint8_t value_type, uint8_t unit)
 {
 	/* int/float/bool/raw ? */
-	if (knot_value_type_is_valid(value_type) == KNOT_SUCCESS) {
+	if (knot_value_type_is_valid(value_type) == 0) {
 
 		/* Verify basic type IDs */
-		if (knot_type_id_is_basic(type_id) == KNOT_SUCCESS) {
+		if (knot_type_id_is_basic(type_id) == 0) {
 			if (basic_types[type_id].value_type == value_type &&
 			    basic_types[type_id].unit_mask & UNIT_MASK(unit))
-				return KNOT_SUCCESS;
+				return 0;
 
 		/* Verify logic type IDs */
-		} else if (knot_type_id_is_logic(type_id) == KNOT_SUCCESS) {
+		} else if (knot_type_id_is_logic(type_id) == 0) {
 			if (logic_types[TYPE_ID_MASK(type_id)] == value_type)
-				return KNOT_SUCCESS;
-		} else if (knot_type_id_is_generic(type_id) == KNOT_SUCCESS) {
+				return 0;
+		} else if (knot_type_id_is_generic(type_id) == 0) {
 			if (generic_types[TYPE_ID_MASK(type_id)] == value_type)
-				return KNOT_SUCCESS;
+				return 0;
 		}
 	}
 
-	return KNOT_INVALID_SCHM;
+	return KNOT_ERR_INVALID;
 }
 
 int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
@@ -206,7 +206,7 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 		 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 		 * KNOT_INVALID_CONFIG in new protocol
 		 */
-		return KNOT_ERROR_UNKNOWN;
+		return KNOT_ERR_INVALID;
 
 	/* Check consistency of time_sec */
 	if (event_flags & KNOT_EVT_FLAG_TIME) {
@@ -215,14 +215,14 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 			 * KNOT_INVALID_CONFIG in new protocol
 			 */
-			return KNOT_ERROR_UNKNOWN;
+			return KNOT_ERR_INVALID;
 	} else {
 		if (time_sec > 0)
 			/*
 			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 			 * KNOT_INVALID_CONFIG in new protocol
 			 */
-			return KNOT_ERROR_UNKNOWN;
+			return KNOT_ERR_INVALID;
 	}
 
 	/* Check consistency of limits */
@@ -234,7 +234,7 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 		 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 		 * KNOT_INVALID_CONFIG in new protocol
 		 */
-		return KNOT_ERROR_UNKNOWN;
+		return KNOT_ERR_INVALID;
 	if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD &&
 			(!upper_limit ||
 			value_type == KNOT_VALUE_TYPE_BOOL ||
@@ -243,7 +243,7 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 		 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 		 * KNOT_INVALID_CONFIG in new protocol
 		 */
-		return KNOT_ERROR_UNKNOWN;
+		return KNOT_ERR_INVALID;
 
 	if ((event_flags & KNOT_EVT_FLAG_LOWER_THRESHOLD) &&
 			(event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD)) {
@@ -255,7 +255,7 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 				 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 				 * KNOT_INVALID_CONFIG in new protocol
 				 */
-				return KNOT_ERROR_UNKNOWN;
+				return KNOT_ERR_INVALID;
 			break;
 		case KNOT_VALUE_TYPE_FLOAT:
 			if( (upper_limit->val_f - lower_limit->val_f) < 0)
@@ -263,17 +263,17 @@ int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
 				 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 				 * KNOT_INVALID_CONFIG in new protocol
 				 */
-				return KNOT_ERROR_UNKNOWN;
+				return KNOT_ERR_INVALID;
 			break;
 		default:
 			/*
 			 * TODO: DEFINE KNOT_CONFIG ERRORS IN PROTOCOL
 			 * KNOT_INVALID_CONFIG in new protocol
 			 */
-			return KNOT_ERROR_UNKNOWN;
+			return KNOT_ERR_INVALID;
 		}
 	}
 
-	return KNOT_SUCCESS;
+	return 0;
 
 }
