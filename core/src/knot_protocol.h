@@ -64,8 +64,8 @@
 #define KNOT_MSG_GET_DATA			0x30
 #define KNOT_MSG_SET_DATA			0x31
 // KNoT response messages (from device)
-#define KNOT_MSG_DATA				0x20
-#define KNOT_MSG_DATA_RESP			0x21
+#define KNOT_MSG_PUSH_DATA_REQ			0x20
+#define KNOT_MSG_PUSH_DATA_RSP			0x21
 #define KNOT_MSG_PUSH_CONFIG_REQ		0x22
 #define KNOT_MSG_PUSH_CONFIG_RSP		0x23
 
@@ -113,6 +113,11 @@ typedef union __attribute__ ((packed)) {
 	uint8_t			raw[KNOT_DATA_RAW_SIZE];
 } knot_value_type;
 
+/*
+ * See KNOT_MSG_PUSH_DATA_REQ: used to send data from endpoint to
+ * GW or encapsule request from external clients to the endpoint
+ * (set data).
+ */
 typedef struct __attribute__ ((packed)) {
 	knot_msg_header		hdr;
 	uint8_t			sensor_id;	// App defined sensor id

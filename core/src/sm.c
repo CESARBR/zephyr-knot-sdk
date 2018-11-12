@@ -285,7 +285,7 @@ polling:
 
 		/* Send data and wait for response */
 		len = msg_create_data(omsg, id_index, value, value_len, false);
-		*xpt_opcode = KNOT_MSG_DATA_RESP;
+		*xpt_opcode = KNOT_MSG_PUSH_DATA_RSP;
 		break;
 	} while (id_index != old_id);
 
@@ -316,7 +316,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* Invalid id */
 		if (id > CONFIG_KNOT_THING_DATA_MAX) {
 			len = msg_create_error(omsg,
-					       KNOT_MSG_DATA,
+					       KNOT_MSG_PUSH_DATA_REQ,
 					       KNOT_INVALID_DATA);
 			NET_WARN("Invalid Id!");
 			break;
@@ -329,7 +329,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		/* Couldn't read value */
 		if (unlikely(!value)) {
 			len = msg_create_error(omsg,
-					       KNOT_MSG_DATA,
+					       KNOT_MSG_PUSH_DATA_REQ,
 					       KNOT_INVALID_DATA);
 			NET_WARN("Can't read requested value");
 			break;
@@ -346,7 +346,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 		if (proxy_write(id, value, value_len) < 0) {
 			len = msg_create_error(omsg,
-					       KNOT_MSG_DATA_RESP,
+					       KNOT_MSG_PUSH_DATA_RSP,
 					       KNOT_INVALID_DATA);
 			break;
 		}

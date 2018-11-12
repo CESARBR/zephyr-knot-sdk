@@ -65,7 +65,7 @@ size_t msg_create_data(knot_msg *msg, u8_t id,
 		       const knot_value_type *value, uint8_t value_len,
 		       bool resp)
 {
-	msg->hdr.type = resp ? KNOT_MSG_DATA_RESP : KNOT_MSG_DATA;
+	msg->hdr.type = resp ? KNOT_MSG_PUSH_DATA_RSP: KNOT_MSG_PUSH_DATA_REQ;
 	msg->data.sensor_id = id;
 
 	msg->hdr.payload_len = sizeof(id) + value_len;
