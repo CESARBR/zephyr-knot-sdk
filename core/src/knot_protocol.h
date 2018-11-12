@@ -65,12 +65,9 @@
 // KNoT request messages (from gateway)
 #define KNOT_MSG_GET_DATA			0x30
 #define KNOT_MSG_SET_DATA			0x31
-#define KNOT_MSG_GET_COMMAND			0x32
-#define KNOT_MSG_SET_COMMAND			0x33
 // KNoT response messages (from device)
 #define KNOT_MSG_DATA				0x20
 #define KNOT_MSG_DATA_RESP			0x21
-#define KNOT_MSG_COMMAND			0x22
 #define KNOT_MSG_CONFIG				0x24
 #define KNOT_MSG_CONFIG_RESP			0x25
 
