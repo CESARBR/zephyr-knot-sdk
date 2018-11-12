@@ -355,7 +355,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		 */
 		len = msg_create_data(omsg, id, value, value_len, true);
 		break;
-	case KNOT_MSG_SET_CONFIG:
+	case KNOT_MSG_PUSH_CONFIG_REQ:
 		/* TODO */
 		break;
 	default:

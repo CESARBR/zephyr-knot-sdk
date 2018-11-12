@@ -60,16 +60,14 @@
 #define KNOT_MSG_SCHEMA_END			0x42
 #define KNOT_MSG_SCHEMA_END_RESP		0x43
 // KNoT data sending config messages (from gateway)
-#define KNOT_MSG_GET_CONFIG			0x50
-#define KNOT_MSG_SET_CONFIG			0x51
 // KNoT request messages (from gateway)
 #define KNOT_MSG_GET_DATA			0x30
 #define KNOT_MSG_SET_DATA			0x31
 // KNoT response messages (from device)
 #define KNOT_MSG_DATA				0x20
 #define KNOT_MSG_DATA_RESP			0x21
-#define KNOT_MSG_CONFIG				0x24
-#define KNOT_MSG_CONFIG_RESP			0x25
+#define KNOT_MSG_PUSH_CONFIG_REQ		0x22
+#define KNOT_MSG_PUSH_CONFIG_RSP		0x23
 
 // KNoT event flags passed by config messages
 #define KNOT_EVT_FLAG_NONE			0x00
