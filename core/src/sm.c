@@ -90,8 +90,8 @@ static bool wl_opcode(const enum sm_state state, const u8_t *ipdu, size_t ilen)
 	/* TODO: Add, after implement,
 	 * UNREG_REQ, SET_CONFIG, and GET_CONFIG
 	 */
-	case KNOT_MSG_SET_DATA:
-	case KNOT_MSG_GET_DATA:
+	case KNOT_MSG_PUSH_DATA_REQ:
+	case KNOT_MSG_POLL_DATA_REQ:
 		return true;
 	default:
 		return false;
@@ -310,7 +310,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	case KNOT_MSG_UNREG_REQ:
 		/* Clear NVM */
 		break;
-	case KNOT_MSG_GET_DATA:
+	case KNOT_MSG_POLL_DATA_REQ:
 		id = imsg->data.sensor_id;
 
 		/* Invalid id */
@@ -326,6 +326,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 		proxy_force_send(id);
 		value = proxy_read(id, &value_len, false);
 
+		/* FIXME: */
 		/* Couldn't read value */
 		if (unlikely(!value)) {
 			len = msg_create_error(omsg,
@@ -337,7 +338,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 
 		len = msg_create_data(omsg, id, value, value_len, false);
 		break;
-	case KNOT_MSG_SET_DATA:
+	case KNOT_MSG_PUSH_DATA_REQ:
 		id = imsg->data.sensor_id;
 		value = &imsg->data.payload;
 		/* value_len = payload_len - sensor_id_len */

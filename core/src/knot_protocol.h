@@ -49,24 +49,22 @@
 #define KNOT_MSG_UNREG_RSP			0x13
 #define KNOT_MSG_AUTH_REQ			0x14
 #define KNOT_MSG_AUTH_RSP			0x15
-/*
- * KNoT device config messages (from device)
- * END flag indicates end of schema transfer.
- */
+
+/* Direction: endpoint to cloud */
 #define KNOT_MSG_SCHM_FRAG_REQ			0x40
 #define KNOT_MSG_SCHM_FRAG_RSP			0x41
 #define KNOT_MSG_SCHM_END_REQ			0x42
 #define KNOT_MSG_SCHM_END_RSP			0x43
-// KNoT data sending config messages (from gateway)
-// KNoT request messages (from gateway)
-#define KNOT_MSG_GET_DATA			0x30
-#define KNOT_MSG_SET_DATA			0x31
-// KNoT response messages (from device)
+
+/* Direction: both */
 #define KNOT_MSG_PUSH_DATA_REQ			0x20
 #define KNOT_MSG_PUSH_DATA_RSP			0x21
 
+/* Direction: cloud to endpoint */
 #define KNOT_MSG_PUSH_CONFIG_REQ		0x22
 #define KNOT_MSG_PUSH_CONFIG_RSP		0x23
+#define KNOT_MSG_POLL_DATA_REQ			0x30
+#define KNOT_MSG_POLL_DATA_RSP			0x31
 
 // KNoT event flags passed by config messages
 #define KNOT_EVT_FLAG_NONE			0x00
