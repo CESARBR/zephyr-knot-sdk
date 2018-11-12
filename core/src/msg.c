@@ -22,7 +22,7 @@ size_t msg_create_error(knot_msg *msg, uint8_t id, int8_t result)
 size_t msg_create_reg(knot_msg *msg, uint64_t id,
 		      const char *name, size_t name_len)
 {
-	msg->reg.hdr.type = KNOT_MSG_REGISTER_REQ;
+	msg->reg.hdr.type = KNOT_MSG_REG_REQ;
 	memcpy(msg->reg.devName, name, name_len);
 	msg->reg.hdr.payload_len = name_len + sizeof(msg->reg.id);
 	/* TODO: missing endianness */
@@ -45,7 +45,7 @@ size_t msg_create_auth(knot_msg *msg, const char *uuid, const char *token)
 size_t msg_create_schema(knot_msg *msg, u8_t id,
 		       const knot_schema *schema, bool end)
 {
-	msg->hdr.type = (end ? KNOT_MSG_SCHEMA_END : KNOT_MSG_SCHEMA);
+	msg->hdr.type = (end ? KNOT_MSG_SCHM_END_REQ : KNOT_MSG_SCHM_FRAG_REQ);
 	msg->schema.sensor_id = id;
 
 	msg->schema.values.value_type = schema->value_type;

@@ -191,7 +191,7 @@ int knot_schema_is_valid(uint16_t type_id, uint8_t value_type, uint8_t unit)
 		}
 	}
 
-	return KNOT_INVALID_SCHEMA;
+	return KNOT_INVALID_SCHM;
 }
 
 int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,

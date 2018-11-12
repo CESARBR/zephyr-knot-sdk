@@ -88,7 +88,7 @@ static bool wl_opcode(const enum sm_state state, const u8_t *ipdu, size_t ilen)
 	/* Return true if find expected response */
 	switch (imsg->hdr.type) {
 	/* TODO: Add, after implement,
-	 * UNREGISTER_REQ, SET_CONFIG, and GET_CONFIG
+	 * UNREG_REQ, SET_CONFIG, and GET_CONFIG
 	 */
 	case KNOT_MSG_SET_DATA:
 	case KNOT_MSG_GET_DATA:
@@ -110,7 +110,7 @@ static enum sm_state state_register(u8_t *xpt_opcode,
 	if (*xpt_opcode == 0xff || to_xpr) {
 		msg = (knot_msg *) opdu;
 		*len = msg_create_reg(msg, device_id, devname, strlen(devname));
-		*xpt_opcode = KNOT_MSG_REGISTER_RESP;
+		*xpt_opcode = KNOT_MSG_REG_RSP;
 		goto done;
 	}
 
@@ -146,7 +146,7 @@ static enum sm_state state_auth(u8_t *xpt_opcode,
 		msg = (knot_msg *) opdu;
 		/* TODO: Read credentials from non-volatile memory */
 		*len = msg_create_auth(msg, uuid, token);
-		*xpt_opcode = KNOT_MSG_AUTH_RESP;
+		*xpt_opcode = KNOT_MSG_AUTH_RSP;
 		goto done;
 	}
 
@@ -189,12 +189,12 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 
 	/* OPCODE verified before entering state. Checking result */
 	switch (*xpt_opcode) {
-	case KNOT_MSG_SCHEMA_RESP:
+	case KNOT_MSG_SCHM_FRAG_RSP:
 		/* Resend last fragment if failed */
 		if (imsg->action.result == KNOT_SUCCESS)
 			id_index++;
 		goto send;
-	case KNOT_MSG_SCHEMA_END_RESP:
+	case KNOT_MSG_SCHM_END_RSP:
 		if (imsg->action.result != KNOT_SUCCESS)
 			goto send;
 		if (storage_set(STORAGE_KEY_UUID, uuid) < 0) {
@@ -230,8 +230,8 @@ send:
 			continue;
 		}
 		end = ((id_index == last_id) ? true : false);
-		*xpt_opcode = (end ? KNOT_MSG_SCHEMA_END_RESP :
-				     KNOT_MSG_SCHEMA_RESP);
+		*xpt_opcode = (end ? KNOT_MSG_SCHM_END_RSP :
+				     KNOT_MSG_SCHM_FRAG_RSP);
 		*len = msg_create_schema(omsg, id_index, schema, end);
 		break;
 	}
@@ -307,7 +307,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	u8_t value_len;
 
 	switch (imsg->hdr.type) {
-	case KNOT_MSG_UNREGISTER_REQ:
+	case KNOT_MSG_UNREG_REQ:
 		/* Clear NVM */
 		break;
 	case KNOT_MSG_GET_DATA:
