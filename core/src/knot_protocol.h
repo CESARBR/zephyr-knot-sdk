@@ -174,8 +174,6 @@ typedef struct __attribute__ ((packed)) {
 	knot_schema		values;
 } knot_msg_schema;
 
-#define KNOT_MSG_SIZE		(sizeof(knot_msg_header) + sizeof(knot_msg_credential))  // must be greater than max structure size defined above
-
 typedef union __attribute__ ((packed)) {
 	knot_msg_header		hdr;
 	knot_msg_result		action;
@@ -187,7 +185,6 @@ typedef union __attribute__ ((packed)) {
 	knot_msg_authentication	auth;
 	knot_msg_schema		schema;
 	knot_msg_config		config;
-	uint8_t			buffer[KNOT_MSG_SIZE];
 } knot_msg;
 
 /*
@@ -214,8 +211,8 @@ int knot_schema_is_valid(uint16_t type_id, uint8_t value_type, uint8_t unit);
  * Helper function to validate the config
  */
 int knot_config_is_valid(uint8_t event_flags, uint8_t value_type,
-			 uint16_t time_sec, const knot_value_type *lower_limit,
-			 const knot_value_type *upper_limit);
+		uint16_t time_sec, const knot_value_type *lower_limit,
+		 const knot_value_type *upper_limit);
 
 
 #endif //KNOT_PROTOCOL_H
