@@ -523,6 +523,20 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	/* State has changed: Don't wait response */
 	if (next != state) {
 		xpt_opcode = 0xff;
+
+		switch (next) {
+		case STATE_REG:
+		case STATE_AUTH:
+		case STATE_SCH:
+			peripheral_set_status_period(STATUS_DISCONN_PERIOD);
+			break;
+		case STATE_ONLINE:
+			peripheral_set_status_period(STATUS_CONN_PERIOD);
+			break;
+		default:
+			peripheral_set_status_period(STATUS_ERROR_PERIOD);
+			break;
+		}
 	}
 
 	/* Not waiting response: Stop timer */

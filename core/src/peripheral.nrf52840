@@ -87,10 +87,6 @@ static int status_init(void)
 	/* Led Pin: Output */
 	gpio_pin_configure(gpiob, STATUS_LED_PIN, GPIO_DIR_OUT);
 
-	/* Led on at beggining */
-	status_led = false;
-	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
-
 	/* If led frequency is not set, show as an error */
 	peripheral_set_status_period(STATUS_ERROR_PERIOD);
 
@@ -121,11 +117,18 @@ bool peripheral_get_reset(void)
 
 void peripheral_set_status_period(s64_t status_period)
 {
+	/* Led on at period update */
+	status_led = false;
+	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
+
 	toggle_led_period = status_period;
 }
 
 bool peripheral_flag_status(void)
 {
+	if (toggle_led_period < 0)
+		return false;
+
 	s64_t actual_time = k_uptime_get();
 
 	if (actual_time - last_toggle_time >= toggle_led_period) {
