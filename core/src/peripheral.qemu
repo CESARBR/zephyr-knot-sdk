@@ -25,3 +25,14 @@ bool peripheral_get_reset(void)
 	/* Never reseting */
 	return false;
 }
+
+void peripheral_set_status_period(s64_t status)
+{
+	return;
+}
+
+bool peripheral_flag_status(void)
+{
+	/* Never toggling */
+	return false;
+}
