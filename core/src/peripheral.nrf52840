@@ -20,10 +20,17 @@
 #include "peripheral.h"
 
 static struct device *gpiob;
-static bool rst_flag;
 
+/* Reset configs */
+static bool rst_flag;
 static struct k_timer rst_timer; /* Reset timer */
 static struct gpio_callback rst_btn_cb; /* Reset button callback */
+
+/* Status led */
+static bool status_led;
+static s64_t toggle_led_period;
+static s64_t last_toggle_time;
+
 
 static void set_reset(struct k_timer *timer_id)
 {
@@ -69,6 +76,30 @@ static int reset_init(void)
 	return 0;
 }
 
+static void toggle_led(void)
+{
+	status_led = !status_led;
+	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
+}
+
+static int status_init(void)
+{
+	/* Led Pin: Output */
+	gpio_pin_configure(gpiob, STATUS_LED_PIN, GPIO_DIR_OUT);
+
+	/* Led on at beggining */
+	status_led = false;
+	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
+
+	/* If led frequency is not set, show as an error */
+	peripheral_set_status_period(STATUS_ERROR_PERIOD);
+
+	last_toggle_time = 0; /* Never toggled led */
+
+	/* TODO: Check for errors */
+	return 0;
+}
+
 int peripheral_init(void)
 {
 	/* Initializing GPIO port */
@@ -77,10 +108,31 @@ int peripheral_init(void)
 		return -1;
 	}
 
-	return reset_init();
+	if (unlikely(reset_init()))
+		return -1;
+
+	return status_init();
 }
 
 bool peripheral_get_reset(void)
 {
 	return rst_flag;
+}
+
+void peripheral_set_status_period(s64_t status_period)
+{
+	toggle_led_period = status_period;
+}
+
+bool peripheral_flag_status(void)
+{
+	s64_t actual_time = k_uptime_get();
+
+	if (actual_time - last_toggle_time >= toggle_led_period) {
+		last_toggle_time = actual_time;
+		toggle_led();
+		return true;
+	}
+
+	return false;
 }

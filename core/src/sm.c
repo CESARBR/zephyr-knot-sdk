@@ -541,6 +541,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	}
 done:
 	state = next;
+	peripheral_flag_status();
 
 	return len;
 }
