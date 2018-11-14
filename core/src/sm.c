@@ -427,6 +427,9 @@ int sm_start(void)
 		state = STATE_REG;
 
 done:
+	/* Initially disconnected */
+	peripheral_set_status_period(STATUS_DISCONN_PERIOD);
+
 	to_on = false;
 	to_xpr = false;
 
