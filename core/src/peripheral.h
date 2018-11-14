@@ -16,9 +16,9 @@
 
 /* Status led toggle controller. Toggle led periods in millis */
 #define STATUS_LED_PIN		LED3_GPIO_PIN
-#define STATUS_DISCONN_PERIOD	500 /* Disconnected. Toggle every 500 ms */
-#define STATUS_CONN_PERIOD	0   /* Connected. Don't toggle */
-#define STATUS_ERROR_PERIOD	100 /* Error. Toggle every 100 ms */
+#define STATUS_DISCONN_PERIOD	1000 /* Disconnected. Toggle every 500 ms */
+#define STATUS_CONN_PERIOD	-1   /* Connected. Don't toggle */
+#define STATUS_ERROR_PERIOD	100  /* Error. Toggle every 100 ms */
 
 int peripheral_init(void);
 
