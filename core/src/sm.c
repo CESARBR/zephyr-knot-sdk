@@ -198,6 +198,8 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 	case KNOT_MSG_SCHM_END_RSP:
 		if (imsg->action.result != 0)
 			goto send;
+
+		NET_DBG("Setting credentials!");
 		if (storage_set(STORAGE_KEY_UUID, uuid) < 0) {
 			next = STATE_ERROR;
 			goto done;
@@ -233,6 +235,7 @@ send:
 		end = ((id_index == last_id) ? true : false);
 		*xpt_opcode = (end ? KNOT_MSG_SCHM_END_RSP :
 				     KNOT_MSG_SCHM_FRAG_RSP);
+		NET_DBG("Creating schema message");
 		*len = msg_create_schema(omsg, id_index, schema, end);
 		break;
 	}
