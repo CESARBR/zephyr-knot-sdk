@@ -65,7 +65,12 @@ static void proto_thread(void)
 	int ret;
 
 	/* Initializing KNoT storage */
-	storage_init();
+	NET_DBG("Initializing storage module");
+	ret = storage_init();
+	if (ret < 0) {
+		NET_ERR("Storage init failed!");
+		return;
+	}
 
 	/* Initializing KNoT peripherals control */
 	peripheral_init();
