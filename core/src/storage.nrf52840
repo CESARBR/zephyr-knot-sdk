@@ -9,13 +9,10 @@
 #include <nvs/nvs.h>
 #include <string.h>
 
-/* Mininum required flash parameters */
+/* Using first two pages of Flash's storage sector */
 #define NVS_SECTOR_SIZE 	FLASH_ERASE_BLOCK_SIZE
+#define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET
 #define NVS_SECTOR_COUNT 	2
-
-/* Leaving first two sectors of NVS to be used by OpenThread */
-#define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET + \
-				2 * FLASH_ERASE_BLOCK_SIZE
 
 #define ID_VALUE_SIZE 		8 // in bytes (u64_t)
 
