@@ -36,6 +36,7 @@ static bool to_xpr;		/* Timeout expired */
 static char uuid[KNOT_PROTOCOL_UUID_LEN + 1];	/* Device uuid */
 static char token[KNOT_PROTOCOL_TOKEN_LEN + 1];	/* Device token */
 static u64_t device_id;				/* Device id */
+static struct storage_app_settings app_settings;/* Storage helper struct */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -178,6 +179,7 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 	const knot_schema *schema;
 	static u8_t id_index = 0;
 	u8_t last_id;
+	size_t res;
 	bool end;
 
 	*len = 0;
@@ -200,19 +202,17 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 			goto send;
 
 		NET_DBG("Setting credentials!");
-		if (storage_set(STORAGE_KEY_UUID, uuid) < 0) {
+		app_settings.device_id 	= device_id;
+		memcpy(app_settings.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);
+		memcpy(app_settings.token, token, KNOT_PROTOCOL_TOKEN_LEN);
+
+		res = storage_set(STORAGE_APP_SETTINGS_KEY,
+				  (const u8_t *) &app_settings);
+		if (res <= 0) {
 			next = STATE_ERROR;
 			goto done;
 		}
-		if (storage_set(STORAGE_KEY_TOKEN, token) < 0) {
-			next = STATE_ERROR;
-			goto done;
-		}
-		if (storage_set(STORAGE_KEY_ID,
-				(const u8_t *) &device_id) < 0) {
-			next = STATE_ERROR;
-			goto done;
-		}
+
 		NET_INFO("Successfully registered!");
 		NET_INFO("UUID: %s", uuid);
 		NET_INFO("token: %s", token);
@@ -411,24 +411,20 @@ int sm_start(void)
 	memset(token, 0, sizeof(token));
 
 	/*
-	 * 'device_id' stored properly at NVM means that UUID
-	 * and token are also available.
+	 * 'app-settings' stored properly at NVM means that UUID, Token and id
+	 * are available.
 	 */
-	err = storage_get(STORAGE_KEY_ID, (u8_t *) &device_id);
-	if (err < 0 || device_id == 0) {
+	err = storage_get(STORAGE_APP_SETTINGS_KEY, (u8_t *) &app_settings);
+	if (err < 0) {
 		device_id = sys_rand32_get();
 		device_id *= device_id;
 		state = STATE_REG;
 		goto done;
 	}
 
-	err = storage_get(STORAGE_KEY_UUID, uuid);
-	if (err < 0)
-		state = STATE_REG;
-
-	err = storage_get(STORAGE_KEY_TOKEN, token);
-	if (err < 0)
-		state = STATE_REG;
+	device_id = app_settings.device_id;
+	memcpy(uuid, app_settings.uuid, KNOT_PROTOCOL_UUID_LEN);
+	memcpy(token, app_settings.token, KNOT_PROTOCOL_TOKEN_LEN);
 
 done:
 	/* Initially disconnected */

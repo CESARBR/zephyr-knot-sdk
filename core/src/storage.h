@@ -6,10 +6,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "knot_protocol.h"
+
+struct storage_app_settings {
+	uint64_t device_id;
+	char uuid[KNOT_PROTOCOL_UUID_LEN];
+	char token[KNOT_PROTOCOL_TOKEN_LEN];
+};
+
 enum storage_key {
-	STORAGE_KEY_ID		= 0xFFFF,
-	STORAGE_KEY_UUID	= 0xFFFE,
-	STORAGE_KEY_TOKEN	= 0xFFFD,
+	STORAGE_APP_SETTINGS_KEY = 0xFFFF	/* App related settings */
 };
 
 /**
@@ -35,7 +41,7 @@ int8_t storage_reset(void);
 /**
  * @brief Gets value from NVM.
  *
- * @details Gets UUID, TOKEN or MAC from flash memory.
+ * @details Gets UUID, TOKEN and MAC from flash memory.
  *
  * @param Int key for the value to be retrieved.
  * @param Buffer string to be stored.
@@ -50,7 +56,7 @@ int8_t storage_get(enum storage_key key, u8_t *value);
 /**
  * @brief Save value on NVM.
  *
- * @details Save UUID, TOKEN or MAC on flash memory.
+ * @details Save UUID, TOKEN and MAC on flash memory.
  *
  * @param Int key for the value to be retrieved.
  * @param Buffer string to be stored.

@@ -14,8 +14,6 @@
 #define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET
 #define NVS_SECTOR_COUNT 	2
 
-#define ID_VALUE_SIZE 		8 // in bytes (u64_t)
-
 static struct nvs_fs knot_fs = {
 	.sector_size = NVS_SECTOR_SIZE,
 	.sector_count = NVS_SECTOR_COUNT,
@@ -29,20 +27,8 @@ int8_t storage_init(void)
 
 int8_t storage_reset(void)
 {
-	int ret;
-
-	/* Clear MAC */
-	ret = nvs_delete(&knot_fs, STORAGE_KEY_ID);
-	if (ret < 0)
-		return ret;
-
-	/* Clear UUID */
-	ret = nvs_delete(&knot_fs, STORAGE_KEY_UUID);
-	if (ret < 0)
-		return ret;
-
-	/* Clear TOKEN */
-	return nvs_delete(&knot_fs, STORAGE_KEY_TOKEN);
+	/* Clear app credentials */
+	return nvs_delete(&knot_fs, STORAGE_APP_SETTINGS_KEY);
 }
 
 int8_t storage_get(enum storage_key key, u8_t *value)
@@ -51,17 +37,11 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 	ssize_t read_len;
 
 	switch (key) {
-	case STORAGE_KEY_UUID:
-		len = KNOT_PROTOCOL_UUID_LEN;
-		break;
-	case STORAGE_KEY_TOKEN:
-		len = KNOT_PROTOCOL_TOKEN_LEN;
-		break;
-	case STORAGE_KEY_ID:
-		len = ID_VALUE_SIZE;
+	case STORAGE_APP_SETTINGS_KEY:
+		len = sizeof(struct storage_app_settings);
 		break;
 	default:
-		return -EINVAL;
+		return -1;
 	}
 
 	read_len = nvs_read(&knot_fs, key, value, len);
@@ -78,14 +58,8 @@ int8_t storage_set(enum storage_key key, const u8_t *value)
 	size_t len;
 
 	switch (key) {
-	case STORAGE_KEY_UUID:
-		len = KNOT_PROTOCOL_UUID_LEN;
-		break;
-	case STORAGE_KEY_TOKEN:
-		len = KNOT_PROTOCOL_TOKEN_LEN;
-		break;
-	case STORAGE_KEY_ID:
-		len = ID_VALUE_SIZE;
+	case STORAGE_APP_SETTINGS_KEY:
+		len = sizeof(struct storage_app_settings);
 		break;
 	default:
 		return -1;
