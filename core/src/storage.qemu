@@ -14,10 +14,7 @@
 
 
 /* Lens */
-
-static u64_t id_val;
-static u8_t uuid_buf[KNOT_PROTOCOL_UUID_LEN];
-static u8_t token_buf[KNOT_PROTOCOL_TOKEN_LEN];
+static struct storage_app_settings app_settings;/* Storage helper struct */
 
 int8_t storage_init(void)
 {
@@ -25,14 +22,12 @@ int8_t storage_init(void)
 
 #if 1
 	/* New device testing */
-	memset(&id_val, 0, sizeof(id_val));
-	memset(uuid_buf, 0, sizeof(uuid_buf));
-	memset(token_buf, 0, sizeof(token_buf));
+	memset(&app_settings, 0, sizeof(struct storage_app_settings));
 #else
 	/* Set known credentials */
-	id_val = 0xDEADBEEFFEEDBABE;
-	strcpy(uuid_buf, "7599eaee-e006-455e-87c1-f9650be8c7cf");
-	strcpy(token_buf, "d2422c409fb5bfcf011292449d6638b480f643d8");
+	app_settings.device_id = 0xDEADBEEFFEEDBABE;
+	strcpy(app_settings.uuid, "0354ec44-826e-4269-8855-a666b1e40000");
+	strcpy(app_settings.token, "924c222bc1f2e7d8648b43fd8fada6b4152fa905");
 #endif
 
 	return 0;
@@ -42,9 +37,7 @@ int8_t storage_reset(void)
 {
 	NET_DBG("Reseting mock storage");
 
-	memset(&id_val, 0, sizeof(id_val));
-	memset(uuid_buf, 0, sizeof(uuid_buf));
-	memset(token_buf, 0, sizeof(token_buf));
+	memset(&app_settings, 0, sizeof(struct storage_app_settings));
 
 	return 0;
 }
@@ -52,19 +45,15 @@ int8_t storage_reset(void)
 int8_t storage_get(enum storage_key key, u8_t *value)
 {
 	switch (key) {
-	case STORAGE_KEY_UUID:
-		if (!strlen(uuid_buf))
+	case STORAGE_APP_SETTINGS_KEY:
+		if (!strlen(app_settings.uuid) || !strlen(app_settings.token))
 			goto err;
-		memcpy(value, uuid_buf, KNOT_PROTOCOL_UUID_LEN);
+
+		memcpy(value, &app_settings,
+		       sizeof(struct storage_app_settings));
 		break;
-	case STORAGE_KEY_TOKEN:
-		if (!strlen(token_buf))
-			goto err;
-		memcpy(value, token_buf, KNOT_PROTOCOL_TOKEN_LEN);
-		break;
-	case STORAGE_KEY_ID:
-		memcpy(value, &id_val, sizeof(id_val));
-		break;
+	default:
+		goto err;
 	}
 
 	return 0;
@@ -77,15 +66,12 @@ int8_t storage_set(enum storage_key key, const u8_t *value)
 {
 
 	switch (key) {
-	case STORAGE_KEY_UUID:
-		memcpy(uuid_buf, value, KNOT_PROTOCOL_UUID_LEN);
+	case STORAGE_APP_SETTINGS_KEY:
+		memcpy(&app_settings, value,
+		       sizeof(struct storage_app_settings));
 		break;
-	case STORAGE_KEY_TOKEN:
-		memcpy(token_buf, value, KNOT_PROTOCOL_TOKEN_LEN);
-		break;
-	case STORAGE_KEY_ID:
-		memcpy(&id_val, value, sizeof(id_val));
-		break;
+	default:
+		return -1;
 	}
 
 	return 0;
