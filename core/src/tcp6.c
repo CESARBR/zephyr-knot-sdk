@@ -6,11 +6,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define SYS_LOG_DOMAIN "knot"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
-
 #include <zephyr.h>
+#include <logging/log.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -22,6 +19,8 @@
 
 #include "net.h"
 #include "tcp6.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 #define PEER_IPV6_PORT 8886
 
@@ -38,7 +37,7 @@ static void tcp6_close(struct net_app_ctx *ctx,
 {
 	net_close_t net_close_cb = user_data;
 
-	NET_DBG("TCP(%p) disconnected", ctx);
+	LOG_DBG("TCP(%p) disconnected", ctx);
 	net_close_cb();
 }
 
@@ -69,7 +68,7 @@ static void tcp6_connected(struct net_app_ctx *ctx,
 			  int status,
 			  void *user_data)
 {
-	NET_DBG("TCP(%p) connected", ctx);
+	LOG_DBG("TCP(%p) connected", ctx);
 }
 
 static int connect_tcp6(struct net_app_ctx *ctx,
@@ -79,25 +78,25 @@ static int connect_tcp6(struct net_app_ctx *ctx,
 {
 	int ret;
 
-	NET_DBG("TCP(%p) Connecting to %s %d ...", ctx, peer, port);
+	LOG_DBG("TCP(%p) Connecting to %s %d ...", ctx, peer, port);
 
 	ret = net_app_init_tcp_client(ctx, NULL, NULL, peer, port,
 				      WAIT_TIME, user_data);
 	if (ret < 0) {
-		NET_ERR("Cannot init %s TCP client (%d)", peer, ret);
+		LOG_ERR("Cannot init %s TCP client (%d)", peer, ret);
 		goto fail;
 	}
 
 	ret = net_app_set_cb(ctx, tcp6_connected, tcp6_received, NULL,
 								tcp6_close);
 	if (ret < 0) {
-		NET_ERR("Cannot set callbacks (%d)", ret);
+		LOG_ERR("Cannot set callbacks (%d)", ret);
 		goto fail;
 	}
 
 	ret = net_app_connect(ctx, CONNECT_TIME);
 	if (ret < 0) {
-		NET_ERR("Cannot connect TCP (%d)", ret);
+		LOG_ERR("Cannot connect TCP (%d)", ret);
 		goto fail;
 	}
 
@@ -109,7 +108,7 @@ int tcp6_start(net_recv_t recv_cb, net_close_t close_cb)
 {
 	int ret = -EPERM;
 
-	NET_DBG("Starting TCP IPv6(%p) ...", &tcp6);
+	LOG_DBG("Starting TCP IPv6(%p) ...", &tcp6);
 
 	recv = recv_cb;
 
@@ -117,7 +116,7 @@ int tcp6_start(net_recv_t recv_cb, net_close_t close_cb)
 		ret = connect_tcp6(&tcp6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR,
 				  PEER_IPV6_PORT, close_cb);
 		if (ret < 0)
-			NET_ERR("Cannot init IPv6 TCP client (%d)", ret);
+			LOG_ERR("Cannot init IPv6 TCP client (%d)", ret);
 	}
 
 	return ret;

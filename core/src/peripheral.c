@@ -14,10 +14,9 @@
 
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <logging/log.h>
 
-#define SYS_LOG_DOMAIN "knot-peripheral"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	#include "peripheral.nrf52840"

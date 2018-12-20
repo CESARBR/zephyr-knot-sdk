@@ -18,7 +18,7 @@ static struct storage_app_settings app_settings;/* Storage helper struct */
 
 int8_t storage_init(void)
 {
-	NET_DBG("Initializing mock storage");
+	LOG_DBG("Initializing mock storage");
 
 #if 1
 	/* New device testing */
@@ -35,7 +35,7 @@ int8_t storage_init(void)
 
 int8_t storage_reset(void)
 {
-	NET_DBG("Reseting mock storage");
+	LOG_DBG("Reseting mock storage");
 
 	memset(&app_settings, 0, sizeof(struct storage_app_settings));
 

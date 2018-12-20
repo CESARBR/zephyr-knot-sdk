@@ -8,12 +8,9 @@
 
 /* KNoT State Machine */
 
-#define SYS_LOG_DOMAIN "knot"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
-
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <logging/log.h>
 #include <misc/reboot.h>
 
 #include "knot_protocol.h"
@@ -22,6 +19,8 @@
 #include "sm.h"
 #include "storage.h"
 #include "peripheral.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 #define TIMEOUT_WIN				3 /* 3 sec */
 
@@ -52,7 +51,7 @@ static void timer_expired(struct k_timer *to)
 {
 	to_xpr = true;
 	to_on = false;
-	NET_WARN("Timeout expired!");
+	LOG_WRN("Timeout expired!");
 }
 
 static bool cmp_opcode(const u8_t xpt_opcode, const u8_t *ipdu, size_t ilen)
@@ -162,7 +161,7 @@ static enum sm_state state_auth(u8_t *xpt_opcode,
 	}
 
 	/* Credentials are only saved on NVM after all the schemas are sent */
-	NET_INFO("Successfully authenticated!");
+	LOG_INF("Successfully authenticated!");
 	next =  STATE_ONLINE;
 
 done:
@@ -201,7 +200,7 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 		if (imsg->action.result != 0)
 			goto send;
 
-		NET_DBG("Setting credentials!");
+		LOG_DBG("Setting credentials!");
 		app_settings.device_id 	= device_id;
 		memcpy(app_settings.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);
 		memcpy(app_settings.token, token, KNOT_PROTOCOL_TOKEN_LEN);
@@ -213,9 +212,9 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 			goto done;
 		}
 
-		NET_INFO("Successfully registered!");
-		NET_INFO("UUID: %s", uuid);
-		NET_INFO("token: %s", token);
+		LOG_INF("Successfully registered!");
+		LOG_INF("UUID: %s", uuid);
+		LOG_INF("token: %s", token);
 
 		next = STATE_ONLINE;
 	default:
@@ -235,7 +234,7 @@ send:
 		end = ((id_index == last_id) ? true : false);
 		*xpt_opcode = (end ? KNOT_MSG_SCHM_END_RSP :
 				     KNOT_MSG_SCHM_FRAG_RSP);
-		NET_DBG("Creating schema message");
+		LOG_DBG("Creating schema message");
 		*len = msg_create_schema(omsg, id_index, schema, end);
 		break;
 	}
@@ -268,7 +267,7 @@ static size_t process_event(u8_t *xpt_opcode,
 	 * and send data of the next sensor.
 	 */
 	if (to_xpr || imsg->action.result != 0)
-		NET_ERR("FAIL SEND FOR ID: %d", id_index);
+		LOG_ERR("FAIL SEND FOR ID: %d", id_index);
 	else
 		proxy_confirm_sent(id_index);
 
@@ -322,7 +321,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_REQ,
 					       KNOT_ERR_INVALID);
-			NET_WARN("Invalid Id!");
+			LOG_WRN("Invalid Id!");
 			break;
 		}
 
@@ -336,7 +335,7 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_REQ,
 					       KNOT_ERR_INVALID);
-			NET_WARN("Can't read requested value");
+			LOG_WRN("Can't read requested value");
 			break;
 		}
 
@@ -402,7 +401,7 @@ int sm_start(void)
 {
 	int8_t err;
 
-	NET_DBG("SM: Start");
+	LOG_DBG("SM: Start");
 
 	state = STATE_AUTH; /* Initial state */
 
@@ -438,7 +437,7 @@ done:
 
 void sm_stop(void)
 {
-	NET_DBG("SM: Stop");
+	LOG_DBG("SM: Stop");
 	if (to_on)
 		k_timer_stop(&to);
 
@@ -447,7 +446,7 @@ void sm_stop(void)
 
 void sm_init(void)
 {
-	NET_DBG("SM: Init");
+	LOG_DBG("SM: Init");
 
 	k_timer_init(&to, timer_expired, NULL);
 
@@ -470,7 +469,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	/* TODO: Consider current state before reseting */
 	if (reset) {
 		/* TODO: Unregister before reseting */
-		NET_INFO("Reseting system...");
+		LOG_INF("Reseting system...");
 		storage_reset();
 		#if !CONFIG_BOARD_QEMU_X86
 			sys_reboot(SYS_REBOOT_WARM);
@@ -490,7 +489,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			k_timer_stop(&to);
 			to_on = false;
 			to_xpr = false;
-			NET_DBG("Got expected resp");
+			LOG_DBG("Got expected resp");
 
 
 		} else if (wl_opcode(state, ipdu, ilen) == false)
@@ -517,7 +516,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		next = state_online(&xpt_opcode, ipdu, ilen, opdu, olen, &len);
 		break;
 	default:
-		NET_ERR("ERROR");
+		LOG_ERR("ERROR");
 		next = STATE_ERROR;
 		break;
 	}
@@ -547,7 +546,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 			k_timer_stop(&to);
 			to_on = false;
 			to_xpr = false;
-			NET_DBG("Timer off");
+			LOG_DBG("Timer off");
 		}
 		goto done;
 	}
@@ -557,7 +556,7 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 		k_timer_start(&to, K_SECONDS(TIMEOUT_WIN), 0);
 		to_on = true;
 		to_xpr = false;
-		NET_DBG("Timer on");
+		LOG_DBG("Timer on");
 		goto done;
 	}
 done:

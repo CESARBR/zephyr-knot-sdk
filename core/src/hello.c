@@ -11,16 +11,16 @@
  * The client sends sensor data encapsulated using KNoT netcol.
  */
 
-#define SYS_LOG_DOMAIN "knot-hello"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
 
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <logging/log.h>
 
 #include "knot.h"
 #include "knot_types.h"
 #include "knot_protocol.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 /* Tracked values */
 static int thermo = 0;
@@ -69,7 +69,7 @@ static void changed_thermo(struct knot_proxy *proxy)
 	id = knot_proxy_get_id(proxy);
 	knot_proxy_value_get_basic(proxy, &thermo);
 
-	NET_INFO("Value for thermo with id %u changed to %d", id, thermo);
+	LOG_INF("Value for thermo with id %u changed to %d", id, thermo);
 }
 
 static void poll_thermo(struct knot_proxy *proxy)
@@ -86,14 +86,14 @@ static void poll_thermo(struct knot_proxy *proxy)
 
 	/* Notify if sent */
 	if (res)
-		NET_INFO("Sending value %d for thermo with id %u", thermo, id);
+		LOG_INF("Sending value %d for thermo with id %u", thermo, id);
 
 }
 
 static void changed_led(struct knot_proxy *proxy)
 {
 	knot_proxy_value_get_basic(proxy, &led);
-	NET_INFO("Value for led changed to %d", led);
+	LOG_INF("Value for led changed to %d", led);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
@@ -109,9 +109,9 @@ static void poll_led(struct knot_proxy *proxy)
 	/* Notify if sent */
 	if (res) {
 		if (led)
-			NET_INFO("Sending value true for led");
+			LOG_INF("Sending value true for led");
 		else
-			NET_INFO("Sending value false for led");
+			LOG_INF("Sending value false for led");
 	}
 }
 
@@ -120,7 +120,7 @@ static void plate_changed(struct knot_proxy *proxy)
 	int len;
 
 	if (knot_proxy_value_get_string(proxy, plate, sizeof(plate), &len))
-		NET_INFO("Plate changed %s", plate);
+		LOG_INF("Plate changed %s", plate);
 }
 
 static void random_plate(struct knot_proxy *proxy)
@@ -140,7 +140,7 @@ static void random_plate(struct knot_proxy *proxy)
 
 	/* Notify if sent */
 	if (res)
-		NET_INFO("Sent plate %s", plate);
+		LOG_INF("Sent plate %s", plate);
 }
 
 void setup(void)
@@ -151,30 +151,30 @@ void setup(void)
 	if (knot_proxy_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
 		      changed_thermo, poll_thermo) == NULL) {
-		NET_ERR("THERMO_0 failed to register");
+		LOG_ERR("THERMO_0 failed to register");
 	}
 	success = knot_proxy_set_config(0,
 					KNOT_EVT_FLAG_TIME, 5,
 					KNOT_EVT_FLAG_UPPER_THRESHOLD,
 					high_temp, NULL);
 	if (!success)
-		NET_ERR("THERMO failed to configure");
+		LOG_ERR("THERMO failed to configure");
 
 	/* BUTTON - Sent after change */
 	if (knot_proxy_register(1, "LED", KNOT_TYPE_ID_SWITCH,
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
 		      changed_led, poll_led) == NULL) {
-		NET_ERR("LED failed to register");
+		LOG_ERR("LED failed to register");
 	}
 	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
 	if (!success)
-		NET_ERR("LED failed to configure");
+		LOG_ERR("LED failed to configure");
 
 	/* PLATE - Will fail to configure */
 	if (knot_proxy_register(2, "PLATE", KNOT_TYPE_ID_NONE,
 		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
 		      plate_changed, random_plate) == NULL) {
-		NET_ERR("PLATE failed to register");
+		LOG_ERR("PLATE failed to register");
 	}
 	/* Limit flag added for raw type variable for testing purposes */
 	success = knot_proxy_set_config(2,
@@ -182,7 +182,7 @@ void setup(void)
 				   KNOT_EVT_FLAG_UPPER_THRESHOLD, plate_upper,
 				   NULL);
 	if (!success)
-		NET_ERR("PLATE failed to configure");
+		LOG_ERR("PLATE failed to configure");
 
 	/* Peripherals control */
 #if CONFIG_BOARD_NRF52840_PCA10056

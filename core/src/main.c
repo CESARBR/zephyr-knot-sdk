@@ -11,24 +11,22 @@
  * The client sends sensor data encapsulated using KNoT protocol.
  */
 
-#define SYS_LOG_DOMAIN "knot"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
-
 #include <zephyr.h>
 #include <net/net_core.h>
 #include <net/net_app.h>
+#include <logging/log.h>
 
 #include "proto.h"
 #include "net.h"
 
+LOG_MODULE_REGISTER(knot, LOG_LEVEL_DBG);
 K_PIPE_DEFINE(p2n_pipe, 128, 4);
 K_PIPE_DEFINE(n2p_pipe, 128, 4);
 static struct k_sem quit_lock;
 
 void main(void)
 {
-	NET_DBG("*** Welcome to KNoT! %s\n", CONFIG_ARCH);
+	LOG_DBG("*** Welcome to KNoT! %s\n", CONFIG_ARCH);
 
 	k_sem_init(&quit_lock, 0, UINT_MAX);
 

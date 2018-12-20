@@ -4,12 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define SYS_LOG_DOMAIN "knot-hello"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
-
 #include <zephyr.h>
 #include <net/net_core.h>
+#include <logging/log.h>
 
 #include <string.h>
 #include <limits.h>
@@ -19,6 +16,8 @@
 #include "msg.h"
 #include "proxy.h"
 #include "knot.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 

@@ -11,17 +11,16 @@
  * The client sends sensor data encapsulated using KNoT netcol.
  */
 
-#define SYS_LOG_DOMAIN "knot"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
-
 #include <zephyr.h>
 #include <net/net_core.h>
 #include <net/net_pkt.h>
 #include <net/buf.h>
+#include <logging/log.h>
 
 #include "net.h"
 #include "tcp6.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
@@ -52,7 +51,7 @@ static bool recv_cb(struct net_buf *netbuf)
 	while (frag) {
 		/* Data comming from network */
 		if ((olen + frag->len) > sizeof(opdu)) {
-			NET_ERR("Small MTU");
+			LOG_ERR("Small MTU");
 			return true;
 		}
 
@@ -74,7 +73,7 @@ static void connection_start(void)
 
 	ret = tcp6_start(recv_cb, close_cb);
 	if (ret < 0) {
-		NET_DBG("NET: TCP start failure");
+		LOG_DBG("NET: TCP start failure");
 		tcp6_stop();
 		return;
 	}
@@ -114,7 +113,7 @@ done:
 
 int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
 {
-	NET_DBG("NET: Start");
+	LOG_DBG("NET: Start");
 
 	proto2net = p2n;
 	net2proto = n2p;
@@ -130,5 +129,5 @@ int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
 
 void net_stop(void)
 {
-	NET_DBG("NET: Stop");
+	LOG_DBG("NET: Stop");
 }

@@ -11,9 +11,6 @@
  * The client sends sensor data encapsulated using KNoT protocol.
  */
 
-#define SYS_LOG_DOMAIN "knot"
-#define NET_SYS_LOG_LEVEL SYS_LOG_LEVEL_DEBUG
-#define NET_LOG_ENABLED 1
 
 #if (!defined(CONFIG_X86) && !defined(CONFIG_CPU_CORTEX_M4))
 	#warning "Floating point services are currently available only for boards \
@@ -23,12 +20,15 @@
 #include <zephyr.h>
 #include <net/net_core.h>
 #include <net/buf.h>
+#include <logging/log.h>
 
 #include "knot.h"
 #include "sm.h"
 #include "proto.h"
 #include "storage.h"
 #include "peripheral.h"
+
+LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
@@ -65,10 +65,10 @@ static void proto_thread(void)
 	int ret;
 
 	/* Initializing KNoT storage */
-	NET_DBG("Initializing storage module");
+	LOG_DBG("Initializing storage module");
 	ret = storage_init();
 	if (ret < 0) {
-		NET_ERR("Storage init failed!");
+		LOG_ERR("Storage init failed!");
 		return;
 	}
 
@@ -111,7 +111,7 @@ done:
 
 int proto_start(struct k_pipe *p2n, struct k_pipe *n2p)
 {
-	NET_DBG("PROTO: Start");
+	LOG_DBG("PROTO: Start");
 
 	proto2net = p2n;
 	net2proto = n2p;
@@ -126,5 +126,5 @@ int proto_start(struct k_pipe *p2n, struct k_pipe *n2p)
 
 void proto_stop(void)
 {
-	NET_DBG("PROTO: Stop");
+	LOG_DBG("PROTO: Stop");
 }
