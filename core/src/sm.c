@@ -418,12 +418,15 @@ int sm_start(void)
 		device_id = sys_rand32_get();
 		device_id *= device_id;
 		state = STATE_REG;
+		LOG_DBG("STATE: REG");
 		goto done;
 	}
+
 
 	device_id = app_settings.device_id;
 	memcpy(uuid, app_settings.uuid, KNOT_PROTOCOL_UUID_LEN);
 	memcpy(token, app_settings.token, KNOT_PROTOCOL_TOKEN_LEN);
+	LOG_DBG("STATE: AUTH");
 
 done:
 	/* Initially disconnected */
@@ -457,6 +460,7 @@ void sm_init(void)
 int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 {
 	enum sm_state next;
+	s64_t status_blink_period;
 	size_t len = 0;
 	bool reset;
 
@@ -525,19 +529,30 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	if (next != state) {
 		xpt_opcode = 0xff;
 
+		status_blink_period = STATUS_DISCONN_PERIOD;
+
 		switch (next) {
 		case STATE_REG:
+			LOG_DBG("STATE: REG");
+			break;
 		case STATE_AUTH:
+			LOG_DBG("STATE: AUTH");
+			break;
 		case STATE_SCH:
-			peripheral_set_status_period(STATUS_DISCONN_PERIOD);
+			LOG_DBG("STATE: SCH");
 			break;
 		case STATE_ONLINE:
-			peripheral_set_status_period(STATUS_CONN_PERIOD);
+			LOG_DBG("STATE: ONLINE");
+			status_blink_period = STATUS_CONN_PERIOD;
 			break;
 		default:
-			peripheral_set_status_period(STATUS_ERROR_PERIOD);
+			LOG_DBG("STATE: ERROR");
+			status_blink_period = STATUS_ERROR_PERIOD;
 			break;
 		}
+
+		peripheral_set_status_period(status_blink_period);
+
 	}
 
 	/* Not waiting response: Stop timer */
