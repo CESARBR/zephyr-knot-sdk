@@ -35,11 +35,10 @@ static int plate_upper = 99999;
  */
 #if CONFIG_BOARD_NRF52840_PCA10056
 #include <device.h>
-#include <board.h>
 #include <gpio.h>
-#define GPIO_PORT		SW0_GPIO_NAME /* General GPIO Controller */
-#define BUTTON_PIN		SW0_GPIO_PIN /* User button */
-#define LED_PIN			LED0_GPIO_PIN /* User button */
+#define GPIO_PORT		SW0_GPIO_CONTROLLER /* General GPIO Controller */
+#define BUTTON_PIN		DT_GPIO_KEYS_SW0_GPIO_PIN /* User button */
+#define LED_PIN			13 /* User button */
 
 static struct device *gpiob;		/* GPIO device */
 static struct gpio_callback button_cb; /* Button pressed callback */

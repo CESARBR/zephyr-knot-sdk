@@ -7,7 +7,7 @@
  */
 
 /* General GPIO Controller */
-#define GPIO_PORT		SW0_GPIO_NAME
+#define GPIO_PORT		SW0_GPIO_CONTROLLER
 
 /* Reset flash controller */
 #define RST_FLASH_PIN		SW3_GPIO_PIN

@@ -22,7 +22,7 @@ static struct nvs_fs knot_fs = {
 
 int8_t storage_init(void)
 {
-	return nvs_init(&knot_fs, FLASH_DEV_NAME);
+	return nvs_init(&knot_fs, DT_FLASH_DEV_NAME);
 }
 
 int8_t storage_reset(void)

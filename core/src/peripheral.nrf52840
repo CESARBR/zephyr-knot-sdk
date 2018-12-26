@@ -13,7 +13,6 @@
  * control buttons and status leds.
  */
 
-#include <board.h>
 #include <device.h>
 #include <gpio.h>
 
