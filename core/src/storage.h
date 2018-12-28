@@ -8,14 +8,30 @@
 
 #include "knot_protocol.h"
 
+#define STORAGE_NET_NAME_LEN 16
+#define STORAGE_XPANID_LEN 23
+#define STORAGE_MASTERKEY_LEN 47
+#define STORAGE_PEER_IPV6_LEN 39
+
 struct storage_app_settings {
 	uint64_t device_id;
 	char uuid[KNOT_PROTOCOL_UUID_LEN];
 	char token[KNOT_PROTOCOL_TOKEN_LEN];
 };
 
+struct storage_pan_settings {
+	bool need_config;			// PAN info needs settings
+	uint16_t pan_id;			// OpenThread PAN Id
+	uint16_t channel;			// OpenThread channel
+	char net_name[STORAGE_NET_NAME_LEN];	// OpenThread net name
+	char xpanid[STORAGE_XPANID_LEN];	// OpenThread expanded PAN Id
+	char masterkey[STORAGE_MASTERKEY_LEN];	// OpenThread master key
+	char peer_ipv6[STORAGE_PEER_IPV6_LEN];	// OpenThread peer's ipv6
+};
+
 enum storage_key {
-	STORAGE_APP_SETTINGS_KEY = 0xFFFF	/* App related settings */
+	STORAGE_APP_SETTINGS_KEY     = 0xFFFF,	/* App related settings */
+	STORAGE_PAN_SETTINGS_KEY     = 0xFFFE,	/* PAN related settings */
 };
 
 /**

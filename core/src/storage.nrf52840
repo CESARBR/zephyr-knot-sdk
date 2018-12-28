@@ -31,18 +31,25 @@ int8_t storage_reset(void)
 	return nvs_delete(&knot_fs, STORAGE_APP_SETTINGS_KEY);
 }
 
+static ssize_t get_item_size(enum storage_key key) {
+	switch (key) {
+	case STORAGE_APP_SETTINGS_KEY:
+		return sizeof(struct storage_app_settings);
+	case STORAGE_PAN_SETTINGS_KEY:
+		return sizeof(struct storage_pan_settings);
+	default:
+		return -1;
+	}
+}
+
 int8_t storage_get(enum storage_key key, u8_t *value)
 {
 	ssize_t len;
 	ssize_t read_len;
 
-	switch (key) {
-	case STORAGE_APP_SETTINGS_KEY:
-		len = sizeof(struct storage_app_settings);
-		break;
-	default:
+	len = get_item_size(key);
+	if (len <= 0)
 		return -1;
-	}
 
 	read_len = nvs_read(&knot_fs, key, value, len);
 
@@ -55,15 +62,11 @@ int8_t storage_get(enum storage_key key, u8_t *value)
 
 int8_t storage_set(enum storage_key key, const u8_t *value)
 {
-	size_t len;
+	ssize_t len;
 
-	switch (key) {
-	case STORAGE_APP_SETTINGS_KEY:
-		len = sizeof(struct storage_app_settings);
-		break;
-	default:
+	len = get_item_size(key);
+	if (len <= 0)
 		return -1;
-	}
 
 	return nvs_write(&knot_fs, key, value, len);
 }
