@@ -6,67 +6,129 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <nvs/nvs.h>
-#include <string.h>
+#include <settings/settings.h>
 
-/* Using first two pages of Flash's storage sector */
-#define NVS_SECTOR_SIZE 	FLASH_ERASE_BLOCK_SIZE
-#define NVS_STORAGE_OFFSET 	FLASH_AREA_STORAGE_OFFSET
-#define NVS_SECTOR_COUNT 	2
+/* Storage path identifiers */
+#define KNOT_SETTINGS_NAME	"knot"
+#define PATH_SEPARATOR		"/"
 
-static struct nvs_fs knot_fs = {
-	.sector_size = NVS_SECTOR_SIZE,
-	.sector_count = NVS_SECTOR_COUNT,
-	.offset = NVS_STORAGE_OFFSET,
+#define CREDENTIALS_KEY		"cred"
+#define LOAD_CREDENTIALS_KEY	CREDENTIALS_KEY
+#define SAVE_CREDENTIALS_KEY	KNOT_SETTINGS_NAME PATH_SEPARATOR CREDENTIALS_KEY
+
+static struct storage_app_settings cred; /* Struct buffer */
+static const struct storage_app_settings empty_cred; /* Empty buffer */
+
+static bool cred_loaded; /* Loaded values flags */
+
+static int set(int argc, char **argv, void *value_ctx)
+{
+	int len;
+	int rc;
+
+	if (argc != 1)
+		return -ENOENT;
+
+	/* Ignore invalid key */
+	if (strcmp(argv[0], LOAD_CREDENTIALS_KEY)) {
+		/* Unknown parameter */
+		return -ENOENT;
+	}
+
+	/* Get values from storage */
+	len = sizeof(cred);
+	rc = settings_val_read_cb(value_ctx, &cred, len);
+
+	/* Read failed */
+	if (rc < 0){
+		cred_loaded = false;
+		return rc;
+	}
+
+	/* Check if empty */
+	if (memcmp(&cred, &empty_cred, len))
+		cred_loaded = true;
+	else
+		cred_loaded = false;
+
+
+	return 0;
+}
+
+static int commit(void)
+{
+	if (cred_loaded)
+		LOG_DBG("KNoT credentials found");
+	else
+		LOG_DBG("KNoT credentials not found");
+
+	return 0;
+}
+
+static struct settings_handler cred_handler = {
+	.name = KNOT_SETTINGS_NAME,
+	.h_set = set,
+	.h_commit = commit,
 };
 
 int8_t storage_init(void)
 {
-	return nvs_init(&knot_fs, DT_FLASH_DEV_NAME);
+	int err;
+
+	cred_loaded = false;
+
+	LOG_DBG("Initializing Storage Settings");
+	err = settings_subsys_init();
+	if (err) {
+		LOG_ERR("Settings subsys init failed (err %d)", err);
+		return err;
+	}
+
+	LOG_DBG("Register settings handler");
+	err = settings_register(&cred_handler);
+	if (err) {
+		LOG_ERR("Settings register failed (err %d)", err);
+		return err;
+	}
+
+	LOG_DBG("Loading stored credentials");
+	err = settings_load();
+	if (err) {
+		LOG_ERR("Settings load failed (err %d)", err);
+		return err;
+	}
+
+	return 0;
 }
 
 int8_t storage_reset(void)
 {
 	/* Clear app credentials */
-	return nvs_delete(&knot_fs, STORAGE_APP_SETTINGS_KEY);
+	return storage_set(&empty_cred);
 }
 
-static ssize_t get_item_size(enum storage_key key) {
-	switch (key) {
-	case STORAGE_APP_SETTINGS_KEY:
-		return sizeof(struct storage_app_settings);
-	case STORAGE_PAN_SETTINGS_KEY:
-		return sizeof(struct storage_pan_settings);
-	default:
-		return -1;
-	}
-}
-
-int8_t storage_get(enum storage_key key, u8_t *value)
+int8_t storage_get(struct storage_app_settings *dest)
 {
-	ssize_t len;
-	ssize_t read_len;
+	if (!cred_loaded)
+		return -ESRCH; // Item not stored
 
-	len = get_item_size(key);
-	if (len <= 0)
-		return -1;
-
-	read_len = nvs_read(&knot_fs, key, value, len);
-
-	if (read_len != len)
-		return -EINVAL;
-
-	/* Successful read */
+	/* Write value on destination */
+	memcpy(dest, &cred, sizeof(cred));
 	return 0;
 }
 
-int8_t storage_set(enum storage_key key, const u8_t *value)
+int8_t storage_set(const struct storage_app_settings *src)
 {
-	ssize_t len;
+	int len = sizeof(cred);
 
-	len = get_item_size(key);
-	if (len <= 0)
-		return -1;
+	/* Cast to (void *) due to lack of const identifier on value argument */
+	int err = settings_save_one(SAVE_CREDENTIALS_KEY, (void *) src, len);
+	if (err) {
+		LOG_ERR("Credentials not saved");
+		return err;
+	}
 
-	return nvs_write(&knot_fs, key, value, len);
+	memcpy(&cred, src, len);
+	cred_loaded = true;
+	return 0;
 }

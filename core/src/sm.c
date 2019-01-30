@@ -205,9 +205,9 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 		memcpy(app_settings.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);
 		memcpy(app_settings.token, token, KNOT_PROTOCOL_TOKEN_LEN);
 
-		res = storage_set(STORAGE_APP_SETTINGS_KEY,
-				  (const u8_t *) &app_settings);
-		if (res <= 0) {
+		res = storage_set(&app_settings);
+		if (res) {
+			LOG_ERR("Failed to set KNoT credentials");
 			next = STATE_ERROR;
 			goto done;
 		}
@@ -413,8 +413,9 @@ int sm_start(void)
 	 * 'app-settings' stored properly at NVM means that UUID, Token and id
 	 * are available.
 	 */
-	err = storage_get(STORAGE_APP_SETTINGS_KEY, (u8_t *) &app_settings);
+	err = storage_get(&app_settings);
 	if (err < 0) {
+		LOG_INF("KNoT credentials not found");
 		device_id = sys_rand32_get();
 		device_id *= device_id;
 		state = STATE_REG;
@@ -422,7 +423,7 @@ int sm_start(void)
 		goto done;
 	}
 
-
+	LOG_INF("KNoT credentials found");
 	device_id = app_settings.device_id;
 	memcpy(uuid, app_settings.uuid, KNOT_PROTOCOL_UUID_LEN);
 	memcpy(token, app_settings.token, KNOT_PROTOCOL_TOKEN_LEN);

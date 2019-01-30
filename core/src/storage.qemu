@@ -42,37 +42,18 @@ int8_t storage_reset(void)
 	return 0;
 }
 
-int8_t storage_get(enum storage_key key, u8_t *value)
+int8_t storage_get(struct storage_app_settings *dest)
 {
-	switch (key) {
-	case STORAGE_APP_SETTINGS_KEY:
-		if (!strlen(app_settings.uuid) || !strlen(app_settings.token))
-			goto err;
+	if (!strlen(app_settings.uuid) || !strlen(app_settings.token))
+		return -ENOENT;
 
-		memcpy(value, &app_settings,
-		       sizeof(struct storage_app_settings));
-		break;
-	default:
-		goto err;
-	}
+	memcpy(dest, &app_settings, sizeof(struct storage_app_settings));
 
 	return 0;
-
-err:
-	return -ENOENT;
 }
 
-int8_t storage_set(enum storage_key key, const u8_t *value)
+int8_t storage_set(const struct storage_app_settings *src);
 {
-
-	switch (key) {
-	case STORAGE_APP_SETTINGS_KEY:
-		memcpy(&app_settings, value,
-		       sizeof(struct storage_app_settings));
-		break;
-	default:
-		return -1;
-	}
-
+	memcpy(&app_settings, src, sizeof(struct storage_app_settings));
 	return 0;
 }
