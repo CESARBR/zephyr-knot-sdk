@@ -1,0 +1,15 @@
+mainmenu "KNoT sample application"
+
+menu "KNoT Thing"
+
+config KNOT_NAME
+	string "KNoT device name"
+	default "knot"
+
+config KNOT_THING_DATA_MAX
+	int "Max number of KNoT items (sensors)"
+	default 5
+
+endmenu
+
+source "Kconfig.zephyr"
