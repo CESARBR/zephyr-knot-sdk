@@ -18,14 +18,21 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
+#include <settings/settings_ot.h>
+
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
 
+#include "bt_srv.h"
+
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
+/* Advertise OpenThread Settings Service */
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0x0a, 0x18),
+	BT_DATA_BYTES(BT_DATA_UUID128_ALL,
+		      0x30, 0x0d, 0x90, 0xb4, 0x7b, 0x81, 0xec, 0x9b,
+	              0x41, 0xd4, 0x9a, 0xaa, 0x9c, 0xe4, 0xa9, 0xa8),
 };
 
 static void connected(struct bt_conn *conn, u8_t err)
@@ -50,6 +57,13 @@ static struct bt_conn_cb conn_callbacks = {
 int bt_srv_init(void)
 {
 	int err;
+
+	/* OT Settings storage system */
+	err = settings_ot_init();
+	if (err) {
+		LOG_ERR("Settings OT init failed (err %d)", err);
+		return err;
+	}
 
 	err = bt_enable(NULL);
 	if (err) {
