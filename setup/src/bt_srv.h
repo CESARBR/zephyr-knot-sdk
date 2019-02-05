@@ -1,4 +1,4 @@
-/* main.c - KNoT Setup main entry point */
+/* bt_services_init.h - Bluetooth services handler */
 /*
  * Copyright (c) 2019, CESAR. All rights reserved.
  *
@@ -15,24 +15,4 @@
  * limitations under the License.
  */
 
-#include <zephyr.h>
-#include <logging/log.h>
-
-#include "bt_srv.h"
-
-LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
-
-void main(void)
-{
-	int err;
-
-	/* Setup Application */
-	LOG_DBG("Initializing Setup App");
-
-	/* Bluetooth services */
-	err = bt_srv_init();
-	if (err) {
-		LOG_ERR("Failed to initialize bluetooth");
-		return;
-	}
-}
+int bt_srv_init(void);
