@@ -16,9 +16,12 @@
  */
 
 #include <zephyr.h>
+#include <logging/log.h>
+
+LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
 
 void main(void)
 {
 	/* Setup Application */
-	printk("Initializing Setup App\n");
+	LOG_DBG("Initializing Setup App");
 }
