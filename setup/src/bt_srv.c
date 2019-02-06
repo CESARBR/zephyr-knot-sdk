@@ -24,13 +24,21 @@
 #include <bluetooth/conn.h>
 
 #include "bt_srv.h"
+#include "gatt_inet6.h"
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
-/* Advertise OpenThread Settings Service */
-static const struct bt_data ad[] = {
+/* Advertise Peer's IPV6 GATT service's UUID  */
+static const struct bt_data ad_inet6[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA_BYTES(BT_DATA_UUID128_ALL,
+	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
+		      0x70, 0x14, 0x1c, 0xbe, 0xdd, 0xe6, 0x5a, 0xb3,
+		      0x8b, 0x49, 0xb4, 0x5d, 0x83, 0x11, 0x60, 0x49),
+};
+
+/* Scan respond OpenThread Settings GATT service's UUID */
+static const struct bt_data scan_resp_ot[] = {
+	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
 		      0x30, 0x0d, 0x90, 0xb4, 0x7b, 0x81, 0xec, 0x9b,
 	              0x41, 0xd4, 0x9a, 0xaa, 0x9c, 0xe4, 0xa9, 0xa8),
 };
@@ -65,6 +73,13 @@ int bt_srv_init(void)
 		return err;
 	}
 
+	/* Peer's IPV6 GATT service */
+	err = gatt_inet6_init();
+	if (err) {
+		LOG_ERR("Peer's IPV6 Config GATT service init failed (err %d)", err);
+		return err;
+	}
+
 	err = bt_enable(NULL);
 	if (err) {
 		LOG_ERR("Bluetooth enable failed (err %d)", err);
@@ -74,7 +89,9 @@ int bt_srv_init(void)
 
 	bt_conn_cb_register(&conn_callbacks);
 
-	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
+	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
+			      ad_inet6, ARRAY_SIZE(ad_inet6),
+			      scan_resp_ot, ARRAY_SIZE(scan_resp_ot));
 	if (err) {
 		LOG_ERR("Advertising failed to start (err %d)", err);
 		return err;
