@@ -11,12 +11,16 @@ macro(set_conf_file)
   endif()
 endmacro()
 
+if (NOT DEFINED ENV{KNOT_BASE})
+    message(FATAL_ERROR "Source the KNoT shell initialize script!")
+endif()
+
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(NONE)
 
 FILE(GLOB app_sources src/*.c)
-FILE(GLOB core_sources ${APPLICATION_SOURCE_DIR}/../../core/src/*.c)
+FILE(GLOB core_sources $ENV{KNOT_BASE}/core/src/*.c)
 target_sources(app PRIVATE ${core_sources} ${app_sources})
-target_include_directories(app PRIVATE ${APPLICATION_SOURCE_DIR}/../../core/src)
+target_include_directories(app PRIVATE $ENV{KNOT_BASE}/core/src)
 
 include($ENV{ZEPHYR_BASE}/samples/net/common/common.cmake)
