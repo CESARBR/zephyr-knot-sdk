@@ -12,9 +12,9 @@
 #define KNOT_SETTINGS_NAME	"knot"
 #define PATH_SEPARATOR		"/"
 
-#define CREDENTIALS_KEY		"cred"
-#define LOAD_CREDENTIALS_KEY	CREDENTIALS_KEY
-#define SAVE_CREDENTIALS_KEY	KNOT_SETTINGS_NAME PATH_SEPARATOR CREDENTIALS_KEY
+#define CRED_KEY		"cred"
+#define LOAD_CREDENTIALS_KEY	CRED_KEY
+#define SAVE_CREDENTIALS_KEY	KNOT_SETTINGS_NAME PATH_SEPARATOR CRED_KEY
 
 static struct storage_app_settings cred; /* Struct buffer */
 static const struct storage_app_settings empty_cred; /* Empty buffer */
