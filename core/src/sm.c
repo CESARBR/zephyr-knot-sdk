@@ -35,7 +35,6 @@ static bool to_xpr;		/* Timeout expired */
 static char uuid[KNOT_PROTOCOL_UUID_LEN + 1];	/* Device uuid */
 static char token[KNOT_PROTOCOL_TOKEN_LEN + 1];	/* Device token */
 static u64_t device_id;				/* Device id */
-static struct storage_app_settings app_settings;/* Storage helper struct */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -178,7 +177,7 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 	const knot_schema *schema;
 	static u8_t id_index = 0;
 	u8_t last_id;
-	size_t res;
+	int res;
 	bool end;
 
 	*len = 0;
@@ -201,13 +200,27 @@ static enum sm_state state_schema(u8_t *xpt_opcode,
 			goto send;
 
 		LOG_DBG("Setting credentials!");
-		app_settings.device_id 	= device_id;
-		memcpy(app_settings.uuid, uuid, KNOT_PROTOCOL_UUID_LEN);
-		memcpy(app_settings.token, token, KNOT_PROTOCOL_TOKEN_LEN);
-
-		res = storage_set(&app_settings);
-		if (res) {
-			LOG_ERR("Failed to set KNoT credentials");
+		/* Save UUID */
+		res = storage_write(STORAGE_CRED_UUID,
+				    uuid, KNOT_PROTOCOL_UUID_LEN);
+		if (res != KNOT_PROTOCOL_UUID_LEN) {
+			LOG_ERR("Failed to set UUID");
+			next = STATE_ERROR;
+			goto done;
+		}
+		/* Save Token */
+		res = storage_write(STORAGE_CRED_TOKEN,
+				    token, KNOT_PROTOCOL_TOKEN_LEN);
+		if (res != KNOT_PROTOCOL_TOKEN_LEN) {
+			LOG_ERR("Failed to set Token");
+			next = STATE_ERROR;
+			goto done;
+		}
+		/* Device Id */
+		res = storage_write(STORAGE_CRED_DEVID,
+				    &device_id, sizeof(device_id));
+		if (res != sizeof(device_id)) {
+			LOG_ERR("Failed to set Device Id");
 			next = STATE_ERROR;
 			goto done;
 		}
@@ -399,7 +412,8 @@ static enum sm_state state_online(u8_t *xpt_opcode,
  */
 int sm_start(void)
 {
-	int8_t err;
+	int rc;
+	bool cred_available = true;
 
 	LOG_DBG("SM: Start");
 
@@ -410,24 +424,36 @@ int sm_start(void)
 	memset(token, 0, sizeof(token));
 
 	/*
-	 * 'app-settings' stored properly at NVM means that UUID, Token and id
-	 * are available.
+	 * Check if UUID, Token and id are available.
+	 * If not, create new credentials.
 	 */
-	err = storage_get(&app_settings);
-	if (err < 0) {
-		LOG_INF("KNoT credentials not found");
-		device_id = sys_rand32_get();
-		device_id *= device_id;
-		state = STATE_REG;
-		LOG_DBG("STATE: REG");
+	rc = storage_read(STORAGE_CRED_UUID,
+			  uuid, KNOT_PROTOCOL_UUID_LEN);
+	if (rc <= 0)
+		cred_available = false;
+
+	rc = storage_read(STORAGE_CRED_TOKEN,
+			  token, KNOT_PROTOCOL_TOKEN_LEN);
+	if (rc <= 0)
+		cred_available = false;
+
+	rc = storage_read(STORAGE_CRED_DEVID,
+			  &device_id, sizeof(device_id));
+	if (rc <= 0)
+		cred_available = false;
+
+	if (cred_available) {
+		LOG_INF("KNoT credentials found");
+		LOG_DBG("STATE: AUTH");
 		goto done;
 	}
 
-	LOG_INF("KNoT credentials found");
-	device_id = app_settings.device_id;
-	memcpy(uuid, app_settings.uuid, KNOT_PROTOCOL_UUID_LEN);
-	memcpy(token, app_settings.token, KNOT_PROTOCOL_TOKEN_LEN);
-	LOG_DBG("STATE: AUTH");
+	/* Go to register if no credentials found */
+	LOG_INF("KNoT credentials not found");
+	device_id = sys_rand32_get();
+	device_id *= device_id;
+	state = STATE_REG;
+	LOG_DBG("STATE: REG");
 
 done:
 	/* Initially disconnected */

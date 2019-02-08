@@ -6,18 +6,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "knot_protocol.h"
-
-struct storage_app_settings {
-	uint64_t device_id;
-	char uuid[KNOT_PROTOCOL_UUID_LEN];
-	char token[KNOT_PROTOCOL_TOKEN_LEN];
+/* Enum start values as 0 and count up */
+enum storage_keys {
+	STORAGE_CRED_UUID = 0,
+	STORAGE_CRED_TOKEN,
+	STORAGE_CRED_DEVID,
 };
 
-int8_t storage_init(void);
+int storage_init(void);
+int storage_reset(void);
 
-int8_t storage_reset(void);
-
-int8_t storage_get(struct storage_app_settings *dest);
-
-int8_t storage_set(const struct storage_app_settings *src);
+int storage_read(enum storage_keys key, void *dest, int len);
+int storage_write(enum storage_keys key, const void *src, int len);

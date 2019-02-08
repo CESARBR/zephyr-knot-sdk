@@ -9,55 +9,71 @@
 #include <settings/settings.h>
 
 /* Storage path identifiers */
-#define KNOT_SETTINGS_NAME	"knot"
-#define PATH_SEPARATOR		"/"
+#define NAMESPACE		"knot"
 
-#define CRED_KEY		"cred"
-#define LOAD_CREDENTIALS_KEY	CRED_KEY
-#define SAVE_CREDENTIALS_KEY	KNOT_SETTINGS_NAME PATH_SEPARATOR CRED_KEY
+#define UUID_KEY		"uuid"
+#define TOKEN_KEY		"token"
+#define DEVID_KEY		"devid"
 
-static struct storage_app_settings cred; /* Struct buffer */
-static const struct storage_app_settings empty_cred; /* Empty buffer */
+#define SAVE_UUID_KEY		NAMESPACE "/" UUID_KEY
+#define SAVE_TOKEN_KEY		NAMESPACE "/" TOKEN_KEY
+#define SAVE_DEVID_KEY		NAMESPACE "/" DEVID_KEY
 
-static bool cred_loaded; /* Loaded values flags */
+/* Buffer sizes */
+#define UUID_LEN	36
+#define TOKEN_LEN	40
+
+/* Buffers */
+static char uuid[UUID_LEN];	/* Device UUID */
+static char token[TOKEN_LEN];	/* Device Token */
+static uint64_t devid;		/* Device ID */
+
+struct key_fmt {
+	const char *save_key;	/* Settings name or key */
+	void *buffer;		/* Pointer to buffers */
+	size_t bsize;		/* Buffer size */
+	bool loaded;		/* Value loaded from storage */
+};
+
+/* Map with info of used buffers */
+static struct key_fmt buf_info[] = {
+	{ SAVE_UUID_KEY,	uuid,	sizeof(uuid),	false },
+	{ SAVE_TOKEN_KEY,	token,	sizeof(token),	false },
+	{ SAVE_DEVID_KEY,	&devid,	sizeof(devid),	false },
+};
 
 static int set(int argc, char **argv, void *value_ctx)
 {
-	int len;
+	struct key_fmt *fmt;
 	int rc;
 
 	if (argc != 1)
 		return -ENOENT;
 
-	/* Ignore invalid key */
-	if (strcmp(argv[0], LOAD_CREDENTIALS_KEY)) {
-		/* Unknown parameter */
+	/* Get keys */
+	if (!strcmp(argv[0], UUID_KEY))
+		fmt = &buf_info[STORAGE_CRED_UUID];
+	else if (!strcmp(argv[0], TOKEN_KEY))
+		fmt = &buf_info[STORAGE_CRED_TOKEN];
+	else if (!strcmp(argv[0], DEVID_KEY))
+		fmt = &buf_info[STORAGE_CRED_DEVID];
+	else /* Ignore invalid key */
 		return -ENOENT;
-	}
 
 	/* Get values from storage */
-	len = sizeof(cred);
-	rc = settings_val_read_cb(value_ctx, &cred, len);
+	rc = settings_val_read_cb(value_ctx, fmt->buffer, fmt->bsize);
 
-	/* Read failed */
-	if (rc < 0){
-		cred_loaded = false;
-		return rc;
-	}
+	/* Sign if value was loaded or not */
+	fmt->loaded = (rc < 0) ? false : true ;
 
-	/* Check if empty */
-	if (memcmp(&cred, &empty_cred, len))
-		cred_loaded = true;
-	else
-		cred_loaded = false;
-
-
-	return 0;
+	return rc;
 }
 
 static int commit(void)
 {
-	if (cred_loaded)
+	if (buf_info[STORAGE_CRED_UUID].loaded &&
+	    buf_info[STORAGE_CRED_TOKEN].loaded &&
+	    buf_info[STORAGE_CRED_DEVID].loaded )
 		LOG_DBG("KNoT credentials found");
 	else
 		LOG_DBG("KNoT credentials not found");
@@ -65,17 +81,15 @@ static int commit(void)
 	return 0;
 }
 
-static struct settings_handler cred_handler = {
-	.name = KNOT_SETTINGS_NAME,
+static struct settings_handler handler = {
+	.name = NAMESPACE,
 	.h_set = set,
 	.h_commit = commit,
 };
 
-int8_t storage_init(void)
+int storage_init(void)
 {
 	int err;
-
-	cred_loaded = false;
 
 	LOG_DBG("Initializing Storage Settings");
 	err = settings_subsys_init();
@@ -85,13 +99,13 @@ int8_t storage_init(void)
 	}
 
 	LOG_DBG("Register settings handler");
-	err = settings_register(&cred_handler);
+	err = settings_register(&handler);
 	if (err) {
 		LOG_ERR("Settings register failed (err %d)", err);
 		return err;
 	}
 
-	LOG_DBG("Loading stored credentials");
+	LOG_DBG("Loading stored values");
 	err = settings_load();
 	if (err) {
 		LOG_ERR("Settings load failed (err %d)", err);
@@ -101,34 +115,85 @@ int8_t storage_init(void)
 	return 0;
 }
 
-int8_t storage_reset(void)
+static int clear_value(enum storage_keys key)
 {
+	const char *save_key;
+	int rc;
+
+	save_key = buf_info[key].save_key;
+
+	rc = settings_delete(save_key);
+	if (rc)
+		LOG_ERR("Deleting key \"%s\" failed (err %d)", save_key, rc);
+
+	return rc;
+}
+
+int storage_reset(void)
+{
+	int rc;
+
 	/* Clear app credentials */
-	return storage_set(&empty_cred);
+	rc = clear_value(STORAGE_CRED_UUID);
+	if (rc)
+		return rc;
+
+	rc = clear_value(STORAGE_CRED_TOKEN);
+	if (rc)
+		return rc;
+
+	return clear_value(STORAGE_CRED_DEVID);
 }
 
-int8_t storage_get(struct storage_app_settings *dest)
+int storage_read(const enum storage_keys key, void *dest, int len)
 {
-	if (!cred_loaded)
-		return -ESRCH; // Item not stored
+	const struct key_fmt *fmt;
+	int olen;
 
-	/* Write value on destination */
-	memcpy(dest, &cred, sizeof(cred));
-	return 0;
+	if (key < 0 || key >= sizeof(buf_info))
+		return -EINVAL;
+
+	if (len <= 0)
+		return -EINVAL;
+
+	fmt = &buf_info[key];
+	if (fmt->loaded == false)
+		return -ENOENT;
+
+	/* Return buffer value */
+	olen = (len < fmt->bsize) ? len : fmt->bsize;
+	memcpy(dest, fmt->buffer, olen);
+
+	return olen;
 }
 
-int8_t storage_set(const struct storage_app_settings *src)
+int storage_write(enum storage_keys key, const void *src, const int len)
 {
-	int len = sizeof(cred);
+	struct key_fmt *fmt;
+	int err;
+	int olen;
 
+	if (key < 0 || key >= sizeof(buf_info))
+		return -EINVAL;
+
+	if (len <= 0)
+		return -EINVAL;
+
+	/* Store value */
 	/* Cast to (void *) due to lack of const identifier on value argument */
-	int err = settings_save_one(SAVE_CREDENTIALS_KEY, (void *) src, len);
+	fmt = &buf_info[key];
+	olen = (len < fmt->bsize) ? len : fmt->bsize;
+	err = settings_save_one(fmt->save_key, (void *) src, olen);
 	if (err) {
-		LOG_ERR("Credentials not saved");
+		LOG_ERR("Failed to save value for key \"%s\"", fmt->save_key);
 		return err;
 	}
 
-	memcpy(&cred, src, len);
-	cred_loaded = true;
-	return 0;
+	/* Save value to buffer */
+	memcpy(fmt->buffer, src, olen);
+
+	/* Set value as available */
+	fmt->loaded = true;
+
+	return olen;
 }
