@@ -13,7 +13,7 @@
 #include <logging/log.h>
 #include <misc/reboot.h>
 
-#include "knot_protocol.h"
+#include <knot/knot_protocol.h>
 #include "proxy.h"
 #include "msg.h"
 #include "sm.h"

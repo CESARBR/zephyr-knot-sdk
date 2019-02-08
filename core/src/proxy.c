@@ -11,8 +11,8 @@
 #include <string.h>
 #include <limits.h>
 
-#include "knot_protocol.h"
-#include "knot_types.h"
+#include <knot/knot_protocol.h>
+#include <knot/knot_types.h>
 #include "msg.h"
 #include "proxy.h"
 #include "knot.h"

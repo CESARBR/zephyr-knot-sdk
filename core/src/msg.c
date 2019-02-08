@@ -7,7 +7,7 @@
 #include <zephyr.h>
 #include <string.h>
 
-#include "knot_protocol.h"
+#include <knot/knot_protocol.h>
 
 #include "msg.h"
 

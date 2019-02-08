@@ -18,9 +18,9 @@ endif()
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(NONE)
 
+include($ENV{KNOT_BASE}/core/CMakeLists.txt)
+
 FILE(GLOB app_sources src/*.c)
-FILE(GLOB core_sources $ENV{KNOT_BASE}/core/src/*.c)
-target_sources(app PRIVATE ${core_sources} ${app_sources})
-target_include_directories(app PRIVATE $ENV{KNOT_BASE}/core/src)
+target_sources(app PRIVATE ${app_sources})
 
 include($ENV{ZEPHYR_BASE}/samples/net/common/common.cmake)
