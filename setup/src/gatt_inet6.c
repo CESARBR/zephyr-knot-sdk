@@ -7,6 +7,7 @@
  */
 
 #include <zephyr.h>
+#include <logging/log.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/gatt.h>
@@ -15,6 +16,8 @@
 
 /* Buffer len */
 #define PEER_IPV6_LEN 40
+
+LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
 static char peer_ipv6[PEER_IPV6_LEN];	// Peer's Ipv6
 
@@ -82,7 +85,7 @@ int gatt_inet6_init(void)
 	/* GATT service start */
 	err = bt_gatt_service_register(&config_svc);
 	if (err) {
-		printk("GATT service init failed (err %d)\n", err);
+		LOG_ERR("GATT service init failed (err %d)", err);
 		return err;
 	}
 
