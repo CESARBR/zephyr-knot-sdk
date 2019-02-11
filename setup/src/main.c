@@ -19,12 +19,33 @@
 #include <logging/log.h>
 
 #include "bt_srv.h"
+#include "peripheral.h"
 
 LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
 
 void main(void)
 {
 	int err;
+	int btn;
+
+	LOG_DBG("Selecting application to run");
+
+	/* Jump to main application if button pressed */
+	err = peripheral_init();
+	if (err)
+		LOG_ERR("Peripheral initialization failed");
+	btn = peripheral_btn_status();
+
+	switch (btn) {
+	case PERIPHERAL_BTN_NOT_PRESSED:
+		LOG_DBG("Setup button not pressed: Loading Main App");
+		for (;;) { /* TODO: Go to Main App */
+			LOG_WRN("Not going to Main App");
+			k_sleep(2000);
+		}
+	case PERIPHERAL_BTN_ERROR:
+		LOG_ERR("Button reading error!");
+	}
 
 	/* Setup Application */
 	LOG_DBG("Initializing Setup App");
