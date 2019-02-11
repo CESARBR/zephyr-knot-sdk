@@ -13,6 +13,7 @@
 #include <bluetooth/gatt.h>
 
 #include "gatt_inet6.h"
+#include "storage.h"
 
 /* Buffer len */
 #define PEER_IPV6_LEN 40
@@ -34,8 +35,14 @@ static ssize_t read_ipv6(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			 void *buf, u16_t len, u16_t offset)
 {
 	char *value = attr->user_data;
-	u16_t max_len = strlen(peer_ipv6);
+	u16_t max_len;
+	int rc;
 
+	rc = storage_read(STORAGE_PEER_IPV6, peer_ipv6, sizeof(peer_ipv6));
+	if (rc != sizeof(peer_ipv6))
+		return BT_GATT_ERR(BT_ATT_ERR_NOT_SUPPORTED);
+
+	max_len = strlen(peer_ipv6);
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, value, max_len);
 }
 
@@ -46,6 +53,7 @@ static ssize_t write_ipv6(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 	u8_t *value = attr->user_data;
 	u16_t max_len = sizeof(peer_ipv6) - 1;	// Last byte preserved for '\0'
 	static char build_peer_ipv6[PEER_IPV6_LEN]; // Peer's Ipv6 build buffer
+	int rc;
 
 	if (offset + len > max_len)
 		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
@@ -61,6 +69,10 @@ static ssize_t write_ipv6(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
 	/* Store value at "peer_ipv6", pointed as "value" */
 	memcpy(value, build_peer_ipv6, PEER_IPV6_LEN);
+	rc = storage_write(STORAGE_PEER_IPV6, build_peer_ipv6, PEER_IPV6_LEN);
+
+	if (rc != PEER_IPV6_LEN)
+		return BT_GATT_ERR(BT_ATT_ERR_NOT_SUPPORTED);
 
 	return len;
 }
@@ -81,6 +93,13 @@ static struct bt_gatt_service config_svc = BT_GATT_SERVICE(config_gatt_attrs);
 int gatt_inet6_init(void)
 {
 	int err;
+
+	/* Storage service start */
+	err = storage_init();
+	if (err) {
+		LOG_ERR("Storage service init failed (err %d)", err);
+		return err;
+	}
 
 	/* GATT service start */
 	err = bt_gatt_service_register(&config_svc);

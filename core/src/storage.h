@@ -11,6 +11,7 @@ enum storage_keys {
 	STORAGE_CRED_UUID = 0,
 	STORAGE_CRED_TOKEN,
 	STORAGE_CRED_DEVID,
+	STORAGE_PEER_IPV6,
 };
 
 int storage_init(void);
