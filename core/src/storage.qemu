@@ -12,49 +12,100 @@
  * To use with the nRF52840 board, use the storage.nrf52840 file.
  */
 
+/* Buffer sizes */
+#define UUID_LEN	36
+#define TOKEN_LEN	40
 
-/* Lens */
-static struct storage_app_settings app_settings;/* Storage helper struct */
+/* Buffers */
+static char uuid[UUID_LEN];	/* Device UUID */
+static char token[TOKEN_LEN];	/* Device Token */
+static uint64_t devid;		/* Device ID */
 
-int8_t storage_init(void)
+int storage_reset(void)
+{
+	LOG_DBG("Reseting mock storage");
+
+	memset(uuid, 0, sizeof(uuid));
+	memset(token, 0, sizeof(token));
+	memset(&devid, 0, sizeof(devid));
+
+	return 0;
+}
+
+int storage_init(void)
 {
 	LOG_DBG("Initializing mock storage");
 
 #if 1
 	/* New device testing */
-	memset(&app_settings, 0, sizeof(struct storage_app_settings));
+	storage_reset();
 #else
 	/* Set known credentials */
-	app_settings.device_id = 0xDEADBEEFFEEDBABE;
-	strcpy(app_settings.uuid, "0354ec44-826e-4269-8855-a666b1e40000");
-	strcpy(app_settings.token, "924c222bc1f2e7d8648b43fd8fada6b4152fa905");
+	devid = 0xDEADBEEFFEEDBABE;
+	memcpy(uuid,
+	       "0354ec44-826e-4269-8855-a666b1e40000", sizeof(uuid));
+	memcpy(token,
+	       "924c222bc1f2e7d8648b43fd8fada6b4152fa905", sizeof(token));
 #endif
 
 	return 0;
 }
 
-int8_t storage_reset(void)
+int storage_read(enum storage_keys key, void *dest, int len)
 {
-	LOG_DBG("Reseting mock storage");
+	int olen;
+	void *buf;
 
-	memset(&app_settings, 0, sizeof(struct storage_app_settings));
-
-	return 0;
-}
-
-int8_t storage_get(struct storage_app_settings *dest)
-{
-	if (!strlen(app_settings.uuid) || !strlen(app_settings.token))
+	if (!strlen(uuid) || !strlen(token))
 		return -ENOENT;
 
-	memcpy(dest, &app_settings, sizeof(struct storage_app_settings));
+	switch (key) {
+	case STORAGE_CRED_UUID:
+		olen = (len < sizeof(uuid)) ? len : sizeof(uuid);
+		buf = uuid;
+		break;
+	case STORAGE_CRED_TOKEN:
+		olen = (len < sizeof(token)) ? len : sizeof(token);
+		buf = token;
+		break;
+	case STORAGE_CRED_DEVID:
+		olen = (len < sizeof(devid)) ? len : sizeof(devid);
+		buf = &devid;
+		break;
+	default:
+		return -ENOENT;
+	}
 
-	return 0;
+	/* Return buffer value */
+	memcpy(dest, buf, olen);
+
+	return olen;
 }
 
-int8_t storage_set(const struct storage_app_settings *src)
+int storage_write(enum storage_keys key, const void *src, int len)
 {
-	memcpy(&app_settings, src, sizeof(struct storage_app_settings));
+	int olen;
+	void *buf;
 
-	return 0;
+	switch (key) {
+	case STORAGE_CRED_UUID:
+		olen = (len < sizeof(uuid)) ? len : sizeof(uuid);
+		buf = uuid;
+		break;
+	case STORAGE_CRED_TOKEN:
+		olen = (len < sizeof(token)) ? len : sizeof(token);
+		buf = token;
+		break;
+	case STORAGE_CRED_DEVID:
+		olen = (len < sizeof(devid)) ? len : sizeof(devid);
+		buf = &devid;
+		break;
+	default:
+		return -ENOENT;
+	}
+
+	/* Return buffer value */
+	memcpy(buf, src, olen);
+
+	return olen;
 }
