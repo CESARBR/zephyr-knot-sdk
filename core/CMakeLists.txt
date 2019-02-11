@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.8.2)
 find_package(Git REQUIRED)
 
+macro(set_conf_file)
+    set(CONF_FILE
+      "prj.conf $ENV{KNOT_BASE}/core/core.conf $ENV{KNOT_BASE}/core/boards/${BOARD}.conf")
+endmacro()
+
+include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
+
 include(ExternalProject)
 
 zephyr_get_include_directories_for_lang_as_string(C includes)
