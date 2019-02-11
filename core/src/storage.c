@@ -20,7 +20,7 @@
 #include "storage.h"
 #include "knot_protocol.h"
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(knot_storage, LOG_LEVEL_DBG);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	#include "storage.nrf52840"
