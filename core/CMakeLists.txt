@@ -6,6 +6,8 @@ macro(set_conf_file)
       "prj.conf $ENV{KNOT_BASE}/core/core.conf $ENV{KNOT_BASE}/core/boards/${BOARD}.conf")
 endmacro()
 
+set(KCONFIG_ROOT $ENV{KNOT_BASE}/core/Kconfig)
+
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 
 include(ExternalProject)
