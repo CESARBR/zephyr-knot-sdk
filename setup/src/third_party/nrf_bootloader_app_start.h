@@ -1,3 +1,13 @@
+/*
+ * Code based on Nordic's nRF5 SDK.
+ * Base version: 15.2.0_9412b96
+ *
+ * The SDK can be downloaded at:
+ * https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v15.x.x/
+ *
+ * The original file can be found, inside the zipped file, at:
+ * components/libraries/bootloader/
+ */
 /**
  * Copyright (c) 2016 - 2018, Nordic Semiconductor ASA
  *
