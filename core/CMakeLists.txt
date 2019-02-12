@@ -18,7 +18,7 @@ zephyr_get_include_directories_for_lang_as_string(C includes)
 zephyr_get_system_include_directories_for_lang_as_string(C system_includes)
 zephyr_get_compile_options_for_lang_as_string(C c_options)
 
-set(PROTO_ROOT ${CMAKE_CURRENT_LIST_DIR}/external/proto)
+set(PROTO_ROOT ${CMAKE_CURRENT_LIST_DIR}/build/external/proto)
 set(PROTO_LIB_DIR ${PROTO_ROOT}/lib)
 set(PROTO_INCLUDE_DIR ${PROTO_ROOT}/include)
 set(PROTO_LIB knotprotocol)
