@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "storage.h"
-#include <knot/knot_protocol.h>
 
 LOG_MODULE_REGISTER(knot_storage, LOG_LEVEL_DBG);
 
