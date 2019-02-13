@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.8.2)
 
+# Change dts with sub-partitions and use specific sub-partition to flash code
+set(DTC_OVERLAY_MULTI_SLOT
+	$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
+)
+set(DTC_OVERLAY_SET_SLOT
+	${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD}-code-slot.overlay
+)
+set(DTC_OVERLAY_FILE
+	"${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"
+)
+
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(knot_setup)
 
