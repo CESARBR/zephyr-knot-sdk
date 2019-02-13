@@ -20,6 +20,7 @@
 
 #include "bt_srv.h"
 #include "peripheral.h"
+#include "bootloader.h"
 
 LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
 
@@ -39,8 +40,12 @@ void main(void)
 	switch (btn) {
 	case PERIPHERAL_BTN_NOT_PRESSED:
 		LOG_DBG("Setup button not pressed: Loading Main App");
-		for (;;) { /* TODO: Go to Main App */
-			LOG_WRN("Not going to Main App");
+		err = bootloader_start_main();
+		if (err == false) /* Successful load */
+			return;
+
+		for (;;) {
+			LOG_ERR("Failed to load Main App");
 			k_sleep(2000);
 		}
 	case PERIPHERAL_BTN_ERROR:
