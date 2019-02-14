@@ -129,14 +129,18 @@ int storage_init(void)
 
 static int clear_value(enum storage_keys key)
 {
+	struct key_fmt *fmt;
 	const char *save_key;
 	int rc;
 
-	save_key = buf_info[key].save_key;
+	fmt = &buf_info[key];
 
-	rc = settings_delete(save_key);
+	rc = settings_delete(fmt->save_key);
 	if (rc)
-		LOG_ERR("Deleting key \"%s\" failed (err %d)", save_key, rc);
+		LOG_ERR("Deleting key \"%s\" failed (err %d)", fmt->save_key,
+							       rc);
+	else
+		fmt->loaded = false;
 
 	return rc;
 }
