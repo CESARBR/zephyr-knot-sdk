@@ -15,9 +15,15 @@ include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(knot_setup)
 
 FILE(GLOB app_sources src/*.c)
+FILE(GLOB third_party_sources src/third_party/*.c)
 set(core_sources
 	$ENV{KNOT_BASE}/core/src/storage.c
 	$ENV{KNOT_BASE}/core/src/storage.nrf52840)
 
-target_sources(app PRIVATE ${app_sources} ${core_sources})
+target_sources(app PRIVATE
+		${app_sources}
+		${core_sources}
+		${third_party_sources}
+)
+
 zephyr_include_directories($ENV{KNOT_BASE}/core/src/)
