@@ -47,27 +47,18 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "sdk_config.h"
-#include "nrf_bootloader_app_start.h"
-#include <stdint.h>
-#include "nrf.h"
-#include "nrf_peripherals.h"
-#include "nrf_bootloader_info.h"
-#include "nrf_dfu_types.h"
-#include "nrf_assert.h"
-#include "nrf_log.h"
-#include "sdk_config.h"
+/*
+ * Copyright (c) 2019, CESAR. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+#include <zephyr.h>
+#include <string.h>
+#include <flash.h>
 
-// Enabling the NRF_BOOTLOADER_READ_PROTECT define is untested.
-// Read-protecting the bootloader requires certain functions to run from RAM.
-// In GCC and SES this is done automatically when the define is enabled. You will
-// get warnings which can be ignored.
-// In Keil you must change project settings to run the entire file from RAM.
-#ifndef NRF_BOOTLOADER_READ_PROTECT
-#define NRF_BOOTLOADER_READ_PROTECT 0
-#endif
-
+// API to disable system clock
+extern void sys_clock_disable(void);
 
 #define HANDLER_MODE_EXIT 0xFFFFFFF9 // When this is jumped to, the CPU will exit interrupt context
                                      // (handler mode), and pop values from the stack into registers.
@@ -115,6 +106,7 @@ __STATIC_INLINE void app_start(uint32_t vector_table_addr)
     __set_BASEPRI(0x00000000);   // Set BASEPRI to its reset value 0.
     __set_FAULTMASK(0x00000000); // Set FAULTMASK to its reset value 0.
 
+    sys_clock_disable();
     if (current_isr_num == 0)
     {
         // The CPU is in Thread mode (main context).
@@ -145,117 +137,8 @@ __STATIC_INLINE void app_start(uint32_t vector_table_addr)
     }
 }
 
-#if NRF_BOOTLOADER_READ_PROTECT
-#ifdef __ICCARM__
-__ramfunc
-#elif  defined ( __GNUC__ ) || defined ( __SES_ARM )
-__attribute__((noinline, long_call, section(".data")))
-#elif  defined ( __CC_ARM )
-#warning "Keil requires changes to project settings to run this file from RAM. Ignore this warning if configuration has been made."
-#endif
-#endif
-ret_code_t nrf_bootloader_flash_protect(uint32_t address, uint32_t size, bool read_protect)
-{
-    if ((size & (CODE_PAGE_SIZE - 1)) || (address > BOOTLOADER_SETTINGS_ADDRESS))
-    {
-        return NRF_ERROR_INVALID_PARAM;
-    }
-
-#if defined(ACL_PRESENT)
-
-    // Protect using ACL.
-    static uint32_t acl_instance = 0;
-
-    uint32_t const wmask  = (ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos);
-    uint32_t const rwmask = wmask | (ACL_ACL_PERM_READ_Disable << ACL_ACL_PERM_READ_Pos);
-    uint32_t const mask   = read_protect ? rwmask: wmask;
-
-    do
-    {
-        if (acl_instance >= ACL_REGIONS_COUNT)
-        {
-            return NRF_ERROR_NO_MEM;
-        }
-
-        NRF_ACL->ACL[acl_instance].ADDR = address;
-        NRF_ACL->ACL[acl_instance].SIZE = size;
-        NRF_ACL->ACL[acl_instance].PERM = mask;
-
-        acl_instance++;
-
-    } while (NRF_ACL->ACL[acl_instance - 1].ADDR != address
-          || NRF_ACL->ACL[acl_instance - 1].SIZE != size
-          || NRF_ACL->ACL[acl_instance - 1].PERM != mask); // Check whether the acl_instance has been used before.
-
-#elif defined (BPROT_PRESENT)
-
-    // Protect using BPROT. BPROT does not support read protection.
-    uint32_t pagenum_start = address / CODE_PAGE_SIZE;
-    uint32_t pagenum_end   = pagenum_start + ((size - 1) / CODE_PAGE_SIZE);
-
-    for (uint32_t i = pagenum_start; i <= pagenum_end; i++)
-    {
-        uint32_t config_index = i / 32;
-        uint32_t mask         = (1 << (i - config_index * 32));
-
-        switch (config_index)
-        {
-            case 0:
-                NRF_BPROT->CONFIG0 = mask;
-                break;
-            case 1:
-                NRF_BPROT->CONFIG1 = mask;
-                break;
-#if BPROT_REGIONS_NUM > 64
-            case 2:
-                NRF_BPROT->CONFIG2 = mask;
-                break;
-            case 3:
-                NRF_BPROT->CONFIG3 = mask;
-                break;
-#endif
-        }
-    }
-
-#endif
-
-    return NRF_SUCCESS;
-}
-
-
-#if NRF_BOOTLOADER_READ_PROTECT
-#ifdef __ICCARM__
-__ramfunc
-#elif  defined ( __GNUC__ ) || defined ( __SES_ARM )
-__attribute__((noinline, long_call, section(".data")))
-#elif  defined ( __CC_ARM )
-#warning "Keil requires changes to project settings to run this file from RAM. Ignore this warning if configuration has been made."
-#endif
-#endif
 void nrf_bootloader_app_start_final(uint32_t vector_table_addr)
 {
-    ret_code_t ret_val;
-
-    // Protect MBR & bootloader code and params pages.
-    if (NRF_BOOTLOADER_READ_PROTECT)
-    {
-        ret_val = nrf_bootloader_flash_protect(0, MBR_SIZE, NRF_BOOTLOADER_READ_PROTECT);
-    }
-
-    // Size of the flash area to protect.
-    uint32_t area_size;
-
-    area_size = BOOTLOADER_SIZE + NRF_MBR_PARAMS_PAGE_SIZE;
-
-    ret_val = nrf_bootloader_flash_protect(BOOTLOADER_START_ADDR,
-                                           area_size,
-                                           NRF_BOOTLOADER_READ_PROTECT);
-
-    if (!NRF_BOOTLOADER_READ_PROTECT && (ret_val != NRF_SUCCESS))
-    {
-        NRF_LOG_ERROR("Could not protect bootloader and settings pages, 0x%x.", ret_val);
-    }
-
     // Run application
     app_start(vector_table_addr);
 }
