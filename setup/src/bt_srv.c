@@ -22,6 +22,12 @@
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
+#include <mgmt/smp_bt.h>
+#include <mgmt/buf.h>
+
+#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
+#include "img_mgmt/img_mgmt.h"
+#endif
 
 #include "bt_srv.h"
 #include "gatt_inet6.h"
@@ -80,6 +86,10 @@ int bt_srv_init(void)
 		return err;
 	}
 
+#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
+	img_mgmt_register_group();
+#endif
+
 	err = bt_enable(NULL);
 	if (err) {
 		LOG_ERR("Bluetooth enable failed (err %d)", err);
@@ -88,6 +98,9 @@ int bt_srv_init(void)
 	LOG_DBG("Bluetooth initialized");
 
 	bt_conn_cb_register(&conn_callbacks);
+
+	/* Initialize the Bluetooth mcumgr transport. */
+	smp_bt_register();
 
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
 			      ad_inet6, ARRAY_SIZE(ad_inet6),
