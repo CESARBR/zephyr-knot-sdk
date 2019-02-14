@@ -64,14 +64,6 @@ static void proto_thread(void)
 	size_t ilen;
 	int ret;
 
-	/* Initializing KNoT storage */
-	LOG_DBG("Initializing storage module");
-	ret = storage_init();
-	if (ret < 0) {
-		LOG_ERR("Storage init failed!");
-		return;
-	}
-
 	/* Initializing KNoT peripherals control */
 	peripheral_init();
 

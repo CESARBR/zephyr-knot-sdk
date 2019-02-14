@@ -10,3 +10,5 @@ int tcp6_start(net_recv_t recv_cb, net_close_t close_cb);
 void tcp6_stop(void);
 
 int tcp6_send(const u8_t *opdu, size_t olen);
+
+int tcp6_init(void);

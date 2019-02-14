@@ -88,6 +88,13 @@ static void net_thread(void)
 	size_t ilen;
 	int ret;
 
+	/* Start TCP layer */
+	ret = tcp6_init();
+	if (ret) {
+		LOG_ERR("Failed to init TCP handler. Aborting net thread");
+		return;
+	}
+
 	memset(ipdu, 0, sizeof(ipdu));
 	connection_start();
 

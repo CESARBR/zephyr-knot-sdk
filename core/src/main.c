@@ -18,6 +18,7 @@
 
 #include "proto.h"
 #include "net.h"
+#include "storage.h"
 
 LOG_MODULE_REGISTER(knot, LOG_LEVEL_DBG);
 K_PIPE_DEFINE(p2n_pipe, 128, 4);
@@ -26,12 +27,20 @@ static struct k_sem quit_lock;
 
 void main(void)
 {
+	int ret;
+
 	LOG_DBG("*** Welcome to KNoT! %s\n", CONFIG_ARCH);
 
 	k_sem_init(&quit_lock, 0, UINT_MAX);
 
 	/* Guarantees NET and PROTO threads will be created */
 	k_sched_lock();
+
+	/* Initializing KNoT storage */
+	LOG_DBG("Initializing storage module");
+	ret = storage_init();
+	if (ret)
+		LOG_ERR("KNoT Storage init failed!");
 
 	/*
 	 * KNoT state thread: manage device registration, detects

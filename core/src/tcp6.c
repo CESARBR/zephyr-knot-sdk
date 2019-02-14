@@ -19,16 +19,19 @@
 
 #include "net.h"
 #include "tcp6.h"
+#include "storage.h"
 
 LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
 #define PEER_IPV6_PORT 8886
+#define IPV6_LEN	40
 
 #define BUF_TIMEOUT	K_MSEC(100)
 #define WAIT_TIME	K_SECONDS(10)
 #define CONNECT_TIME	K_SECONDS(10)
 
 static struct net_app_ctx tcp6;
+static char peer_ipv6[IPV6_LEN];
 static net_recv_t recv;
 
 static void tcp6_close(struct net_app_ctx *ctx,
@@ -113,7 +116,7 @@ int tcp6_start(net_recv_t recv_cb, net_close_t close_cb)
 	recv = recv_cb;
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
-		ret = connect_tcp6(&tcp6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR,
+		ret = connect_tcp6(&tcp6, peer_ipv6,
 				  PEER_IPV6_PORT, close_cb);
 		if (ret < 0)
 			LOG_ERR("Cannot init IPv6 TCP client (%d)", ret);
@@ -144,6 +147,21 @@ int tcp6_send(const u8_t *opdu, size_t olen)
 	ret = net_app_send_pkt(&tcp6, opkt, NULL, 0, K_FOREVER, NULL);
 	if (ret < 0)
 		net_pkt_unref(opkt);
+
+	return 0;
+}
+
+int tcp6_init(void)
+{
+	int rc;
+
+	LOG_DBG("Initializing TCP handler");
+
+	rc = storage_read(STORAGE_PEER_IPV6, peer_ipv6, sizeof(peer_ipv6));
+	if (rc <= 0) {
+		LOG_ERR("Failed to read Peer's IPv6");
+		return -ENOENT;
+	}
 
 	return 0;
 }
