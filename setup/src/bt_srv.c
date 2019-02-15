@@ -34,12 +34,22 @@
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
+bool active_conn;
+
 /* Advertise Peer's IPV6 GATT service's UUID  */
 static const struct bt_data ad_inet6[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
 		      0x70, 0x14, 0x1c, 0xbe, 0xdd, 0xe6, 0x5a, 0xb3,
 		      0x8b, 0x49, 0xb4, 0x5d, 0x83, 0x11, 0x60, 0x49),
+};
+
+/* Advertise Peer's MCUMGR service's UUID  */
+static const struct bt_data ad_mcumgr[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
+		      0x84, 0xaa, 0x60, 0x74, 0x52, 0x8a, 0x8b, 0x86,
+		      0xd3, 0x4c, 0xb7, 0x1d, 0x1d, 0xdc, 0x53, 0x8d),
 };
 
 /* Scan respond OpenThread Settings GATT service's UUID */
@@ -49,8 +59,25 @@ static const struct bt_data scan_resp_ot[] = {
 	              0x41, 0xd4, 0x9a, 0xaa, 0x9c, 0xe4, 0xa9, 0xa8),
 };
 
+static void advertise(const struct bt_data *adv)
+{
+	int err;
+
+	bt_le_adv_stop();
+
+	/* Using ad_inet6 as default size for ad_inet6 and ad_mcumgr */
+	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
+			      adv, ARRAY_SIZE(ad_inet6),
+			      scan_resp_ot, ARRAY_SIZE(scan_resp_ot));
+	if (err) {
+		LOG_ERR("Advertising failed to start (err %d)", err);
+	}
+}
+
 static void connected(struct bt_conn *conn, u8_t err)
 {
+	active_conn = true;
+
 	if (err) {
 		LOG_ERR("Connection failed (err %u)", err);
 	} else {
@@ -60,6 +87,7 @@ static void connected(struct bt_conn *conn, u8_t err)
 
 static void disconnected(struct bt_conn *conn, u8_t reason)
 {
+	active_conn = false;
 	LOG_DBG("Disconnected (reason %u)", reason);
 }
 
@@ -71,6 +99,11 @@ static struct bt_conn_cb conn_callbacks = {
 int bt_srv_init(void)
 {
 	int err;
+	bool adv_bool;
+	const struct bt_data *adv_tmp;
+
+	active_conn = false;
+	adv_bool = false;
 
 	/* OT Settings storage system */
 	err = settings_ot_init();
@@ -102,14 +135,17 @@ int bt_srv_init(void)
 	/* Initialize the Bluetooth mcumgr transport. */
 	smp_bt_register();
 
-	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
-			      ad_inet6, ARRAY_SIZE(ad_inet6),
-			      scan_resp_ot, ARRAY_SIZE(scan_resp_ot));
-	if (err) {
-		LOG_ERR("Advertising failed to start (err %d)", err);
-		return err;
+	LOG_INF("Advertising...");
+
+	while (1) {
+		k_sleep(500);
+
+		if (!active_conn) {
+			adv_tmp = (adv_bool) ? ad_inet6 : ad_mcumgr;
+			advertise(adv_tmp);
+			adv_bool = !adv_bool;
+		}
 	}
-	LOG_INF("Advertising successfully started");
 
 	return 0;
 }
