@@ -11,7 +11,6 @@
 #include <zephyr.h>
 #include <net/net_core.h>
 #include <logging/log.h>
-#include <misc/reboot.h>
 
 #include <knot/knot_protocol.h>
 #include "proxy.h"
@@ -489,23 +488,10 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	enum sm_state next;
 	s64_t status_blink_period;
 	size_t len = 0;
-	bool reset;
 
 	/* Expected OPCODE response. Initially not expecting response*/
 	static u8_t xpt_opcode = 0xff;
 	bool got_resp; /* Got right response */
-
-	/* Handle reset flag */
-	reset = peripheral_get_reset();
-	/* TODO: Consider current state before reseting */
-	if (reset) {
-		/* TODO: Unregister before reseting */
-		LOG_INF("Reseting system...");
-		storage_reset();
-		#if !CONFIG_BOARD_QEMU_X86
-			sys_reboot(SYS_REBOOT_WARM);
-		#endif
-	}
 
 	/*
 	 * When the timer is enabled, if no data is received or the expected

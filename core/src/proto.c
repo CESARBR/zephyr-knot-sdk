@@ -21,6 +21,7 @@
 #include <net/net_core.h>
 #include <net/buf.h>
 #include <logging/log.h>
+#include <misc/reboot.h>
 
 #include "knot.h"
 #include "sm.h"
@@ -63,6 +64,7 @@ static void proto_thread(void)
 	size_t olen;
 	size_t ilen;
 	int ret;
+	bool reset;
 
 	/* Initializing KNoT peripherals control */
 	peripheral_init();
@@ -99,6 +101,17 @@ static void proto_thread(void)
 
 done:
 		peripheral_flag_status();
+
+		/* Handle reset flag */
+		reset = peripheral_get_reset();
+		if (reset) {
+			/* TODO: Unregister before reseting */
+			LOG_INF("Reseting system...");
+			storage_reset();
+			#if !CONFIG_BOARD_QEMU_X86
+				sys_reboot(SYS_REBOOT_WARM);
+			#endif
+		}
 
 		k_yield();
 	}
