@@ -116,6 +116,10 @@ bool peripheral_get_reset(void)
 
 void peripheral_set_status_period(s64_t status_period)
 {
+	/* Ignore if up to date */
+	if (toggle_led_period == status_period)
+		return;
+
 	/* Led on at period update */
 	status_led = false;
 	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);

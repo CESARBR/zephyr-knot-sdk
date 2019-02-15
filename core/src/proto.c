@@ -66,6 +66,7 @@ static void proto_thread(void)
 
 	/* Initializing KNoT peripherals control */
 	peripheral_init();
+	peripheral_set_status_period(STATUS_DISCONN_PERIOD);
 
 	/* Initializing SM and abstract IO internals */
 	sm_init();
@@ -78,8 +79,10 @@ static void proto_thread(void)
 		loop();
 
 		/* Ignore net and SM if disconnected */
-		if (check_connection() == false)
+		if (check_connection() == false) {
+			peripheral_set_status_period(STATUS_DISCONN_PERIOD);
 			goto done;
+		}
 
 		ilen = 0;
 		memset(&ipdu, 0, sizeof(ipdu));
@@ -95,6 +98,8 @@ static void proto_thread(void)
 				   &olen, olen, K_NO_WAIT);
 
 done:
+		peripheral_flag_status();
+
 		k_yield();
 	}
 
