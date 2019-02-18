@@ -15,6 +15,7 @@
 #include <net/net_core.h>
 #include <net/net_app.h>
 #include <logging/log.h>
+#include <settings/settings.h>
 
 #include "proto.h"
 #include "net.h"
@@ -41,6 +42,11 @@ void main(void)
 	ret = storage_init();
 	if (ret)
 		LOG_ERR("KNoT Storage init failed!");
+
+	LOG_DBG("Loading stored values");
+	ret = settings_load();
+	if (ret)
+		LOG_ERR("Settings load failed (err %d)", ret);
 
 	/*
 	 * KNoT state thread: manage device registration, detects

@@ -117,13 +117,6 @@ int storage_init(void)
 		return err;
 	}
 
-	LOG_DBG("Loading stored values");
-	err = settings_load();
-	if (err) {
-		LOG_ERR("Settings load failed (err %d)", err);
-		return err;
-	}
-
 	return 0;
 }
 
