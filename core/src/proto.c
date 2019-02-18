@@ -22,6 +22,7 @@
 #include <net/buf.h>
 #include <logging/log.h>
 #include <misc/reboot.h>
+#include <settings/settings_ot.h>
 
 #include "knot.h"
 #include "sm.h"
@@ -108,6 +109,7 @@ done:
 			/* TODO: Unregister before reseting */
 			LOG_INF("Reseting system...");
 			storage_reset();
+			settings_ot_reset();
 			#if !CONFIG_BOARD_QEMU_X86
 				sys_reboot(SYS_REBOOT_WARM);
 			#endif
