@@ -18,6 +18,7 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
+#include <settings/settings.h>
 #include <settings/settings_ot.h>
 
 #include <bluetooth/bluetooth.h>
@@ -118,6 +119,11 @@ int bt_srv_init(void)
 		LOG_ERR("Peer's IPV6 Config GATT service init failed (err %d)", err);
 		return err;
 	}
+
+	LOG_DBG("Loading stored values");
+	err = settings_load();
+	if (err)
+		LOG_ERR("Settings load failed (err %d)", err);
 
 #ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
 	img_mgmt_register_group();
