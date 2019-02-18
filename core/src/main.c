@@ -16,6 +16,7 @@
 #include <net/net_app.h>
 #include <logging/log.h>
 #include <settings/settings.h>
+#include <settings/settings_ot.h>
 
 #include "proto.h"
 #include "net.h"
@@ -42,6 +43,12 @@ void main(void)
 	ret = storage_init();
 	if (ret)
 		LOG_ERR("KNoT Storage init failed!");
+
+	/* Initializing OpenThread settings */
+	LOG_DBG("Initializing OpenThread settings");
+	ret = settings_ot_init();
+	if (ret)
+		LOG_ERR("OpenThread settings init failed!");
 
 	LOG_DBG("Loading stored values");
 	ret = settings_load();
