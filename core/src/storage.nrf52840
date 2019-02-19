@@ -123,7 +123,6 @@ int storage_init(void)
 static int clear_value(enum storage_keys key)
 {
 	struct key_fmt *fmt;
-	const char *save_key;
 	int rc;
 
 	fmt = &buf_info[key];
