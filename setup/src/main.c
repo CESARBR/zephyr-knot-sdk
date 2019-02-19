@@ -59,20 +59,33 @@ void main(void)
 	btn = peripheral_btn_status();
 
 	switch (btn) {
+	case PERIPHERAL_BTN_PRESSED:
+		LOG_DBG("Setup button pressed");
+		break;
 	case PERIPHERAL_BTN_NOT_PRESSED:
-		LOG_DBG("Setup button not pressed: Loading Main App");
-		err = bootloader_start_main();
-		if (err == false) /* Successful load */
-			return;
-
-		for (;;) {
-			LOG_ERR("Failed to load Main App");
-			k_sleep(2000);
-		}
+		LOG_DBG("Setup button not pressed");
+		break;
 	case PERIPHERAL_BTN_ERROR:
+	default:
 		LOG_ERR("Button reading error!");
 	}
 
+	/* Run Setup App if button pressed or failed to read */
+	if (btn != PERIPHERAL_BTN_NOT_PRESSED)
+		goto setup;
+
+	/* Load Main App */
+	err = bootloader_start_main();
+	if (err == false) /* Successful load */
+		return;
+
+	/* Flag error if Main App not loaded */
+	for (;;) {
+		LOG_ERR("Failed to load Main App");
+		k_sleep(2000);
+	}
+
+setup:
 	/* Setup Application */
 	LOG_DBG("Initializing Setup App");
 
