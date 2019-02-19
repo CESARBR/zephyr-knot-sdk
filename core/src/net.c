@@ -89,12 +89,22 @@ static void net_thread(void)
 	size_t ilen;
 	int ret;
 
-	/* Load OpenThread credentials from settings */
+	/* Load and set OpenThread credentials from settings */
 	ret = ot_config_load();
 	if (ret) {
 		LOG_ERR("Failed to load OT credentials. Aborting net thread");
 		return;
 	}
+
+	ret = ot_config_set();
+	if (ret) {
+		LOG_ERR("Failed to set OT credentials. Aborting net thread");
+		return;
+	}
+
+	/* TODO: Check if OpenThread is ready before initializing TCP layer */
+	/* Give time for OpenThread to load */
+	k_sleep(100);
 
 	/* Start TCP layer */
 	ret = tcp6_init();

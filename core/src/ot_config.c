@@ -9,6 +9,10 @@
 #include <zephyr.h>
 #include <logging/log.h>
 #include <settings/settings_ot.h>
+#include <net/net_if.h>
+#include <net/openthread.h>
+#include <openthread/thread.h>
+#include <openthread/link.h>
 
 #include "ot_config.h"
 
@@ -68,4 +72,81 @@ int ot_config_load(void)
 	LOG_DBG("  masterkey: %s", masterkey);
 
 	return 0;
+}
+
+int ot_config_set(void)
+{
+	struct net_if *iface;
+	struct openthread_context *ot_context;
+	otExtendedPanId xpanid_ctx;
+	otMasterKey masterkey_ctx;
+	int rc;
+
+	/* Load interface and context */
+	iface = net_if_get_default();
+	ot_context = net_if_l2_data(iface);
+
+	/* Convert string to bytes */
+	net_bytes_from_str(xpanid_ctx.m8, 8, xpanid);
+	net_bytes_from_str(masterkey_ctx.m8, 16, masterkey);
+
+	LOG_DBG("Setting OpenThread credentials");
+
+	/* Disable OpenThread service */
+	rc = otThreadSetEnabled(ot_context->instance, false);
+	if (rc) {
+		LOG_ERR("Failed to stop Thread protocol. (err %d)", rc);
+		return rc;
+	}
+	rc = otIp6SetEnabled(ot_context->instance, false);
+	if (rc) {
+		LOG_ERR("Failed to disable IPv6 communication. (err %d)", rc);
+		return rc;
+	}
+
+	/* Set credentials */
+	rc = otThreadSetNetworkName(ot_context->instance, net_name);
+	if (rc) {
+		LOG_ERR("Failed to configure net_name. (err %d)", rc);
+		return rc;
+	}
+
+	rc = otLinkSetChannel(ot_context->instance, channel);
+	if (rc) {
+		LOG_ERR("Failed to configure channel. (err %d)", rc);
+		return rc;
+	}
+
+	rc = otLinkSetPanId(ot_context->instance, panid);
+	if (rc) {
+		LOG_ERR("Failed to configure panid. (err %d)", rc);
+		return rc;
+	}
+
+	rc = otThreadSetExtendedPanId(ot_context->instance, &xpanid_ctx);
+	if (rc) {
+		LOG_ERR("Failed to configure xpanid. (err %d)", rc);
+		return rc;
+	}
+
+	rc = otThreadSetMasterKey(ot_context->instance, &masterkey_ctx);
+	if (rc) {
+		LOG_ERR("Failed to configure masterkey. (err %d)", rc);
+		return rc;
+	}
+
+	/* Enable OpenThread service */
+	rc = otIp6SetEnabled(ot_context->instance, true);
+	if (rc) {
+		LOG_ERR("Failed to enable IPv6 communication. (err %d)", rc);
+		return rc;
+	}
+
+	rc = otThreadSetEnabled(ot_context->instance, true);
+	if (rc) {
+		LOG_ERR("Failed to start Thread protocol. (err %d)", rc);
+		return rc;
+	}
+
+	return OT_ERROR_NONE;
 }

@@ -7,3 +7,5 @@
  */
 
 int ot_config_load(void);
+
+int ot_config_set(void);
