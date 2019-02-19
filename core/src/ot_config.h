@@ -8,4 +8,6 @@
 
 int ot_config_load(void);
 
+#if defined(CONFIG_NET_L2_OPENTHREAD)
 int ot_config_set(void);
+#endif

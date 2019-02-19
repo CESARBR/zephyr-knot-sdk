@@ -9,10 +9,12 @@
 #include <zephyr.h>
 #include <logging/log.h>
 #include <settings/settings_ot.h>
+#if defined(CONFIG_NET_L2_OPENTHREAD)
 #include <net/net_if.h>
 #include <net/openthread.h>
 #include <openthread/thread.h>
 #include <openthread/link.h>
+#endif
 
 #include "ot_config.h"
 
@@ -74,6 +76,7 @@ int ot_config_load(void)
 	return 0;
 }
 
+#if defined(CONFIG_NET_L2_OPENTHREAD)
 int ot_config_set(void)
 {
 	struct net_if *iface;
@@ -150,3 +153,4 @@ int ot_config_set(void)
 
 	return OT_ERROR_NONE;
 }
+#endif
