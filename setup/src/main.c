@@ -31,6 +31,7 @@ void main(void)
 {
 	int err;
 	int btn;
+	bool ipv6_set;
 
 	LOG_DBG("Initializing storage services");
 
@@ -52,6 +53,13 @@ void main(void)
 
 	LOG_DBG("Selecting application to run");
 
+	/* Check for stored values */
+	ipv6_set = storage_is_set(STORAGE_PEER_IPV6);
+	if (ipv6_set)
+		LOG_DBG("Peer's IPv6 set");
+	else
+		LOG_DBG("Peer's IPv6 not set");
+
 	/* Jump to main application if button pressed */
 	err = peripheral_init();
 	if (err)
@@ -70,8 +78,13 @@ void main(void)
 		LOG_ERR("Button reading error!");
 	}
 
-	/* Run Setup App if button pressed or failed to read */
-	if (btn != PERIPHERAL_BTN_NOT_PRESSED)
+	/*
+	 * Run Setup App if button pressed or failed to read or if PAN Settings
+	 * not set.
+	 */
+	/* TODO: Check for OpenThread Settings */
+	if ( btn != PERIPHERAL_BTN_NOT_PRESSED ||
+	     ipv6_set == false )
 		goto setup;
 
 	/* Load Main App */
