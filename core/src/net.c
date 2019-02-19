@@ -19,6 +19,7 @@
 
 #include "net.h"
 #include "tcp6.h"
+#include "ot_config.h"
 
 LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
@@ -87,6 +88,13 @@ static void net_thread(void)
 	u8_t ipdu[128];
 	size_t ilen;
 	int ret;
+
+	/* Load OpenThread credentials from settings */
+	ret = ot_config_load();
+	if (ret) {
+		LOG_ERR("Failed to load OT credentials. Aborting net thread");
+		return;
+	}
 
 	/* Start TCP layer */
 	ret = tcp6_init();
