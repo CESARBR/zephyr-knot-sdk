@@ -106,13 +106,6 @@ int bt_srv_init(void)
 	active_conn = false;
 	adv_bool = false;
 
-	/* OT Settings storage system */
-	err = settings_ot_init();
-	if (err) {
-		LOG_ERR("Settings OT init failed (err %d)", err);
-		return err;
-	}
-
 	/* Peer's IPV6 GATT service */
 	err = gatt_inet6_init();
 	if (err) {

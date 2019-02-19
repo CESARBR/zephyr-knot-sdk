@@ -17,10 +17,13 @@
 
 #include <zephyr.h>
 #include <logging/log.h>
+#include <settings/settings.h>
+#include <settings/settings_ot.h>
 
 #include "bt_srv.h"
 #include "peripheral.h"
 #include "bootloader.h"
+#include "storage.h"
 
 LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
 
@@ -28,6 +31,24 @@ void main(void)
 {
 	int err;
 	int btn;
+
+	LOG_DBG("Initializing storage services");
+
+	/* Storage service */
+	err = storage_init();
+	if (err)
+		LOG_ERR("Storage service init failed (err %d)", err);
+
+	/* OT Settings storage */
+	err = settings_ot_init();
+	if (err)
+		LOG_ERR("Settings OT init failed (err %d)", err);
+
+	LOG_DBG("Loading stored values");
+	err = settings_load();
+	if (err)
+		LOG_ERR("Settings load failed (err %d)", err);
+
 
 	LOG_DBG("Selecting application to run");
 

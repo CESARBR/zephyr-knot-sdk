@@ -94,13 +94,6 @@ int gatt_inet6_init(void)
 {
 	int err;
 
-	/* Storage service start */
-	err = storage_init();
-	if (err) {
-		LOG_ERR("Storage service init failed (err %d)", err);
-		return err;
-	}
-
 	/* GATT service start */
 	err = bt_gatt_service_register(&config_svc);
 	if (err) {
