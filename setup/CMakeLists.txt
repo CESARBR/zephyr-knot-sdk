@@ -17,6 +17,7 @@ project(knot_setup)
 FILE(GLOB app_sources src/*.c)
 FILE(GLOB third_party_sources src/third_party/*.c)
 set(core_sources
+	$ENV{KNOT_BASE}/core/src/ot_config.c
 	$ENV{KNOT_BASE}/core/src/storage.c
 	$ENV{KNOT_BASE}/core/src/storage.nrf52840)
 

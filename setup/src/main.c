@@ -24,6 +24,7 @@
 #include "peripheral.h"
 #include "bootloader.h"
 #include "storage.h"
+#include "ot_config.h"
 
 LOG_MODULE_REGISTER(knot_setup, LOG_LEVEL_DBG);
 
@@ -32,6 +33,7 @@ void main(void)
 	int err;
 	int btn;
 	bool ipv6_set;
+	bool ot_set;
 
 	LOG_DBG("Initializing storage services");
 
@@ -60,6 +62,9 @@ void main(void)
 	else
 		LOG_DBG("Peer's IPv6 not set");
 
+	err = ot_config_load();
+	ot_set = (err == 0); /* OT config loaded. Has OT settings */
+
 	/* Jump to main application if button pressed */
 	err = peripheral_init();
 	if (err)
@@ -84,7 +89,7 @@ void main(void)
 	 */
 	/* TODO: Check for OpenThread Settings */
 	if ( btn != PERIPHERAL_BTN_NOT_PRESSED ||
-	     ipv6_set == false )
+	     ipv6_set == false || ot_set == false)
 		goto setup;
 
 	/* Load Main App */
