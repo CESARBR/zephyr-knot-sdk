@@ -19,3 +19,5 @@ int storage_reset(void);
 
 int storage_read(enum storage_keys key, void *dest, int len);
 int storage_write(enum storage_keys key, const void *src, int len);
+
+bool storage_is_set(enum storage_keys key);

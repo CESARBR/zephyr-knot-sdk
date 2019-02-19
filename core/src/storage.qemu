@@ -51,12 +51,27 @@ int storage_init(void)
 	return 0;
 }
 
+bool storage_is_set(enum storage_keys key)
+{
+	switch (key) {
+	case STORAGE_CRED_UUID:
+		return (!strlen(uuid) != 0);
+	case STORAGE_CRED_TOKEN:
+		return (!strlen(token) != 0);
+	case STORAGE_CRED_DEVID:
+		return (devid != 0);
+	default:
+		return false;
+	}
+}
+
+
 int storage_read(enum storage_keys key, void *dest, int len)
 {
 	int olen;
 	void *buf;
 
-	if (!strlen(uuid) || !strlen(token))
+	if (storage_is_set(key) == false)
 		return -ENOENT;
 
 	switch (key) {

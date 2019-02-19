@@ -157,20 +157,26 @@ int storage_reset(void)
 	return clear_value(STORAGE_PEER_IPV6);
 }
 
+bool storage_is_set(enum storage_keys key)
+{
+	struct key_fmt *fmt;
+
+	fmt = &buf_info[key];
+	return fmt->loaded;
+}
+
 int storage_read(const enum storage_keys key, void *dest, int len)
 {
 	const struct key_fmt *fmt;
 	int olen;
 
-	if (key < 0 || key >= sizeof(buf_info))
-		return -EINVAL;
-
 	if (len <= 0)
 		return -EINVAL;
 
-	fmt = &buf_info[key];
-	if (fmt->loaded == false)
+	if (storage_is_set(key) == false)
 		return -ENOENT;
+
+	fmt = &buf_info[key];
 
 	/* Return buffer value */
 	olen = (len < fmt->bsize) ? len : fmt->bsize;
