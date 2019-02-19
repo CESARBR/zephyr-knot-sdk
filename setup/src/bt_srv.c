@@ -113,11 +113,6 @@ int bt_srv_init(void)
 		return err;
 	}
 
-	LOG_DBG("Loading stored values");
-	err = settings_load();
-	if (err)
-		LOG_ERR("Settings load failed (err %d)", err);
-
 #ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
 	img_mgmt_register_group();
 #endif
