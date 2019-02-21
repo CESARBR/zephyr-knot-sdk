@@ -22,13 +22,12 @@
 #include <net/buf.h>
 #include <logging/log.h>
 #include <misc/reboot.h>
-#include <settings/settings_ot.h>
 
 #include "knot.h"
 #include "sm.h"
 #include "proto.h"
-#include "storage.h"
 #include "peripheral.h"
+#include "clear.h"
 
 LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
@@ -108,8 +107,7 @@ done:
 		if (reset) {
 			/* TODO: Unregister before reseting */
 			LOG_INF("Reseting system...");
-			storage_reset();
-			settings_ot_reset();
+			clear_factory();
 			#if !CONFIG_BOARD_QEMU_X86
 				sys_reboot(SYS_REBOOT_WARM);
 			#endif
