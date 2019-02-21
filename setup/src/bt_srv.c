@@ -97,6 +97,22 @@ static struct bt_conn_cb conn_callbacks = {
 	.disconnected = disconnected,
 };
 
+static void pairing_complete_cb(struct bt_conn *conn, bool bonded)
+{
+	LOG_DBG("Pairing complete: %d", bonded);
+}
+
+static void pairing_failed_cb(struct bt_conn *conn)
+{
+	LOG_DBG("Pairing failed!");
+	bt_conn_disconnect(conn, BT_HCI_ERR_AUTHENTICATION_FAIL);
+}
+
+static struct bt_conn_auth_cb auth_cb = {
+	.pairing_complete = pairing_complete_cb,
+	.pairing_failed = pairing_failed_cb,
+};
+
 int bt_srv_init(void)
 {
 	int err;
@@ -125,6 +141,7 @@ int bt_srv_init(void)
 	LOG_DBG("Bluetooth initialized");
 
 	bt_conn_cb_register(&conn_callbacks);
+	bt_conn_auth_cb_register(&auth_cb);
 
 	/* Initialize the Bluetooth mcumgr transport. */
 	smp_bt_register();
