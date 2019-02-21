@@ -129,6 +129,8 @@ int bt_srv_init(void)
 	/* Initialize the Bluetooth mcumgr transport. */
 	smp_bt_register();
 
+	settings_load();
+
 	LOG_INF("Advertising...");
 
 	while (1) {
