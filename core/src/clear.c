@@ -6,9 +6,40 @@
 
 #include <zephyr.h>
 #include <settings/settings_ot.h>
+#include <logging/log.h>
+#include <flash.h>
 
 #include "storage.h"
 #include "clear.h"
+
+LOG_MODULE_REGISTER(knot_clear, LOG_LEVEL_DBG);
+
+static int clear_ot_nvs(void)
+{
+	struct device *flash_dev;
+	int rc;
+
+	flash_dev = device_get_binding(DT_FLASH_DEV_NAME);
+	if (!flash_dev) {
+		LOG_ERR("Flash driver was not found!");
+		return -1;
+	}
+
+	/* Erase OpenThread flash partition */
+	flash_write_protection_set(flash_dev, false);
+	rc = flash_erase(flash_dev,
+			 FLASH_AREA_OT_STORAGE_OFFSET,
+			 FLASH_AREA_OT_STORAGE_SIZE);
+	if (rc) {
+		LOG_ERR("Failed to clear OpenThread's NVS");
+		return -1;
+	}
+
+	flash_write_protection_set(flash_dev, true);
+
+	return 0;
+}
+
 
 int clear_factory(void)
 {
@@ -20,6 +51,10 @@ int clear_factory(void)
 		ret = -1;
 
 	rc = settings_ot_reset();
+	if (rc)
+		ret = -1;
+
+	rc = clear_ot_nvs();
 	if (rc)
 		ret = -1;
 
