@@ -23,6 +23,7 @@
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
+#include <bluetooth/services/setup_ot.h>
 #include <mgmt/smp_bt.h>
 #include <mgmt/buf.h>
 
@@ -113,6 +114,11 @@ static struct bt_conn_auth_cb auth_cb = {
 	.pairing_failed = pairing_failed_cb,
 };
 
+static void ot_updated(void)
+{
+	LOG_DBG("OpenThread value updated");
+}
+
 int bt_srv_init(void)
 {
 	int err;
@@ -128,6 +134,9 @@ int bt_srv_init(void)
 		LOG_ERR("Peer's IPV6 Config GATT service init failed (err %d)", err);
 		return err;
 	}
+
+	/* Set OpenThread value updated callback */
+	setup_ot_updated_cb_register(&ot_updated);
 
 #ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
 	img_mgmt_register_group();
