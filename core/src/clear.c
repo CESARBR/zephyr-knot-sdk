@@ -14,7 +14,7 @@
 
 LOG_MODULE_REGISTER(knot_clear, LOG_LEVEL_DBG);
 
-static int clear_ot_nvs(void)
+int clear_ot_nvs(void)
 {
 	struct device *flash_dev;
 	int rc;

@@ -33,6 +33,7 @@
 
 #include "bt_srv.h"
 #include "gatt_inet6.h"
+#include "clear.h"
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
@@ -116,7 +117,14 @@ static struct bt_conn_auth_cb auth_cb = {
 
 static void ot_updated(void)
 {
+	static bool ot_nvs_wiped = false;
+
 	LOG_DBG("OpenThread value updated");
+
+	if (ot_nvs_wiped == false) {
+		clear_ot_nvs();
+		ot_nvs_wiped = true;
+	}
 }
 
 int bt_srv_init(void)
