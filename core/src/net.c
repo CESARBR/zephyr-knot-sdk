@@ -90,15 +90,33 @@ static void net_thread(void)
 	int ret;
 
 	/* Load and set OpenThread credentials from settings */
+	ret = ot_config_init();
+	if (ret) {
+		LOG_ERR("Failed to init OT handler. Aborting net thread");
+		return;
+	}
+
 	ret = ot_config_load();
 	if (ret) {
 		LOG_ERR("Failed to load OT credentials. Aborting net thread");
 		return;
 	}
 
+	ret = ot_config_stop();
+	if (ret) {
+		LOG_ERR("Failed to stop OT. Aborting net thread");
+		return;
+	}
+
 	ret = ot_config_set();
 	if (ret) {
 		LOG_ERR("Failed to set OT credentials. Aborting net thread");
+		return;
+	}
+
+	ret = ot_config_start();
+	if (ret) {
+		LOG_ERR("Failed to start OT. Aborting net thread");
 		return;
 	}
 

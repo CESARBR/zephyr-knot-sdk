@@ -24,6 +24,10 @@
 
 LOG_MODULE_REGISTER(ot_config, LOG_LEVEL_DBG);
 
+#if defined(CONFIG_NET_L2_OPENTHREAD)
+static struct openthread_context *ot_context;
+#endif
+
 static char net_name[NET_NAME_LEN];
 static char xpanid[XPANID_LEN];
 static char masterkey[MASTERKEY_LEN];
@@ -77,35 +81,38 @@ int ot_config_load(void)
 }
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
-int ot_config_set(void)
+int ot_config_init(void)
 {
 	struct net_if *iface;
-	struct openthread_context *ot_context;
+
+	/* Load interface and context */
+	LOG_DBG("Initializing OpenThread handler");
+	iface = net_if_get_default();
+	if (iface == NULL) {
+		LOG_ERR("Failed to get net interface");
+		return -1;
+	}
+
+	ot_context = net_if_l2_data(iface);
+	if (ot_context == NULL) {
+		LOG_ERR("Failed to get OT context");
+		return -1;
+	}
+
+	return 0;
+}
+
+int ot_config_set(void)
+{
 	otExtendedPanId xpanid_ctx;
 	otMasterKey masterkey_ctx;
 	int rc;
-
-	/* Load interface and context */
-	iface = net_if_get_default();
-	ot_context = net_if_l2_data(iface);
 
 	/* Convert string to bytes */
 	net_bytes_from_str(xpanid_ctx.m8, 8, xpanid);
 	net_bytes_from_str(masterkey_ctx.m8, 16, masterkey);
 
 	LOG_DBG("Setting OpenThread credentials");
-
-	/* Disable OpenThread service */
-	rc = otThreadSetEnabled(ot_context->instance, false);
-	if (rc) {
-		LOG_ERR("Failed to stop Thread protocol. (err %d)", rc);
-		return rc;
-	}
-	rc = otIp6SetEnabled(ot_context->instance, false);
-	if (rc) {
-		LOG_ERR("Failed to disable IPv6 communication. (err %d)", rc);
-		return rc;
-	}
 
 	/* Set credentials */
 	rc = otThreadSetNetworkName(ot_context->instance, net_name);
@@ -138,7 +145,15 @@ int ot_config_set(void)
 		return rc;
 	}
 
+	return OT_ERROR_NONE;
+}
+
+int ot_config_start(void)
+{
+	int rc;
+
 	/* Enable OpenThread service */
+	LOG_DBG("Starting OpenThread service");
 	rc = otIp6SetEnabled(ot_context->instance, true);
 	if (rc) {
 		LOG_ERR("Failed to enable IPv6 communication. (err %d)", rc);
@@ -146,11 +161,29 @@ int ot_config_set(void)
 	}
 
 	rc = otThreadSetEnabled(ot_context->instance, true);
-	if (rc) {
+	if (rc)
 		LOG_ERR("Failed to start Thread protocol. (err %d)", rc);
+
+	return rc;
+}
+
+int ot_config_stop(void)
+{
+	int rc;
+
+	/* Disable OpenThread service */
+	LOG_DBG("Stopping OpenThread service");
+	rc = otThreadSetEnabled(ot_context->instance, false);
+	if (rc) {
+		LOG_ERR("Failed to stop Thread protocol. (err %d)", rc);
 		return rc;
 	}
 
-	return OT_ERROR_NONE;
+	rc = otIp6SetEnabled(ot_context->instance, false);
+	if (rc)
+		LOG_ERR("Failed to disable IPv6 communication. (err %d)", rc);
+
+	return rc;
 }
+
 #endif

@@ -9,5 +9,10 @@
 int ot_config_load(void);
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
+int ot_config_init(void);
+
+int ot_config_start(void);
+int ot_config_stop(void);
+
 int ot_config_set(void);
 #endif
