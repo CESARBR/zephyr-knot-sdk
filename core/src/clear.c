@@ -30,14 +30,12 @@ int clear_ot_nvs(void)
 	rc = flash_erase(flash_dev,
 			 FLASH_AREA_OT_STORAGE_OFFSET,
 			 FLASH_AREA_OT_STORAGE_SIZE);
-	if (rc) {
+	if (rc)
 		LOG_ERR("Failed to clear OpenThread's NVS");
-		return -1;
-	}
 
 	flash_write_protection_set(flash_dev, true);
 
-	return 0;
+	return rc;
 }
 
 static int clear_settings(void)
