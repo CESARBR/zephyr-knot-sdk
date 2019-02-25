@@ -40,6 +40,29 @@ int clear_ot_nvs(void)
 	return 0;
 }
 
+static int clear_settings(void)
+{
+	struct device *flash_dev;
+	int rc;
+
+	flash_dev = device_get_binding(DT_FLASH_DEV_NAME);
+	if (!flash_dev) {
+		LOG_ERR("Flash driver was not found!");
+		return -1;
+	}
+
+	/* Erase Storage flash partition */
+	flash_write_protection_set(flash_dev, false);
+	rc = flash_erase(flash_dev,
+			 FLASH_AREA_STORAGE_OFFSET,
+			 FLASH_AREA_STORAGE_SIZE);
+	if (rc)
+		LOG_ERR("Failed to clear Storage flash partition");
+
+	flash_write_protection_set(flash_dev, true);
+
+	return rc;
+}
 
 int clear_factory(void)
 {
@@ -55,6 +78,10 @@ int clear_factory(void)
 		ret = -1;
 
 	rc = clear_ot_nvs();
+	if (rc)
+		ret = -1;
+
+	rc = clear_settings();
 	if (rc)
 		ret = -1;
 
