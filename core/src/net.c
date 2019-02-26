@@ -120,9 +120,9 @@ static void net_thread(void)
 		return;
 	}
 
-	/* TODO: Check if OpenThread is ready before initializing TCP layer */
-	/* Give time for OpenThread to load */
-	k_sleep(100);
+	LOG_DBG("Waiting for OpenThread to be ready...");
+	while (ot_config_is_ready() == false)
+		k_sleep(100);
 
 	/* Start TCP layer */
 	ret = tcp6_init();

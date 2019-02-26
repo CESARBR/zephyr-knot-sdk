@@ -26,6 +26,7 @@ LOG_MODULE_REGISTER(ot_config, LOG_LEVEL_DBG);
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 static struct openthread_context *ot_context;
+static otDeviceRole role = OT_DEVICE_ROLE_DISABLED;
 #endif
 
 static char net_name[NET_NAME_LEN];
@@ -83,7 +84,6 @@ int ot_config_load(void)
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 static void update_role(void)
 {
-	otDeviceRole role;
 	role = otThreadGetDeviceRole(ot_context->instance);
 
 	if (role != OT_DEVICE_ROLE_CHILD) {
@@ -214,6 +214,12 @@ int ot_config_stop(void)
 		LOG_ERR("Failed to disable IPv6 communication. (err %d)", rc);
 
 	return rc;
+}
+
+bool ot_config_is_ready(void)
+{
+	/* Device is ready when its role is set to Child */
+	return (role == OT_DEVICE_ROLE_CHILD);
 }
 
 #endif
