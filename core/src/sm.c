@@ -24,6 +24,7 @@ LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 #define TIMEOUT_WIN				3 /* 3 sec */
 
 static struct k_timer to;	/* Re-send timeout */
+static u8_t xpt_opcode;		/* Expected response OPCODE */
 static bool to_on;		/* Timeout active */
 static bool to_xpr;		/* Timeout expired */
 
@@ -460,6 +461,7 @@ done:
 
 	to_on = false;
 	to_xpr = false;
+	xpt_opcode = 0xff;
 
 	return 0;
 }
@@ -489,8 +491,6 @@ int sm_run(const u8_t *ipdu, size_t ilen, u8_t *opdu, size_t olen)
 	s64_t status_blink_period;
 	size_t len = 0;
 
-	/* Expected OPCODE response. Initially not expecting response*/
-	static u8_t xpt_opcode = 0xff;
 	bool got_resp; /* Got right response */
 
 	/*
