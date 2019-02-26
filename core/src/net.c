@@ -71,6 +71,8 @@ static bool recv_cb(struct net_buf *netbuf)
 void ot_disconn(void)
 {
 	LOG_ERR("NET: OT disconnected");
+
+	close_cb();
 }
 
 static void connection_start(void)
