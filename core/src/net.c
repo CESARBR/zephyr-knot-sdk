@@ -72,6 +72,10 @@ static void connection_start(void)
 {
 	int ret;
 
+	LOG_DBG("Waiting for OpenThread to be ready...");
+	while (ot_config_is_ready() == false)
+		k_sleep(100);
+
 	ret = tcp6_start(recv_cb, close_cb);
 	if (ret < 0) {
 		LOG_DBG("NET: TCP start failure");
@@ -119,10 +123,6 @@ static void net_thread(void)
 		LOG_ERR("Failed to start OT. Aborting net thread");
 		return;
 	}
-
-	LOG_DBG("Waiting for OpenThread to be ready...");
-	while (ot_config_is_ready() == false)
-		k_sleep(100);
 
 	/* Start TCP layer */
 	ret = tcp6_init();
