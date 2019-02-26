@@ -81,6 +81,29 @@ int ot_config_load(void)
 }
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
+static void update_role(void)
+{
+	otDeviceRole role;
+	role = otThreadGetDeviceRole(ot_context->instance);
+
+	if (role != OT_DEVICE_ROLE_CHILD) {
+		LOG_WRN("OT role: %u (not child)", role);
+		return;
+	}
+
+	LOG_DBG("OT role: %u (child)", role);
+}
+
+static void change_cb(otChangedFlags aFlags, void *aContext)
+{
+	/* Ignore if no role change */
+	if ((aFlags & OT_CHANGED_THREAD_ROLE) == false)
+		return;
+
+	LOG_DBG("OT Role changed");
+	update_role();
+}
+
 int ot_config_init(void)
 {
 	struct net_if *iface;
@@ -98,6 +121,8 @@ int ot_config_init(void)
 		LOG_ERR("Failed to get OT context");
 		return -1;
 	}
+
+	otSetStateChangedCallback(ot_context->instance, &change_cb, ot_context);
 
 	return 0;
 }
