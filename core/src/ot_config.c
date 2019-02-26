@@ -107,6 +107,7 @@ static void change_cb(otChangedFlags aFlags, void *aContext)
 int ot_config_init(void)
 {
 	struct net_if *iface;
+	int rc;
 
 	/* Load interface and context */
 	LOG_DBG("Initializing OpenThread handler");
@@ -122,9 +123,13 @@ int ot_config_init(void)
 		return -1;
 	}
 
-	otSetStateChangedCallback(ot_context->instance, &change_cb, ot_context);
+	rc = otSetStateChangedCallback(ot_context->instance,
+				       &change_cb,
+				       ot_context);
+	if (rc)
+		LOG_ERR("Failed to set change cb (err %d)", rc);
 
-	return 0;
+	return rc;
 }
 
 int ot_config_set(void)
