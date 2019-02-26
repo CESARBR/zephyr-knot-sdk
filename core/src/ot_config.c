@@ -29,6 +29,7 @@ LOG_MODULE_REGISTER(ot_config, LOG_LEVEL_DBG);
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 static struct openthread_context *ot_context;
 static otDeviceRole role = OT_DEVICE_ROLE_DISABLED;
+ot_config_disconn_cb disconn_cb;
 #endif
 
 static char net_name[NET_NAME_LEN];
@@ -88,12 +89,16 @@ static void update_role(void)
 {
 	role = otThreadGetDeviceRole(ot_context->instance);
 
-	if (role != OT_DEVICE_ROLE_CHILD) {
-		LOG_WRN("OT role: %u (not child)", role);
+	if (role == OT_DEVICE_ROLE_CHILD) {
+		LOG_DBG("OT role: %u (child)", role);
 		return;
 	}
 
-	LOG_DBG("OT role: %u (child)", role);
+	LOG_WRN("OT role: %u (not child)", role);
+	/* Call disconnection callback if set */
+	if (disconn_cb != NULL)
+		disconn_cb();
+
 }
 
 static void change_cb(otChangedFlags aFlags, void *aContext)
@@ -106,10 +111,12 @@ static void change_cb(otChangedFlags aFlags, void *aContext)
 	update_role();
 }
 
-int ot_config_init(void)
+int ot_config_init(ot_config_disconn_cb ot_disconn_cb)
 {
 	struct net_if *iface;
 	int rc;
+
+	disconn_cb = ot_disconn_cb;
 
 	/* Load interface and context */
 	LOG_DBG("Initializing OpenThread handler");

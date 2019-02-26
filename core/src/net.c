@@ -68,6 +68,11 @@ static bool recv_cb(struct net_buf *netbuf)
 	return true;
 }
 
+void ot_disconn(void)
+{
+	LOG_ERR("NET: OT disconnected");
+}
+
 static void connection_start(void)
 {
 	int ret;
@@ -94,7 +99,7 @@ static void net_thread(void)
 	int ret;
 
 	/* Load and set OpenThread credentials from settings */
-	ret = ot_config_init();
+	ret = ot_config_init(&ot_disconn);
 	if (ret) {
 		LOG_ERR("Failed to init OT handler. Aborting net thread");
 		return;
