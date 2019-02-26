@@ -18,6 +18,8 @@
 
 #include "ot_config.h"
 
+#define CHILD_TIMEOUT 5
+
 #define NET_NAME_LEN 17
 #define XPANID_LEN 24
 #define MASTERKEY_LEN 48
@@ -128,6 +130,9 @@ int ot_config_init(void)
 				       ot_context);
 	if (rc)
 		LOG_ERR("Failed to set change cb (err %d)", rc);
+
+	/* Time for Thing to become detached if disconnected */
+	otThreadSetChildTimeout(ot_context->instance, CHILD_TIMEOUT);
 
 	return rc;
 }
