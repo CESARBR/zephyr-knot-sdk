@@ -1,0 +1,10 @@
+This folder contains pre-built stock images that can be flash to KNoT Things.
+
+The following images are included:
+
+MCUBOOT-EC-P256
+File: mcuboot-ec-p256.hex
+Content: MCUBOOT image using signature type ECDSA_P256 and the signature file
+`root-ec-p256.pem` at `<mcuboot-repo>/root-ec-p256.pem`
+Version: 5e9078f1e0bfed493b4265dd435cccb856cf2d6f
+
