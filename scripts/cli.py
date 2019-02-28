@@ -8,6 +8,32 @@ from os import environ, path
 
 import sys
 import click
+import subprocess
+
+
+"""
+ Run subprocess and get raise error if any
+"""
+def run_cmd(cmd):
+    print('Executing command: {}\n'.format(cmd))
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
+
+    # Wait for process to run
+    out, err = process.communicate()
+
+    rc = process.returncode
+
+    if rc == 0:
+        return
+
+    # Print output if error
+    print('code: {}'.format(rc))
+    if out is not None:
+        print('Output: ' + out.decode('ascii'))
+    if err is not None:
+        print('Error: '  + err.decode('ascii'))
+        raise Exception("Process execution failed")
 
 
 """
@@ -48,12 +74,21 @@ class KnotSDK(metaclass=Singleton):
     def __flash(self, file_path):
         # TODO
         print('Flashing file ' + file_path)
+        cmd = 'nrfjprog --program ' + \
+              file_path + \
+              ' --sectorerase -f nrf52 --reset'
+        run_cmd(cmd)
+
 
     def flash_mcuboot(self):
         print('Flashing stock MCUBOOT...')
-        self.__flash(path.join(self.knot_path,
-                               self.Constants.IMG_PATH,
-                               self.Constants.MCUBOOT_STOCK_FILE))
+        try:
+            self.__flash(path.join(self.knot_path,
+                                    self.Constants.IMG_PATH,
+                                    self.Constants.MCUBOOT_STOCK_FILE))
+            print('MCUBOOT flashed')
+        except Exception as e:
+            print('Failed to flash MCUBOOT. \n Error: {}'.format(e))
 
 
 """
