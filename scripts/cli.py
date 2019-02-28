@@ -12,6 +12,24 @@ import subprocess
 
 
 """
+ Custom exception for error during command execution
+"""
+class ProcExecErr(Exception):
+    def __init__(self, cmd, message, error_code):
+        super(ProcExecErr, self).__init__(message)
+        self.cmd = cmd
+        self.error = error_code
+        self.message = message
+
+    def __str__(self):
+        ret = '<{}>\nProcess execution fail\n' + \
+              'cmd: {}\n' + \
+              'Return code: {}\n' + \
+              'Process output: \n{}\n'
+        return ret.format(type(self).__name__,
+                          self.cmd ,self.error, self.message)
+
+"""
  Run subprocess and get raise error if any
 """
 def run_cmd(cmd):
@@ -27,13 +45,15 @@ def run_cmd(cmd):
     if rc == 0:
         return
 
-    # Print output if error
-    print('code: {}'.format(rc))
+    # Raise exception if error
+    excep_msg = ''
     if out is not None:
-        print('Output: ' + out.decode('ascii'))
+        excep_msg += 'stdout: {}'.format(out.decode('ascii'))
     if err is not None:
-        print('Error: '  + err.decode('ascii'))
-        raise Exception("Process execution failed")
+        excep_msg += 'stderr: {}'.format(err.decode('ascii'))
+
+
+    raise ProcExecErr(cmd, excep_msg, rc)
 
 
 """
@@ -87,8 +107,8 @@ class KnotSDK(metaclass=Singleton):
                                     self.Constants.IMG_PATH,
                                     self.Constants.MCUBOOT_STOCK_FILE))
             print('MCUBOOT flashed')
-        except Exception as e:
-            print('Failed to flash MCUBOOT. \n Error: {}'.format(e))
+        except ProcExecErr as e:
+            print('Failed to flash MCUBOOT.\nError: {}'.format(e))
 
 
 """
