@@ -76,6 +76,8 @@ class KnotSDK(metaclass=Singleton):
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
+        SETUP_PATH = "setup"
+        BUILD_PATH = "build"
         IMG_PATH = "img"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
 
@@ -109,6 +111,34 @@ class KnotSDK(metaclass=Singleton):
         except ProcExecErr as e:
             print('Failed to flash MCUBOOT.\nError: {}'.format(e))
 
+    """
+    Create build folder at path if it doesn't exists.
+    Returs True if directory already exists.
+    """
+    def create_build(self, path):
+        try:
+            os.makedirs(path)
+            print('Create dir: {}'.format(path))
+            return False
+        except OSError as e:
+            if e.errno != os.errno.EEXIST:
+                raise
+            return True
+
+    """
+    Create build folder and make setup app
+    """
+    def make_setup(self):
+        build_path = os.path.join(self.knot_path,
+                                  self.Constants.SETUP_PATH,
+                                  self.Constants.BUILD_PATH)
+        exists = self.create_build(build_path)
+        if not exists:
+            #TODO
+            print("Running cmake for setup")
+        #TODO
+        print('Building setup app...')
+
 
 """
  Command line interface components
@@ -126,8 +156,7 @@ def make(ctx):
     if ctx.invoked_subcommand == "clean":
         return
 
-    # TODO
-    print('Building setup app...')
+    KnotSDK().make_setup()
 
     # TODO
     print('Building main app...')
