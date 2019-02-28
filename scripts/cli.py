@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from os import environ
+from os import environ, path
 
 import sys
 import click
@@ -31,6 +31,8 @@ class KnotSDK(metaclass=Singleton):
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
+        IMG_PATH = "img"
+        MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
 
     def __init__(self):
         self.check_env()
@@ -42,6 +44,16 @@ class KnotSDK(metaclass=Singleton):
             raise KeyError('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
         self.knot_path = environ[self.Constants.KNOT_BASE_VAR]
         print('Using KNoT base path: ' + self.knot_path)
+
+    def __flash(self, file_path):
+        # TODO
+        print('Flashing file ' + file_path)
+
+    def flash_mcuboot(self):
+        print('Flashing stock MCUBOOT...')
+        self.__flash(path.join(self.knot_path,
+                               self.Constants.IMG_PATH,
+                               self.Constants.MCUBOOT_STOCK_FILE))
 
 
 """
@@ -83,8 +95,7 @@ def erase():
 
 @cli.command(help='Flash stock MCUBOOT')
 def mcuboot():
-    # TODO
-    click.echo('Flashing stock MCUBOOT...')
+   KnotSDK().flash_mcuboot()
 
 
 """
