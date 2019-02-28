@@ -4,8 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from os import environ, path
-
+import os
 import sys
 import click
 import subprocess
@@ -84,11 +83,11 @@ class KnotSDK(metaclass=Singleton):
         self.check_env()
 
     def check_env(self):
-        if self.Constants.KNOT_BASE_VAR not in environ:
+        if self.Constants.KNOT_BASE_VAR not in os.environ:
             print('KNoT base path not found.')
             print('Run: $ source <knot-zephyr-sdk-path>/knot-env.sh')
             raise KeyError('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
-        self.knot_path = environ[self.Constants.KNOT_BASE_VAR]
+        self.knot_path = os.environ[self.Constants.KNOT_BASE_VAR]
         print('Using KNoT base path: ' + self.knot_path)
 
     def __flash(self, file_path):
@@ -103,7 +102,7 @@ class KnotSDK(metaclass=Singleton):
     def flash_mcuboot(self):
         print('Flashing stock MCUBOOT...')
         try:
-            self.__flash(path.join(self.knot_path,
+            self.__flash(os.path.join(self.knot_path,
                                     self.Constants.IMG_PATH,
                                     self.Constants.MCUBOOT_STOCK_FILE))
             print('MCUBOOT flashed')
