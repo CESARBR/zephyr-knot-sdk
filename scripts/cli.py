@@ -29,32 +29,6 @@ class ProcExecErr(Exception):
         return ret.format(type(self).__name__,
                           self.cmd ,self.error, self.message)
 
-"""
- Run subprocess and get raise error if any
-"""
-def run_cmd(cmd):
-    print('Executing command: {}\n'.format(cmd))
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE)
-
-    # Wait for process to run
-    out, err = process.communicate()
-
-    rc = process.returncode
-
-    if rc == 0:
-        return
-
-    # Raise exception if error
-    excep_msg = ''
-    if out is not None:
-        excep_msg += 'stdout: {}'.format(out.decode('ascii'))
-    if err is not None:
-        excep_msg += 'stderr: {}'.format(err.decode('ascii'))
-
-
-    raise ProcExecErr(cmd, excep_msg, rc)
-
 
 """
  Singleton class to garrantee that a single instance will be used for
@@ -74,6 +48,7 @@ class Singleton(type):
 """
 class KnotSDK(metaclass=Singleton):
     knot_path = "" # Common directory and files used by images
+    cwd = "" # Current working directory from where cli was called
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -92,6 +67,9 @@ class KnotSDK(metaclass=Singleton):
             raise KeyError('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
         self.knot_path = os.environ[self.Constants.KNOT_BASE_VAR]
         print('Using KNoT base path: ' + self.knot_path)
+
+        # Get current working directory
+        self.cwd = os.getcwd()
 
     def __flash(self, file_path):
         # TODO
@@ -139,6 +117,33 @@ class KnotSDK(metaclass=Singleton):
             print("Running cmake for setup")
         #TODO
         print('Building setup app...')
+
+
+"""
+ Run subprocess and get raise error if any
+"""
+def run_cmd(cmd, workdir=KnotSDK().cwd):
+    print('Executing command: "{}"\nfrom: {}\n'.format(cmd, workdir))
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            cwd=workdir)
+
+    # Wait for process to run
+    out, err = process.communicate()
+
+    rc = process.returncode
+
+    if rc == 0:
+        return
+
+    # Raise exception if error
+    excep_msg = ''
+    if out is not None:
+        excep_msg += 'stdout: {}'.format(out.decode('ascii'))
+    if err is not None:
+        excep_msg += 'stderr: {}'.format(err.decode('ascii'))
+
+    raise ProcExecErr(cmd, excep_msg, rc)
 
 
 """
