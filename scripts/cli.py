@@ -156,9 +156,9 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
     # Raise exception if error
     excep_msg = ''
     if out is not None:
-        excep_msg += 'stdout: {}'.format(out.decode('ascii'))
+        excep_msg += 'stdout: {}'.format(out.decode('utf_8'))
     if err is not None:
-        excep_msg += 'stderr: {}'.format(err.decode('ascii'))
+        excep_msg += 'stderr: {}'.format(err.decode('utf_8'))
 
     raise ProcExecErr(cmd, excep_msg, rc)
 
