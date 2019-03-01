@@ -100,12 +100,8 @@ class KnotSDK(metaclass=Singleton):
             os.makedirs(path)
             print('Creating dir: {}'.format(path))
 
-    """
-    Create build folder and make setup app
-    """
-    def make_setup(self):
-        setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
-        build_path = os.path.join(setup_path, self.Constants.BUILD_PATH)
+    def make_app(self, app_path, app_name):
+        build_path = os.path.join(app_path, self.Constants.BUILD_PATH)
 
         # Build directory
         self.create_build(build_path)
@@ -113,27 +109,34 @@ class KnotSDK(metaclass=Singleton):
         # Cmake
         if not os.listdir(build_path):
             print("Build directory is empty")
-            print("Creating make files for Setup App")
+            print("Creating make files for {} App".format(app_name))
             cmd = 'cmake -DBOARD={} {}'.format(KnotSDK().Constants.BOARD,
-                                               setup_path)
+                                               app_path)
             try:
                 run_cmd(cmd, workdir=build_path)
-                print('Created make files for Setup App')
+                print('Created make files for {} App'.format(app_name))
             except ProcExecErr as e:
-                print('Failed to create make file for Setup App')
+                print('Failed to create make file for {} App'.format(app_name))
                 print('Error: {}'.format(e))
                 exit(e.error)
 
         # make
-        print('Building setup app...')
+        print('Building {} App ...'.format(app_name))
         cmd = 'make -C {}'.format(build_path)
         try:
             run_cmd(cmd, workdir=build_path)
-            print('Setup App built')
+            print('{} App built'.format(app_name))
         except ProcExecErr as e:
-            print('Failed to build Setup App')
+            print('Failed to build {} App'.format(app_name))
             print('Error: {}'.format(e))
             exit(e.error)
+
+    """
+    Create build folder and make setup app
+    """
+    def make_setup(self):
+        setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
+        self.make_app(setup_path, "Setup")
 
 
 """
