@@ -52,6 +52,7 @@ class KnotSDK(metaclass=Singleton):
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
+        BOARD = "nrf52840_pca10056"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
         IMG_PATH = "img"
@@ -108,13 +109,25 @@ class KnotSDK(metaclass=Singleton):
     Create build folder and make setup app
     """
     def make_setup(self):
-        build_path = os.path.join(self.knot_path,
-                                  self.Constants.SETUP_PATH,
-                                  self.Constants.BUILD_PATH)
-        exists = self.create_build(build_path)
-        if not exists:
-            #TODO
-            print("Running cmake for setup")
+        setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
+        build_path = os.path.join(setup_path, self.Constants.BUILD_PATH)
+
+        # Build directory
+        self.create_build(build_path)
+
+        # Cmake
+        if not os.listdir(build_path):
+            print("Build directory is empty")
+            print("Creating make files for Setup App")
+            cmd = 'cmake -DBOARD={} {}'.format(KnotSDK().Constants.BOARD,
+                                               setup_path)
+            try:
+                run_cmd(cmd, workdir=build_path)
+                print('Created make files for Setup App')
+            except ProcExecErr as e:
+                print('Failed to create make file for Setup App')
+                print('Error: {}'.format(e))
+                exit(e.error)
         #TODO
         print('Building setup app...')
 
