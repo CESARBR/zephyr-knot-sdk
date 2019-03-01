@@ -123,8 +123,17 @@ class KnotSDK(metaclass=Singleton):
                 print('Failed to create make file for Setup App')
                 print('Error: {}'.format(e))
                 exit(e.error)
-        #TODO
+
+        # make
         print('Building setup app...')
+        cmd = 'make -C {}'.format(build_path)
+        try:
+            run_cmd(cmd, workdir=build_path)
+            print('Setup App built')
+        except ProcExecErr as e:
+            print('Failed to build Setup App')
+            print('Error: {}'.format(e))
+            exit(e.error)
 
 
 """
