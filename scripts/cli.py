@@ -64,7 +64,7 @@ class KnotSDK(metaclass=Singleton):
         if self.Constants.KNOT_BASE_VAR not in os.environ:
             print('KNoT base path not found.')
             print('Run: $ source <knot-zephyr-sdk-path>/knot-env.sh')
-            raise KeyError('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
+            exit('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
         self.knot_path = os.environ[self.Constants.KNOT_BASE_VAR]
         print('Using KNoT base path: ' + self.knot_path)
 
