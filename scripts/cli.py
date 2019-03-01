@@ -96,14 +96,9 @@ class KnotSDK(metaclass=Singleton):
     Returs True if directory already exists.
     """
     def create_build(self, path):
-        try:
+        if not os.path.exists(path):
             os.makedirs(path)
-            print('Create dir: {}'.format(path))
-            return False
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-            return True
+            print('Creating dir: {}'.format(path))
 
     """
     Create build folder and make setup app
