@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import errno
 import sys
 import click
 import subprocess
@@ -121,7 +122,7 @@ class KnotSDK(metaclass=Singleton):
             print('Create dir: {}'.format(path))
             return False
         except OSError as e:
-            if e.errno != os.errno.EEXIST:
+            if e.errno != errno.EEXIST:
                 raise
             return True
 
