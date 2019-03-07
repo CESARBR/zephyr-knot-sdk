@@ -90,6 +90,11 @@ class KnotSDK(metaclass=Singleton):
                                   self.Constants.MCUBOOT_STOCK_FILE))
         print('MCUBOOT flashed')
 
+    def flash_signed(self):
+        print('Flashing signed image...')
+        self.__flash(self.signed_hex_path)
+        print('Signed image flashed')
+
     """
     Create build folder at path if it doesn't exists.
     Returs True if directory already exists.
@@ -283,8 +288,7 @@ def make(ctx, ot_path):
 
 @make.command(help='Flash setup and main apps')
 def flash():
-    # TODO
-    print('Flashing setup and main apps...')
+    KnotSDK().flash_signed()
 
 @make.command(help='Delete building files')
 def clean():
