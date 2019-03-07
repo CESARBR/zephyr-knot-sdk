@@ -35,6 +35,7 @@ class KnotSDK(metaclass=Singleton):
     setup_hex_path = None # Path to generated hex path for setup app
     main_hex_path = None # Path to generated hex path for main app
     merged_hex_path = None # Path to hex file merged from main and setup app
+    signed_hex_path = None # Path to signed merged hex file
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -44,9 +45,16 @@ class KnotSDK(metaclass=Singleton):
         BUILD_PATH = "build"
         HEX_PATH = "zephyr/zephyr.hex"
         MERGED_HEX_PATH = "merged.hex"
+        SIGNED_HEX_PATH = "signed.hex"
         IMG_PATH = "img"
         OT_CONFIG_PATH = "overlay-knot-ot.conf"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
+        SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
+        SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
+        SIGN_HEADER_SIZE = "0x200"
+        SIGN_IMG_ALIGN = "8"
+        SIGN_SCRIPT_VERSION = "1.5"
+        SIGN_IMG_SLOT_SIZE = "0x69000"
 
     def __init__(self):
         self.check_env()
@@ -182,6 +190,35 @@ class KnotSDK(metaclass=Singleton):
         else:
             print('Hex file generated at {}'.format(self.merged_hex_path))
 
+    """
+    Sign merged hex file
+    """
+    def sign_merged(self):
+        self.signed_hex_path = os.path.join(self.knot_path,
+                                            self.Constants.BUILD_PATH,
+                                            self.Constants.SIGNED_HEX_PATH)
+
+        # Sign merged image using imgtool script
+        imgtool_path = os.path.join(self.knot_path,
+                                    self.Constants.SIGN_SCRIPT_PATH)
+        key_path = os.path.join(self.knot_path,
+                                self.Constants.SIGN_KEY_PATH)
+
+        cmd = ('{} sign'.format(imgtool_path)
+               + ' --key {}'.format(key_path)
+               + ' --header-size {}'.format(self.Constants.SIGN_HEADER_SIZE)
+               + ' --align {}'.format(self.Constants.SIGN_IMG_ALIGN)
+               + ' --version {}'.format(self.Constants.SIGN_SCRIPT_VERSION)
+               + ' --slot-size {}'.format(self.Constants.SIGN_IMG_SLOT_SIZE)
+               + ' --pad'
+               + ' {}'.format(self.merged_hex_path)
+               + ' {}'.format(self.signed_hex_path))
+        print('Signing merged hex file')
+        run_cmd(cmd)
+        if not os.path.isfile(self.signed_hex_path):
+            exit('Error: No hex file found at {}'.format(self.signed_hex_path))
+        else:
+            print('Hex file generated at {}'.format(self.signed_hex_path))
 
 """
  Run subprocess and get raise error if any
@@ -242,6 +279,7 @@ def make(ctx, ot_path):
     # Merge and Sign apps
     KnotSDK().clear_core_work()
     KnotSDK().merge_setup_main()
+    KnotSDK().sign_merged()
 
 @make.command(help='Flash setup and main apps')
 def flash():
