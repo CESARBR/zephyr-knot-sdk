@@ -12,12 +12,13 @@ import click
 import subprocess
 
 
-"""
- Singleton class to garrantee that a single instance will be used for
- its inhereted classes
-"""
 class Singleton(type):
+    """
+    Singleton class to guarantee that a single instance will be used for
+    its inhereted classes
+    """
     __instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls.__instances:
             cls.__instances[cls] = super(Singleton,
@@ -25,17 +26,17 @@ class Singleton(type):
         return cls.__instances[cls]
 
 
-"""
- Specific operations related to the KNoT Zephyr SDK
-"""
 class KnotSDK(metaclass=Singleton):
-    knot_path = "" # Common directory and files used by images
-    ext_ot_path = None # External OpenThread repository
-    cwd = "" # Current working directory from where cli was called
-    setup_hex_path = None # Path to generated hex path for setup app
-    main_hex_path = None # Path to generated hex path for main app
-    merged_hex_path = None # Path to hex file merged from main and setup app
-    signed_hex_path = None # Path to signed merged hex file
+    """
+    Specific operations related to the KNoT Zephyr SDK
+    """
+    knot_path = ""  # Common directory and files used by images
+    ext_ot_path = None  # External OpenThread repository
+    cwd = ""  # Current working directory from where cli was called
+    setup_hex_path = None  # Path to generated hex path for setup app
+    main_hex_path = None  # Path to generated hex path for main app
+    merged_hex_path = None  # Path to hex file merged from main and setup app
+    signed_hex_path = None  # Path to signed merged hex file
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -63,7 +64,7 @@ class KnotSDK(metaclass=Singleton):
         if self.Constants.KNOT_BASE_VAR not in os.environ:
             print('KNoT base path not found.')
             print('Run: $ source <knot-zephyr-sdk-path>/knot-env.sh')
-            exit('"$' + self.Constants.KNOT_BASE_VAR +'" not found')
+            exit('"$' + self.Constants.KNOT_BASE_VAR + '" not found')
         self.knot_path = os.environ[self.Constants.KNOT_BASE_VAR]
         print('Using KNoT base path: ' + self.knot_path)
 
@@ -82,7 +83,6 @@ class KnotSDK(metaclass=Singleton):
               ' --sectorerase -f nrf52 --reset'
         run_cmd(cmd)
 
-
     def flash_mcuboot(self):
         print('Flashing stock MCUBOOT...')
         self.__flash(os.path.join(self.knot_path,
@@ -95,11 +95,11 @@ class KnotSDK(metaclass=Singleton):
         self.__flash(self.signed_hex_path)
         print('Signed image flashed')
 
-    """
-    Create build folder at path if it doesn't exists.
-    Returs True if directory already exists.
-    """
     def create_build(self, path):
+        """
+        Create build folder at path if it doesn't exists.
+        Returns True if directory already exists.
+        """
         if not os.path.exists(path):
             os.makedirs(path)
             print('Creating dir: {}'.format(path))
@@ -115,8 +115,8 @@ class KnotSDK(metaclass=Singleton):
             print("Build directory is empty")
             print("Creating make files for {} App".format(app_name))
             cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
-                                               options,
-                                               app_path)
+                                                  options,
+                                                  app_path)
             run_cmd(cmd, workdir=build_path)
             print('Created make files for {} App'.format(app_name))
 
@@ -134,18 +134,17 @@ class KnotSDK(metaclass=Singleton):
             print('Hex file generated at {}'.format(hex_path))
             return hex_path
 
-
-    """
-    Create build folder and make setup app
-    """
     def make_setup(self):
+        """
+        Create build folder and make setup app
+        """
         setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
         self.setup_hex_path = self.make_app(setup_path, "Setup")
 
-    """
-    Create build folder and make main app
-    """
     def make_main(self):
+        """
+        Create build folder and make main app
+        """
         # Define overlay file to be used
         overlay_path = os.path.join(self.knot_path,
                                     self.Constants.CORE_PATH,
@@ -155,7 +154,8 @@ class KnotSDK(metaclass=Singleton):
         # Use external OpenThread path if provided
         if self.ext_ot_path is not None:
             external_ot =\
-                '-DEXTERNAL_PROJECT_PATH_OPENTHREAD={}'.format(self.ext_ot_path)
+                '-DEXTERNAL_PROJECT_PATH_OPENTHREAD={}'.format(
+                    self.ext_ot_path)
         else:
             external_ot = ''
 
@@ -163,10 +163,10 @@ class KnotSDK(metaclass=Singleton):
         opt = '{} {}'.format(overlay_config, external_ot)
         self.main_hex_path = self.make_app(self.cwd, "Main", options=opt)
 
-    """
-    Clear build directory
-    """
     def clear_core_work(self):
+        """
+        Clear build directory
+        """
         core_work_path = os.path.join(self.knot_path,
                                       self.Constants.BUILD_PATH)
         print('Deleting {}'.format(core_work_path))
@@ -176,18 +176,18 @@ class KnotSDK(metaclass=Singleton):
         print('Creating {}'.format(core_work_path))
         os.mkdir(core_work_path)
 
-    """
-    Merge main and setup apps
-    """
     def merge_setup_main(self):
+        """
+        Merge main and setup apps
+        """
         self.merged_hex_path = os.path.join(self.knot_path,
-                                       self.Constants.BUILD_PATH,
-                                       self.Constants.MERGED_HEX_PATH)
+                                            self.Constants.BUILD_PATH,
+                                            self.Constants.MERGED_HEX_PATH)
 
         # Output hex at merge_hex_path
         cmd = 'mergehex -m {} {} -o {}'.format(self.setup_hex_path,
-                                            self.main_hex_path,
-                                            self.merged_hex_path)
+                                               self.main_hex_path,
+                                               self.merged_hex_path)
         print('Merging main and setup apps')
         run_cmd(cmd)
         if not os.path.isfile(self.merged_hex_path):
@@ -195,10 +195,10 @@ class KnotSDK(metaclass=Singleton):
         else:
             print('Hex file generated at {}'.format(self.merged_hex_path))
 
-    """
-    Sign merged hex file
-    """
     def sign_merged(self):
+        """
+        Sign merged hex file
+        """
         self.signed_hex_path = os.path.join(self.knot_path,
                                             self.Constants.BUILD_PATH,
                                             self.Constants.SIGNED_HEX_PATH)
@@ -209,15 +209,15 @@ class KnotSDK(metaclass=Singleton):
         key_path = os.path.join(self.knot_path,
                                 self.Constants.SIGN_KEY_PATH)
 
-        cmd = ('{} sign'.format(imgtool_path)
-               + ' --key {}'.format(key_path)
-               + ' --header-size {}'.format(self.Constants.SIGN_HEADER_SIZE)
-               + ' --align {}'.format(self.Constants.SIGN_IMG_ALIGN)
-               + ' --version {}'.format(self.Constants.SIGN_SCRIPT_VERSION)
-               + ' --slot-size {}'.format(self.Constants.SIGN_IMG_SLOT_SIZE)
-               + ' --pad'
-               + ' {}'.format(self.merged_hex_path)
-               + ' {}'.format(self.signed_hex_path))
+        cmd = ('{} sign'.format(imgtool_path) +
+               ' --key {}'.format(key_path) +
+               ' --header-size {}'.format(self.Constants.SIGN_HEADER_SIZE) +
+               ' --align {}'.format(self.Constants.SIGN_IMG_ALIGN) +
+               ' --version {}'.format(self.Constants.SIGN_SCRIPT_VERSION) +
+               ' --slot-size {}'.format(self.Constants.SIGN_IMG_SLOT_SIZE) +
+               ' --pad' +
+               ' {}'.format(self.merged_hex_path) +
+               ' {}'.format(self.signed_hex_path))
         print('Signing merged hex file')
         run_cmd(cmd)
         if not os.path.isfile(self.signed_hex_path):
@@ -225,14 +225,15 @@ class KnotSDK(metaclass=Singleton):
         else:
             print('Hex file generated at {}'.format(self.signed_hex_path))
 
-"""
- Run subprocess and get raise error if any
-"""
+
 def run_cmd(cmd, workdir=KnotSDK().cwd):
+    """
+    Run subprocess and get raise error if any
+    """
     print('Executing command: "{}"\nfrom: {}\n'.format(cmd, workdir))
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            cwd=workdir)
+                               stderr=subprocess.PIPE,
+                               cwd=workdir)
 
     # Wait for process to run
     out, err = process.communicate()
@@ -250,22 +251,23 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
     if err is not None:
         proc_log += 'stderr: {}'.format(err.decode('utf_8'))
 
-    err_msg = 'Process execution failed\n' + \
-              'cmd: {}\n' + \
-              'Return code: {}\n' + \
-              'Process output: \n{}\n'
+    err_msg = ('Process execution failed\n' +
+               'cmd: {}\n' +
+               'Return code: {}\n' +
+               'Process output: \n{}\n')
     exit(err_msg.format(cmd, rc, proc_log))
 
 
-"""
- Command line interface components
-"""
 @click.group()
 def cli():
+    """
+    Command line interface components
+    """
     try:
         KnotSDK()
     except KeyError as err:
         sys.exit(err)
+
 
 @cli.group(help='Build setup and main apps', invoke_without_command=True)
 @click.pass_context
@@ -286,27 +288,31 @@ def make(ctx, ot_path):
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
 
+
 @make.command(help='Flash setup and main apps')
 def flash():
     KnotSDK().flash_signed()
+
 
 @make.command(help='Delete building files')
 def clean():
     # TODO
     print('Deleting building files...')
 
+
 @cli.command(help='Erase flash memory')
 def erase():
     # TODO
     click.echo('Erasing KNoT Thing memory...')
 
+
 @cli.command(help='Flash stock MCUBOOT')
 def mcuboot():
-   KnotSDK().flash_mcuboot()
+    KnotSDK().flash_mcuboot()
 
 
-"""
- Run cli
-"""
 if __name__ == '__main__':
+    """
+    Run cli
+    """
     cli()
