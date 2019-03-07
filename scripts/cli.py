@@ -70,6 +70,11 @@ class App(object):
         else:
             print('Hex file generated at {}'.format(self.hex_path))
 
+    def clean(self):
+        print('Clearing {} App'.format(self.name))
+        if os.path.exists(self.build_path):
+            shutil.rmtree(self.build_path)
+
 
 class KnotSDK(metaclass=Singleton):
     """
@@ -175,18 +180,21 @@ class KnotSDK(metaclass=Singleton):
         opt = '{} {}'.format(overlay_config, external_ot)
         self.main_app.make(options=opt)
 
-    def clear_core_work(self):
+    def clear_core_dir(self):
         """
         Clear build directory
         """
-        core_work_path = os.path.join(self.knot_path,
-                                      self.Constants.BUILD_PATH)
-        print('Deleting {}'.format(core_work_path))
-        if os.path.exists(core_work_path):
-            shutil.rmtree(core_work_path)
+        core_dir = os.path.join(self.knot_path,
+                                self.Constants.BUILD_PATH)
+        print('Deleting {}'.format(core_dir))
+        if os.path.exists(core_dir):
+            shutil.rmtree(core_dir)
 
-        print('Creating {}'.format(core_work_path))
-        os.mkdir(core_work_path)
+    def make_core_dir(self):
+        core_dir = os.path.join(self.knot_path,
+                                self.Constants.BUILD_PATH)
+        print('Creating {}'.format(core_dir))
+        os.mkdir(core_dir)
 
     def merge_setup_main(self):
         """
@@ -299,7 +307,8 @@ def make(ctx, ot_path):
     KnotSDK().make_main()
 
     # Merge and Sign apps
-    KnotSDK().clear_core_work()
+    KnotSDK().clear_core_dir()
+    KnotSDK().make_core_dir()
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
 
@@ -311,8 +320,10 @@ def flash():
 
 @make.command(help='Delete building files')
 def clean():
-    # TODO
     print('Deleting building files...')
+    KnotSDK().setup_app.clean()
+    KnotSDK().main_app.clean()
+    KnotSDK().clear_core_dir()
 
 
 @cli.command(help='Erase flash memory')
