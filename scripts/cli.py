@@ -245,6 +245,15 @@ class KnotSDK(metaclass=Singleton):
         else:
             print('Hex file generated at {}'.format(self.signed_hex_path))
 
+    def erase_thing(self):
+        """
+        Clear flash
+        """
+        cmd = 'nrfjprog --eraseall'
+        print('Erasing KNoT Thing memory')
+        run_cmd(cmd)
+        print('KNoT Thing memory erased')
+
 
 def run_cmd(cmd, workdir=KnotSDK().cwd):
     """
@@ -328,8 +337,7 @@ def clean():
 
 @cli.command(help='Erase flash memory')
 def erase():
-    # TODO
-    click.echo('Erasing KNoT Thing memory...')
+    KnotSDK().erase_thing()
 
 
 @cli.command(help='Flash stock MCUBOOT')
