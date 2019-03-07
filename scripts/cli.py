@@ -48,14 +48,17 @@ class Singleton(type):
 """
 class KnotSDK(metaclass=Singleton):
     knot_path = "" # Common directory and files used by images
+    ext_ot_path = None # External OpenThread repository
     cwd = "" # Current working directory from where cli was called
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
         BOARD = "nrf52840_pca10056"
+        CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
         IMG_PATH = "img"
+        OT_CONFIG_PATH = "overlay-knot-ot.conf"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
 
     def __init__(self):
@@ -71,6 +74,10 @@ class KnotSDK(metaclass=Singleton):
 
         # Get current working directory
         self.cwd = os.getcwd()
+
+    def set_ext_ot_path(self, ot_path):
+        print('Using OT path: {}'.format(ot_path))
+        self.ext_ot_path = ot_path
 
     def __flash(self, file_path):
         # TODO
@@ -100,7 +107,7 @@ class KnotSDK(metaclass=Singleton):
             os.makedirs(path)
             print('Creating dir: {}'.format(path))
 
-    def make_app(self, app_path, app_name):
+    def make_app(self, app_path, app_name, options=''):
         build_path = os.path.join(app_path, self.Constants.BUILD_PATH)
 
         # Build directory
@@ -110,7 +117,8 @@ class KnotSDK(metaclass=Singleton):
         if not os.listdir(build_path):
             print("Build directory is empty")
             print("Creating make files for {} App".format(app_name))
-            cmd = 'cmake -DBOARD={} {}'.format(KnotSDK().Constants.BOARD,
+            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
+                                               options,
                                                app_path)
             try:
                 run_cmd(cmd, workdir=build_path)
@@ -137,6 +145,27 @@ class KnotSDK(metaclass=Singleton):
     def make_setup(self):
         setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
         self.make_app(setup_path, "Setup")
+
+    """
+    Create build folder and make main app
+    """
+    def make_main(self):
+        # Define overlay file to be used
+        overlay_path = os.path.join(self.knot_path,
+                                    self.Constants.CORE_PATH,
+                                    self.Constants.OT_CONFIG_PATH)
+        overlay_config = '-DOVERLAY_CONFIG={}'.format(overlay_path)
+
+        # Use external OpenThread path if provided
+        if self.ext_ot_path is not None:
+            external_ot =\
+                '-DEXTERNAL_PROJECT_PATH_OPENTHREAD={}'.format(self.ext_ot_path)
+        else:
+            external_ot = ''
+
+        # Build main app with compiling options
+        opt = '{} {}'.format(overlay_config, external_ot)
+        self.make_app(self.cwd, "Main", options=opt)
 
 
 """
@@ -178,14 +207,16 @@ def cli():
 
 @cli.group(help='Build setup and main apps', invoke_without_command=True)
 @click.pass_context
-def make(ctx):
+@click.option('--ot_path', help='Define OpenThread repository path')
+def make(ctx, ot_path):
     if ctx.invoked_subcommand == "clean":
         return
 
-    KnotSDK().make_setup()
+    if ot_path is not None:
+        KnotSDK().set_ext_ot_path(ot_path)
 
-    # TODO
-    print('Building main app...')
+    KnotSDK().make_setup()
+    KnotSDK().make_main()
 
 @make.command(help='Flash setup and main apps')
 def flash():
