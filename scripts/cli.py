@@ -50,6 +50,8 @@ class KnotSDK(metaclass=Singleton):
     knot_path = "" # Common directory and files used by images
     ext_ot_path = None # External OpenThread repository
     cwd = "" # Current working directory from where cli was called
+    setup_hex_path = None # Path to generated hex path for setup app
+    main_hex_path = None # Path to generated hex path for main app
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -57,6 +59,7 @@ class KnotSDK(metaclass=Singleton):
         CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
+        HEX_PATH = "zephyr/zephyr.hex"
         IMG_PATH = "img"
         OT_CONFIG_PATH = "overlay-knot-ot.conf"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
@@ -133,11 +136,19 @@ class KnotSDK(metaclass=Singleton):
         cmd = 'make -C {}'.format(build_path)
         try:
             run_cmd(cmd, workdir=build_path)
-            print('{} App built'.format(app_name))
         except ProcExecErr as e:
             print('Failed to build {} App'.format(app_name))
             print('Error: {}'.format(e))
             exit(e.error)
+
+        print('{} App built'.format(app_name))
+        hex_path = os.path.join(build_path, self.Constants.HEX_PATH)
+        if not os.path.isfile(hex_path):
+            exit('Error: No hex file found at {}'.format(hex_path))
+        else:
+            print('Hex file generated at {}'.format(hex_path))
+            return hex_path
+
 
     """
     Create build folder and make setup app
