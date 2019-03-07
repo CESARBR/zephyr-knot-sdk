@@ -12,25 +12,6 @@ import subprocess
 
 
 """
- Custom exception for error during command execution
-"""
-class ProcExecErr(Exception):
-    def __init__(self, cmd, message, error_code):
-        super(ProcExecErr, self).__init__(message)
-        self.cmd = cmd
-        self.error = error_code
-        self.message = message
-
-    def __str__(self):
-        ret = '<{}>\nProcess execution fail\n' + \
-              'cmd: {}\n' + \
-              'Return code: {}\n' + \
-              'Process output: \n{}\n'
-        return ret.format(type(self).__name__,
-                          self.cmd ,self.error, self.message)
-
-
-"""
  Singleton class to garrantee that a single instance will be used for
  its inhereted classes
 """
@@ -93,13 +74,10 @@ class KnotSDK(metaclass=Singleton):
 
     def flash_mcuboot(self):
         print('Flashing stock MCUBOOT...')
-        try:
-            self.__flash(os.path.join(self.knot_path,
-                                    self.Constants.IMG_PATH,
-                                    self.Constants.MCUBOOT_STOCK_FILE))
-            print('MCUBOOT flashed')
-        except ProcExecErr as e:
-            print('Failed to flash MCUBOOT.\nError: {}'.format(e))
+        self.__flash(os.path.join(self.knot_path,
+                                  self.Constants.IMG_PATH,
+                                  self.Constants.MCUBOOT_STOCK_FILE))
+        print('MCUBOOT flashed')
 
     """
     Create build folder at path if it doesn't exists.
@@ -123,25 +101,16 @@ class KnotSDK(metaclass=Singleton):
             cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
                                                options,
                                                app_path)
-            try:
-                run_cmd(cmd, workdir=build_path)
-                print('Created make files for {} App'.format(app_name))
-            except ProcExecErr as e:
-                print('Failed to create make file for {} App'.format(app_name))
-                print('Error: {}'.format(e))
-                exit(e.error)
+            run_cmd(cmd, workdir=build_path)
+            print('Created make files for {} App'.format(app_name))
 
         # make
         print('Building {} App ...'.format(app_name))
         cmd = 'make -C {}'.format(build_path)
-        try:
-            run_cmd(cmd, workdir=build_path)
-        except ProcExecErr as e:
-            print('Failed to build {} App'.format(app_name))
-            print('Error: {}'.format(e))
-            exit(e.error)
-
+        run_cmd(cmd, workdir=build_path)
         print('{} App built'.format(app_name))
+
+        # Check for hex file
         hex_path = os.path.join(build_path, self.Constants.HEX_PATH)
         if not os.path.isfile(hex_path):
             exit('Error: No hex file found at {}'.format(hex_path))
@@ -193,17 +162,22 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
 
     rc = process.returncode
 
+    # Successful execution
     if rc == 0:
         return
 
-    # Raise exception if error
-    excep_msg = ''
+    # Log error
+    proc_log = ''
     if out is not None:
-        excep_msg += 'stdout: {}'.format(out.decode('utf_8'))
+        proc_log += 'stdout: {}'.format(out.decode('utf_8'))
     if err is not None:
-        excep_msg += 'stderr: {}'.format(err.decode('utf_8'))
+        proc_log += 'stderr: {}'.format(err.decode('utf_8'))
 
-    raise ProcExecErr(cmd, excep_msg, rc)
+    err_msg = 'Process execution failed\n' + \
+              'cmd: {}\n' + \
+              'Return code: {}\n' + \
+              'Process output: \n{}\n'
+    exit(err_msg.format(cmd, rc, proc_log))
 
 
 """
