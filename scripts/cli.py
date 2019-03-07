@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import shutil
 import errno
 import sys
 import click
@@ -33,6 +34,7 @@ class KnotSDK(metaclass=Singleton):
     cwd = "" # Current working directory from where cli was called
     setup_hex_path = None # Path to generated hex path for setup app
     main_hex_path = None # Path to generated hex path for main app
+    merged_hex_path = None # Path to hex file merged from main and setup app
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -41,6 +43,7 @@ class KnotSDK(metaclass=Singleton):
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
         HEX_PATH = "zephyr/zephyr.hex"
+        MERGED_HEX_PATH = "merged.hex"
         IMG_PATH = "img"
         OT_CONFIG_PATH = "overlay-knot-ot.conf"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
@@ -124,7 +127,7 @@ class KnotSDK(metaclass=Singleton):
     """
     def make_setup(self):
         setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
-        self.make_app(setup_path, "Setup")
+        self.setup_hex_path = self.make_app(setup_path, "Setup")
 
     """
     Create build folder and make main app
@@ -145,7 +148,39 @@ class KnotSDK(metaclass=Singleton):
 
         # Build main app with compiling options
         opt = '{} {}'.format(overlay_config, external_ot)
-        self.make_app(self.cwd, "Main", options=opt)
+        self.main_hex_path = self.make_app(self.cwd, "Main", options=opt)
+
+    """
+    Clear build directory
+    """
+    def clear_core_work(self):
+        core_work_path = os.path.join(self.knot_path,
+                                      self.Constants.BUILD_PATH)
+        print('Deleting {}'.format(core_work_path))
+        if os.path.exists(core_work_path):
+            shutil.rmtree(core_work_path)
+
+        print('Creating {}'.format(core_work_path))
+        os.mkdir(core_work_path)
+
+    """
+    Merge main and setup apps
+    """
+    def merge_setup_main(self):
+        self.merged_hex_path = os.path.join(self.knot_path,
+                                       self.Constants.BUILD_PATH,
+                                       self.Constants.MERGED_HEX_PATH)
+
+        # Output hex at merge_hex_path
+        cmd = 'mergehex -m {} {} -o {}'.format(self.setup_hex_path,
+                                            self.main_hex_path,
+                                            self.merged_hex_path)
+        print('Merging main and setup apps')
+        run_cmd(cmd)
+        if not os.path.isfile(self.merged_hex_path):
+            exit('Error: No hex file found at {}'.format(self.merged_hex_path))
+        else:
+            print('Hex file generated at {}'.format(self.merged_hex_path))
 
 
 """
@@ -200,8 +235,13 @@ def make(ctx, ot_path):
     if ot_path is not None:
         KnotSDK().set_ext_ot_path(ot_path)
 
+    # Make apps
     KnotSDK().make_setup()
     KnotSDK().make_main()
+
+    # Merge and Sign apps
+    KnotSDK().clear_core_work()
+    KnotSDK().merge_setup_main()
 
 @make.command(help='Flash setup and main apps')
 def flash():
