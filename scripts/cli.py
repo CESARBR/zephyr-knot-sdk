@@ -26,6 +26,51 @@ class Singleton(type):
         return cls.__instances[cls]
 
 
+class App(object):
+    name = ""  # App name
+    root_path = None  # Path to root folder
+    build_path = None  # Path to build folder
+    hex_path = None  # Path to generated hex file
+
+    class Constants:
+        BUILD_PATH = "build"
+        HEX_PATH = "zephyr/zephyr.hex"
+
+    def __init__(self, name, path):
+        self.name = name
+        self.root_path = path
+        self.build_path = os.path.join(path, self.Constants.BUILD_PATH)
+        self.hex_path = os.path.join(self.build_path, self.Constants.HEX_PATH)
+
+    def make(self, options=''):
+        # Create build directory if doesn't exist
+        if not os.path.exists(self.build_path):
+            print('Creating dir: {}'.format(self.build_path))
+            os.makedirs(self.build_path)
+
+        # Cmake
+        if not os.listdir(self.build_path):
+            print("Build directory is empty")
+            print("Creating make files for {} App".format(self.name))
+            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
+                                                  options,
+                                                  self.root_path)
+            run_cmd(cmd, workdir=self.build_path)
+            print('Created make files for {} App'.format(self.name))
+
+        # make
+        print('Building {} App ...'.format(self.name))
+        cmd = 'make -C {}'.format(self.build_path)
+        run_cmd(cmd, workdir=self.build_path)
+        print('{} App built'.format(self.name))
+
+        # Check for hex file
+        if not os.path.isfile(self.hex_path):
+            exit('Error: No hex file found at {}'.format(self.hex_path))
+        else:
+            print('Hex file generated at {}'.format(self.hex_path))
+
+
 class KnotSDK(metaclass=Singleton):
     """
     Specific operations related to the KNoT Zephyr SDK
@@ -33,8 +78,8 @@ class KnotSDK(metaclass=Singleton):
     knot_path = ""  # Common directory and files used by images
     ext_ot_path = None  # External OpenThread repository
     cwd = ""  # Current working directory from where cli was called
-    setup_hex_path = None  # Path to generated hex path for setup app
-    main_hex_path = None  # Path to generated hex path for main app
+    setup_app = None  # Setup app
+    main_app = None  # Main app
     merged_hex_path = None  # Path to hex file merged from main and setup app
     signed_hex_path = None  # Path to signed merged hex file
 
@@ -44,7 +89,6 @@ class KnotSDK(metaclass=Singleton):
         CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
-        HEX_PATH = "zephyr/zephyr.hex"
         MERGED_HEX_PATH = "merged.hex"
         SIGNED_HEX_PATH = "signed.hex"
         IMG_PATH = "img"
@@ -59,6 +103,14 @@ class KnotSDK(metaclass=Singleton):
 
     def __init__(self):
         self.check_env()
+
+    def apps_init(self):
+        # Setup
+        setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
+        self.setup_app = App("Setup", setup_path)
+        # Main
+        main_path = self.cwd
+        self.main_app = App("Main", main_path)
 
     def check_env(self):
         if self.Constants.KNOT_BASE_VAR not in os.environ:
@@ -95,51 +147,11 @@ class KnotSDK(metaclass=Singleton):
         self.__flash(self.signed_hex_path)
         print('Signed image flashed')
 
-    def create_build(self, path):
-        """
-        Create build folder at path if it doesn't exists.
-        Returns True if directory already exists.
-        """
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print('Creating dir: {}'.format(path))
-
-    def make_app(self, app_path, app_name, options=''):
-        build_path = os.path.join(app_path, self.Constants.BUILD_PATH)
-
-        # Build directory
-        self.create_build(build_path)
-
-        # Cmake
-        if not os.listdir(build_path):
-            print("Build directory is empty")
-            print("Creating make files for {} App".format(app_name))
-            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
-                                                  options,
-                                                  app_path)
-            run_cmd(cmd, workdir=build_path)
-            print('Created make files for {} App'.format(app_name))
-
-        # make
-        print('Building {} App ...'.format(app_name))
-        cmd = 'make -C {}'.format(build_path)
-        run_cmd(cmd, workdir=build_path)
-        print('{} App built'.format(app_name))
-
-        # Check for hex file
-        hex_path = os.path.join(build_path, self.Constants.HEX_PATH)
-        if not os.path.isfile(hex_path):
-            exit('Error: No hex file found at {}'.format(hex_path))
-        else:
-            print('Hex file generated at {}'.format(hex_path))
-            return hex_path
-
     def make_setup(self):
         """
         Create build folder and make setup app
         """
-        setup_path = os.path.join(self.knot_path, self.Constants.SETUP_PATH)
-        self.setup_hex_path = self.make_app(setup_path, "Setup")
+        self.setup_app.make()
 
     def make_main(self):
         """
@@ -161,7 +173,7 @@ class KnotSDK(metaclass=Singleton):
 
         # Build main app with compiling options
         opt = '{} {}'.format(overlay_config, external_ot)
-        self.main_hex_path = self.make_app(self.cwd, "Main", options=opt)
+        self.main_app.make(options=opt)
 
     def clear_core_work(self):
         """
@@ -185,8 +197,8 @@ class KnotSDK(metaclass=Singleton):
                                             self.Constants.MERGED_HEX_PATH)
 
         # Output hex at merge_hex_path
-        cmd = 'mergehex -m {} {} -o {}'.format(self.setup_hex_path,
-                                               self.main_hex_path,
+        cmd = 'mergehex -m {} {} -o {}'.format(self.setup_app.hex_path,
+                                               self.main_app.hex_path,
                                                self.merged_hex_path)
         print('Merging main and setup apps')
         run_cmd(cmd)
@@ -273,6 +285,9 @@ def cli():
 @click.pass_context
 @click.option('--ot_path', help='Define OpenThread repository path')
 def make(ctx, ot_path):
+    # Initialize App objects
+    KnotSDK().apps_init()
+
     if ctx.invoked_subcommand == "clean":
         return
 
