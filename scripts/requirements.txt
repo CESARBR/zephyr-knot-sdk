@@ -1,0 +1,15 @@
+asn1crypto==0.24.0
+cffi==1.11.5
+Click==7.0
+colorama==0.4.1
+coloredlogs==10.0
+cryptography==2.4.2
+docopt==0.6.2
+idna==2.8
+intelhex==2.2.1
+pycparser==2.19
+pyelftools==0.25
+pykwalify==1.7.0
+python-dateutil==2.7.5
+PyYAML==3.13
+six==1.11.0
