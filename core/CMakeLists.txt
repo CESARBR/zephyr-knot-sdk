@@ -70,6 +70,7 @@ add_dependencies(proto syscall_list_h_target)
 add_dependencies(proto syscall_macros_h_target)
 
 add_dependencies(app proto)
+add_dependencies(app ot)
 
 FILE(GLOB core_sources $ENV{KNOT_BASE}/core/src/*.c)
 target_sources(app PRIVATE ${core_sources})
