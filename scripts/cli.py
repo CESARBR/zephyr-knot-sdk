@@ -10,6 +10,7 @@ import errno
 import sys
 import click
 import subprocess
+import logging
 
 
 class Singleton(type):
@@ -45,33 +46,35 @@ class App(object):
     def make(self, options=''):
         # Create build directory if doesn't exist
         if not os.path.exists(self.build_path):
-            print('Creating dir: {}'.format(self.build_path))
+            logging.info('Creating dir: {}'.format(self.build_path))
             os.makedirs(self.build_path)
 
         # Cmake
         if not os.listdir(self.build_path):
-            print("Build directory is empty")
-            print("Creating make files for {} App".format(self.name))
+            logging.warn("Build directory is empty")
+            logging.info("Creating make files for {} App".format(self.name))
             cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
                                                   options,
                                                   self.root_path)
             run_cmd(cmd, workdir=self.build_path)
-            print('Created make files for {} App'.format(self.name))
+            logging.info('Created make files for {} App'.format(self.name))
 
         # make
-        print('Building {} App ...'.format(self.name))
+        logging.info('Building {} App ...'.format(self.name))
         cmd = 'make -C {}'.format(self.build_path)
         run_cmd(cmd, workdir=self.build_path)
-        print('{} App built'.format(self.name))
+        logging.info('{} App built'.format(self.name))
 
         # Check for hex file
         if not os.path.isfile(self.hex_path):
-            exit('Error: No hex file found at {}'.format(self.hex_path))
+            logging.critical(
+                'Error: No hex file found at {}'.format(self.hex_path))
+            exit()
         else:
-            print('Hex file generated at {}'.format(self.hex_path))
+            logging.info('Hex file generated at {}'.format(self.hex_path))
 
     def clean(self):
-        print('Clearing {} App'.format(self.name))
+        logging.info('Clearing {} App'.format(self.name))
         if os.path.exists(self.build_path):
             shutil.rmtree(self.build_path)
 
@@ -120,41 +123,41 @@ class KnotSDK(metaclass=Singleton):
 
     def check_env(self):
         if self.Constants.KNOT_BASE_VAR not in os.environ:
-            print('KNoT base path not found.')
-            print('Run: $ source <knot-zephyr-sdk-path>/knot-env.sh')
-            exit('"$' + self.Constants.KNOT_BASE_VAR + '" not found')
+            logging.critical(
+                '"${}" not found'.format(self.Constants.KNOT_BASE_VAR))
+            logging.info('Run: $ source <knot-zephyr-sdk-path>/knot-env.sh')
+            exit()
         self.knot_path = os.environ[self.Constants.KNOT_BASE_VAR]
-        print('Using KNoT base path: ' + self.knot_path)
+        logging.info('Using KNoT base path: ' + self.knot_path)
 
         # Get current working directory
         self.cwd = os.getcwd()
 
     def set_ext_ot_path(self, ot_path):
-        print('Using OT path: {}'.format(ot_path))
+        logging.info('Using OT path: {}'.format(ot_path))
         self.ext_ot_path = ot_path
 
     def set_quiet(self, quiet):
         self.quiet = quiet
 
     def __flash(self, file_path):
-        # TODO
-        print('Flashing file ' + file_path)
+        logging.info('Flashing file ' + file_path)
         cmd = 'nrfjprog --program ' + \
               file_path + \
               ' --sectorerase -f nrf52 --reset'
         run_cmd(cmd)
 
     def flash_mcuboot(self):
-        print('Flashing stock MCUBOOT...')
+        logging.info('Flashing stock MCUBOOT...')
         self.__flash(os.path.join(self.knot_path,
                                   self.Constants.IMG_PATH,
                                   self.Constants.MCUBOOT_STOCK_FILE))
-        print('MCUBOOT flashed')
+        logging.info('MCUBOOT flashed')
 
     def flash_signed(self):
-        print('Flashing signed image...')
+        logging.info('Flashing signed image...')
         self.__flash(self.signed_hex_path)
-        print('Signed image flashed')
+        logging.info('Signed image flashed')
 
     def make_setup(self):
         """
@@ -190,14 +193,14 @@ class KnotSDK(metaclass=Singleton):
         """
         core_dir = os.path.join(self.knot_path,
                                 self.Constants.BUILD_PATH)
-        print('Deleting {}'.format(core_dir))
+        logging.info('Deleting {}'.format(core_dir))
         if os.path.exists(core_dir):
             shutil.rmtree(core_dir)
 
     def make_core_dir(self):
         core_dir = os.path.join(self.knot_path,
                                 self.Constants.BUILD_PATH)
-        print('Creating {}'.format(core_dir))
+        logging.info('Creating {}'.format(core_dir))
         os.mkdir(core_dir)
 
     def merge_setup_main(self):
@@ -212,12 +215,13 @@ class KnotSDK(metaclass=Singleton):
         cmd = 'mergehex -m {} {} -o {}'.format(self.setup_app.hex_path,
                                                self.main_app.hex_path,
                                                self.merged_hex_path)
-        print('Merging main and setup apps')
+        logging.info('Merging main and setup apps')
         run_cmd(cmd)
         if not os.path.isfile(self.merged_hex_path):
             exit('Error: No hex file found at {}'.format(self.merged_hex_path))
         else:
-            print('Hex file generated at {}'.format(self.merged_hex_path))
+            logging.info('Hex file generated at {}'.format(
+                self.merged_hex_path))
 
     def sign_merged(self):
         """
@@ -242,21 +246,22 @@ class KnotSDK(metaclass=Singleton):
                ' --pad' +
                ' {}'.format(self.merged_hex_path) +
                ' {}'.format(self.signed_hex_path))
-        print('Signing merged hex file')
+        logging.info('Signing merged hex file')
         run_cmd(cmd)
         if not os.path.isfile(self.signed_hex_path):
             exit('Error: No hex file found at {}'.format(self.signed_hex_path))
         else:
-            print('Hex file generated at {}'.format(self.signed_hex_path))
+            logging.info('Hex file generated at {}'.format(
+                self.signed_hex_path))
 
     def erase_thing(self):
         """
         Clear flash
         """
         cmd = 'nrfjprog --eraseall'
-        print('Erasing KNoT Thing memory')
+        logging.info('Erasing KNoT Thing memory')
         run_cmd(cmd)
-        print('KNoT Thing memory erased')
+        logging.info('KNoT Thing memory erased')
 
 
 def run_cmd(cmd, workdir=KnotSDK().cwd):
@@ -271,7 +276,8 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
         out_pipe = None
         err_pipe = None
 
-    print('Executing command: "{}"\nfrom: {}\n'.format(cmd, workdir))
+    logging.info('Executing command: "{}"'.format(cmd))
+    logging.info('Used working directory: "{}"'.format(workdir))
     process = subprocess.Popen(cmd.split(),
                                stdout=out_pipe,
                                stderr=err_pipe,
@@ -287,21 +293,18 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
         return
 
     # Log error
-    proc_log = ''
-    if out is not None:
-        proc_log += 'stdout: {}'.format(out.decode('utf_8'))
-    if err is not None:
-        proc_log += 'stderr: {}'.format(err.decode('utf_8'))
+    logging.critical('Process execution failed')
+    logging.info('cmd: {}'.format(cmd))
+    logging.info('Return code: {}'.format(rc))
 
-    err_msg = ('Process execution failed\n' +
-               'cmd: {}\n' +
-               'Return code: {}\n')
-
-    # Add process output if not printed already
+    # Log process output if not printed already
     if KnotSDK().quiet:
-        err_msg += 'Process output: \n{}\n'
+        if out is not None:
+            logging.info('Process stdout: \n{}'.format(out.decode('utf_8')))
+        if err is not None:
+            logging.info('Process stderr: \n{}'.format(err.decode('utf_8')))
 
-    exit(err_msg.format(cmd, rc, proc_log))
+    exit()
 
 
 @click.group()
@@ -351,7 +354,7 @@ def flash():
 
 @make.command(help='Delete building files')
 def clean():
-    print('Deleting building files...')
+    logging.info('Deleting building files...')
     KnotSDK().setup_app.clean()
     KnotSDK().main_app.clean()
     KnotSDK().clear_core_dir()
@@ -366,9 +369,8 @@ def erase():
 def mcuboot():
     KnotSDK().flash_mcuboot()
 
-
 if __name__ == '__main__':
     """
     Run cli
     """
-    cli()
+    cli()  # Run command line interface
