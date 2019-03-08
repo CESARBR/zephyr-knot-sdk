@@ -11,6 +11,7 @@ import sys
 import click
 import subprocess
 import logging
+import coloredlogs
 
 
 class Singleton(type):
@@ -373,4 +374,8 @@ if __name__ == '__main__':
     """
     Run cli
     """
+    # Use logging
+    log_format = '%(asctime)s [%(levelname)s]: %(message)s'
+    coloredlogs.install(fmt=log_format)  # Enable colored logging
+
     cli()  # Run command line interface
