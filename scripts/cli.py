@@ -87,6 +87,7 @@ class KnotSDK(metaclass=Singleton):
     main_app = None  # Main app
     merged_hex_path = None  # Path to hex file merged from main and setup app
     signed_hex_path = None  # Path to signed merged hex file
+    quiet = False  # Suppress command sub-process successful outputs if set
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -131,6 +132,9 @@ class KnotSDK(metaclass=Singleton):
     def set_ext_ot_path(self, ot_path):
         print('Using OT path: {}'.format(ot_path))
         self.ext_ot_path = ot_path
+
+    def set_quiet(self, quiet):
+        self.quiet = quiet
 
     def __flash(self, file_path):
         # TODO
@@ -259,9 +263,18 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
     """
     Run subprocess and get raise error if any
     """
+    # Pipe outputs if quiet selected
+    if KnotSDK().quiet:
+        out_pipe = subprocess.PIPE
+        err_pipe = subprocess.PIPE
+    else:
+        out_pipe = None
+        err_pipe = None
+
     print('Executing command: "{}"\nfrom: {}\n'.format(cmd, workdir))
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
+    process = subprocess.Popen(cmd.split(),
+                               stdout=out_pipe,
+                               stderr=err_pipe,
                                cwd=workdir)
 
     # Wait for process to run
@@ -282,8 +295,12 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
 
     err_msg = ('Process execution failed\n' +
                'cmd: {}\n' +
-               'Return code: {}\n' +
-               'Process output: \n{}\n')
+               'Return code: {}\n')
+
+    # Add process output if not printed already
+    if KnotSDK().quiet:
+        err_msg += 'Process output: \n{}\n'
+
     exit(err_msg.format(cmd, rc, proc_log))
 
 
@@ -301,7 +318,12 @@ def cli():
 @cli.group(help='Build setup and main apps', invoke_without_command=True)
 @click.pass_context
 @click.option('--ot_path', help='Define OpenThread repository path')
-def make(ctx, ot_path):
+@click.option('-q', '--quiet', help='Suppress successful sub-command messages',
+              is_flag=True)
+def make(ctx, ot_path, quiet):
+    if quiet:
+        KnotSDK().set_quiet(True)
+
     # Initialize App objects
     KnotSDK().apps_init()
 
