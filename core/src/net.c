@@ -19,7 +19,9 @@
 
 #include "net.h"
 #include "tcp6.h"
-#include "ot_config.h"
+#if CONFIG_SETTINGS_OT
+	#include "ot_config.h"
+#endif
 
 LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
 
@@ -80,8 +82,10 @@ static void connection_start(void)
 	int ret;
 
 	LOG_DBG("Waiting for OpenThread to be ready...");
-	while (ot_config_is_ready() == false)
-		k_sleep(100);
+	#if CONFIG_SETTINGS_OT
+		while (ot_config_is_ready() == false)
+			k_sleep(100);
+	#endif
 
 	ret = tcp6_start(recv_cb, close_cb);
 	if (ret < 0) {
@@ -101,35 +105,40 @@ static void net_thread(void)
 	int ret;
 
 	/* Load and set OpenThread credentials from settings */
-	ret = ot_config_init(&ot_disconn);
-	if (ret) {
-		LOG_ERR("Failed to init OT handler. Aborting net thread");
-		return;
-	}
+	#if CONFIG_SETTINGS_OT
+		ret = ot_config_init(&ot_disconn);
+		if (ret) {
+			LOG_ERR("Failed to init OT handler. \
+			Aborting net thread");
+			return;
+		}
 
-	ret = ot_config_load();
-	if (ret) {
-		LOG_ERR("Failed to load OT credentials. Aborting net thread");
-		return;
-	}
+		ret = ot_config_load();
+		if (ret) {
+			LOG_ERR("Failed to load OT credentials. \
+			Aborting net thread");
+			return;
+		}
 
-	ret = ot_config_stop();
-	if (ret) {
-		LOG_ERR("Failed to stop OT. Aborting net thread");
-		return;
-	}
+		ret = ot_config_stop();
+		if (ret) {
+			LOG_ERR("Failed to stop OT. Aborting net thread");
+			return;
+		}
 
-	ret = ot_config_set();
-	if (ret) {
-		LOG_ERR("Failed to set OT credentials. Aborting net thread");
-		return;
-	}
+		ret = ot_config_set();
+		if (ret) {
+			LOG_ERR("Failed to set OT credentials. \
+			Aborting net thread");
+			return;
+		}
 
-	ret = ot_config_start();
-	if (ret) {
-		LOG_ERR("Failed to start OT. Aborting net thread");
-		return;
-	}
+		ret = ot_config_start();
+		if (ret) {
+			LOG_ERR("Failed to start OT. Aborting net thread");
+			return;
+		}
+	#endif
 
 	/* Start TCP layer */
 	ret = tcp6_init();

@@ -6,9 +6,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if CONFIG_SETTINGS_OT
 #include <zephyr.h>
 #include <logging/log.h>
 #include <settings/settings_ot.h>
+
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 #include <net/net_if.h>
 #include <net/openthread.h>
@@ -234,4 +236,5 @@ bool ot_config_is_ready(void)
 	return (role == OT_DEVICE_ROLE_CHILD);
 }
 
-#endif
+#endif // endif CONFIG_NET_L2_OPENTHREAD
+#endif // endif CONFIG_SETTINGS_OT

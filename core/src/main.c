@@ -16,7 +16,9 @@
 #include <net/net_app.h>
 #include <logging/log.h>
 #include <settings/settings.h>
-#include <settings/settings_ot.h>
+#if CONFIG_SETTINGS_OT
+	#include <settings/settings_ot.h>
+#endif
 
 #include "proto.h"
 #include "net.h"
@@ -44,16 +46,21 @@ void main(void)
 	if (ret)
 		LOG_ERR("KNoT Storage init failed!");
 
-	/* Initializing OpenThread settings */
-	LOG_DBG("Initializing OpenThread settings");
-	ret = settings_ot_init();
-	if (ret)
-		LOG_ERR("OpenThread settings init failed!");
+	#if CONFIG_SETTINGS_OT
+		/* Initializing OpenThread settings */
+		LOG_DBG("Initializing OpenThread settings");
+		ret = settings_ot_init();
+		if (ret)
+			LOG_ERR("OpenThread settings init failed!");
 
-	LOG_DBG("Loading stored values");
-	ret = settings_load();
-	if (ret)
-		LOG_ERR("Settings load failed (err %d)", ret);
+		LOG_DBG("Loading stored values");
+	#endif
+
+	#if CONFIG_SETTINGS
+		ret = settings_load();
+		if (ret)
+			LOG_ERR("Settings load failed (err %d)", ret);
+	#endif
 
 	/*
 	 * KNoT state thread: manage device registration, detects
