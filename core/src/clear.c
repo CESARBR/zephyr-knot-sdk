@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if !CONFIG_BOARD_QEMU_X86
 #include <zephyr.h>
 #include <settings/settings_ot.h>
 #include <logging/log.h>
@@ -85,3 +86,4 @@ int clear_factory(void)
 
 	return ret;
 }
+#endif
