@@ -6,7 +6,9 @@ macro(set_conf_file)
       "prj.conf $ENV{KNOT_BASE}/core/core.conf $ENV{KNOT_BASE}/core/boards/${BOARD}.conf")
 endmacro()
 
-set(BOARD nrf52840_pca10056)
+if(NOT BOARD)
+        set(BOARD nrf52840_pca10056)
+endif ()
 
 set(KCONFIG_ROOT $ENV{KNOT_BASE}/core/Kconfig)
 
