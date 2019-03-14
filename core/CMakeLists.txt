@@ -12,16 +12,18 @@ endif ()
 
 set(KCONFIG_ROOT $ENV{KNOT_BASE}/core/Kconfig)
 
-# Change dts with sub-partitions and use specific sub-partition to flash code
-set(DTC_OVERLAY_MULTI_SLOT
-        $ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
-)
-set(DTC_OVERLAY_SET_SLOT
-        $ENV{KNOT_BASE}/core/boards/${BOARD}-code-slot.overlay
-)
-set(DTC_OVERLAY_FILE
-        "${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"
-)
+if (NOT ${BOARD} STREQUAL qemu_x86)
+        # Change dts with sub-partitions and use specific sub-partition to flash
+        set(DTC_OVERLAY_MULTI_SLOT
+                $ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
+        )
+        set(DTC_OVERLAY_SET_SLOT
+                $ENV{KNOT_BASE}/core/boards/${BOARD}-code-slot.overlay
+        )
+        set(DTC_OVERLAY_FILE
+                "${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"
+        )
+endif ()
 
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 
