@@ -15,11 +15,13 @@
 /* Buffer sizes */
 #define UUID_LEN	36
 #define TOKEN_LEN	40
+#define IPV6_LEN	40
 
 /* Buffers */
-static char uuid[UUID_LEN];	/* Device UUID */
-static char token[TOKEN_LEN];	/* Device Token */
-static uint64_t devid;		/* Device ID */
+static char uuid[UUID_LEN];		/* Device UUID */
+static char token[TOKEN_LEN];		/* Device Token */
+static uint64_t devid;			/* Device ID */
+static char peer_ipv6[IPV6_LEN];	/* Peer's IPV6 */
 
 int storage_reset(void)
 {
@@ -36,6 +38,8 @@ int storage_init(void)
 {
 	LOG_DBG("Initializing mock storage");
 
+	char peer_ipv6_buf[IPV6_LEN] = "2001:db8::2"; /* net-tools IPv6 */
+
 #if 1
 	/* New device testing */
 	storage_reset();
@@ -47,6 +51,7 @@ int storage_init(void)
 	memcpy(token,
 	       "924c222bc1f2e7d8648b43fd8fada6b4152fa905", sizeof(token));
 #endif
+	memcpy(peer_ipv6, peer_ipv6_buf, strlen(peer_ipv6_buf) + 1);
 
 	return 0;
 }
@@ -60,6 +65,8 @@ bool storage_is_set(enum storage_keys key)
 		return (!strlen(token) != 0);
 	case STORAGE_CRED_DEVID:
 		return (devid != 0);
+	case STORAGE_PEER_IPV6:
+		return (strlen(peer_ipv6) != 0);
 	default:
 		return false;
 	}
@@ -86,6 +93,10 @@ int storage_read(enum storage_keys key, void *dest, int len)
 	case STORAGE_CRED_DEVID:
 		olen = (len < sizeof(devid)) ? len : sizeof(devid);
 		buf = &devid;
+		break;
+	case STORAGE_PEER_IPV6:
+		olen = (len < sizeof(peer_ipv6)) ? len : sizeof(peer_ipv6);
+		buf = peer_ipv6;
 		break;
 	default:
 		return -ENOENT;
@@ -114,6 +125,10 @@ int storage_write(enum storage_keys key, const void *src, int len)
 	case STORAGE_CRED_DEVID:
 		olen = (len < sizeof(devid)) ? len : sizeof(devid);
 		buf = &devid;
+		break;
+	case STORAGE_PEER_IPV6:
+		olen = (len < sizeof(peer_ipv6)) ? len : sizeof(peer_ipv6);
+		buf = peer_ipv6;
 		break;
 	default:
 		return -ENOENT;
