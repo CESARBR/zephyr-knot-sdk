@@ -26,7 +26,7 @@
 #define XPANID_LEN 24
 #define MASTERKEY_LEN 48
 
-LOG_MODULE_REGISTER(ot_config, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(ot_config, CONFIG_KNOT_LOG_LEVEL);
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 static struct openthread_context *ot_context;

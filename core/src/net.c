@@ -23,7 +23,7 @@
 	#include "ot_config.h"
 #endif
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);

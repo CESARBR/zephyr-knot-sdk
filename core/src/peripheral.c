@@ -16,7 +16,7 @@
 #include <net/net_core.h>
 #include <logging/log.h>
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	#include "peripheral.nrf52840"

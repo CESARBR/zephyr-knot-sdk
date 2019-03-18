@@ -21,7 +21,7 @@
 #include "tcp6.h"
 #include "storage.h"
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #define PEER_IPV6_PORT 8886
 #define IPV6_LEN	40

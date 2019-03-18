@@ -24,7 +24,7 @@
 #include "net.h"
 #include "storage.h"
 
-LOG_MODULE_REGISTER(knot, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(knot, CONFIG_KNOT_LOG_LEVEL);
 K_PIPE_DEFINE(p2n_pipe, 128, 4);
 K_PIPE_DEFINE(n2p_pipe, 128, 4);
 static struct k_sem quit_lock;

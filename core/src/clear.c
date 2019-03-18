@@ -13,7 +13,7 @@
 #include "storage.h"
 #include "clear.h"
 
-LOG_MODULE_REGISTER(knot_clear, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(knot_clear, CONFIG_KNOT_LOG_LEVEL);
 
 int clear_ot_nvs(void)
 {

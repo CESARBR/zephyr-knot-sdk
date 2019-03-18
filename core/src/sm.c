@@ -19,7 +19,7 @@
 #include "storage.h"
 #include "peripheral.h"
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #define TIMEOUT_WIN				3 /* 3 sec */
 

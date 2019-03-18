@@ -17,7 +17,7 @@
 #include "proxy.h"
 #include "knot.h"
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #define MIN(a, b)         (((a) < (b)) ? (a) : (b))
 

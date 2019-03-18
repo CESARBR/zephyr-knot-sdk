@@ -10,6 +10,38 @@ config KNOT_THING_DATA_MAX
 	int "Max number of KNoT items (sensors)"
 	default 3
 
+config KNOT_LOG
+	bool "Enable KNoT log"
+	default n
+	help
+	  This option enables log support for KNoT
+	depends on LOG
+
+choice
+	prompt "KNoT log level"
+	depends on KNOT_LOG
+	help
+	  This option selects KNoT log level.
+
+config KNOT_LOG_LEVEL_ERROR
+	bool "Error"
+config KNOT_LOG_LEVEL_WARNING
+	bool "Warning"
+config KNOT_LOG_LEVEL_INFO
+	bool "Info"
+config KNOT_LOG_LEVEL_DEBUG
+	bool "Debug"
+
+endchoice
+
+config KNOT_LOG_LEVEL
+	int
+	default 0 if !KNOT_LOG
+	default 1 if KNOT_LOG_LEVEL_ERROR
+	default 2 if KNOT_LOG_LEVEL_WARNING
+	default 3 if KNOT_LOG_LEVEL_INFO
+	default 4 if KNOT_LOG_LEVEL_DEBUG
+
 endmenu
 
 source "Kconfig.zephyr"
