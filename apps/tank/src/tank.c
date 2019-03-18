@@ -25,7 +25,7 @@
 #include <knot/knot_types.h>
 #include <knot/knot_protocol.h>
 
-LOG_MODULE_DECLARE(knot, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(tank, LOG_LEVEL_DBG);
 
 /* Tracked value */
 static float volume = 10000;
