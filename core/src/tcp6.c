@@ -101,9 +101,21 @@ void tcp6_stop(void)
 	socket_close();
 }
 
-int tcp6_send(const u8_t *opdu, size_t olen)
+int tcp6_send(const u8_t *buf, size_t len)
 {
-	// TODO: Not sending messages
+	ssize_t out_len;
+
+	LOG_DBG("Sending msg");
+	while (len) {
+		out_len = zsock_send(socket, buf, len, 0);
+
+		if (out_len < 0)
+			return -errno;
+
+		buf = buf + out_len;
+		len -= out_len;
+	}
+
 	return 0;
 }
 
