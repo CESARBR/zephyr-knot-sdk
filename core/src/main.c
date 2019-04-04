@@ -52,10 +52,10 @@ void main(void)
 		if (ret)
 			LOG_ERR("OpenThread settings init failed!");
 
-		LOG_DBG("Loading stored values");
 	#endif
 
 	#if CONFIG_SETTINGS
+		LOG_DBG("Loading stored values");
 		ret = settings_load();
 		if (ret)
 			LOG_ERR("Settings load failed (err %d)", ret);
