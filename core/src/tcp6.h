@@ -11,4 +11,5 @@ void tcp6_stop(void);
 
 int tcp6_send(const u8_t *buf, size_t len);
 
+int tcp6_event_poll(void);
 int tcp6_init(void);

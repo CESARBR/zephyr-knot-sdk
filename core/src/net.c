@@ -40,10 +40,23 @@ static void close_cb(void)
 	connected = false;
 }
 
-static bool recv_cb(struct net_buf *netbuf)
+static int recv_cb(void *buf, size_t len)
 {
-	// TODO: Not handling received messages
-	return true;
+	int rc;
+	u8_t opdu[128];
+
+	if (len > sizeof(opdu)) {
+		LOG_ERR("NET: SMALL PDU");
+		return -EMSGSIZE;
+	}
+
+	memcpy(opdu, buf, len);
+	/* Sending recv data to PROTO thread */
+	rc = k_pipe_put(net2proto, opdu, len, &len, len, K_NO_WAIT);
+	if (rc)
+		LOG_ERR("Pipe write failed. Err: %d", rc);
+
+	return rc;
 }
 
 void ot_disconn(void)
@@ -132,14 +145,27 @@ static void net_thread(void)
 			connection_start();
 			goto done;
 		}
+		/* Look for incoming messages */
+		tcp6_event_poll();
 
 		ilen = 0;
 		/* Reading data from PROTO thread */
 		ret = k_pipe_get(proto2net, ipdu, sizeof(ipdu),
 				 &ilen, 0U, K_NO_WAIT);
+		if (ret != 0) {
+			LOG_ERR("Pipe read failed");
+			goto done;
+		}
 
-		if (ret == 0 && ilen)
-			ret = tcp6_send(ipdu, ilen);
+		/* No message to send */
+		if (ilen == 0)
+			goto done;
+
+		/* Send message */
+		ret = tcp6_send(ipdu, ilen);
+		if (ret)
+			LOG_ERR("Msg send fail (%d)", ret);
+
 done:
 		k_yield();
 	}

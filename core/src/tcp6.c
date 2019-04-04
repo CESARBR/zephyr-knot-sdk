@@ -31,6 +31,48 @@ static net_recv_t recv_cb;
 static net_close_t close_cb;
 static int socket;
 
+static int receive(void)
+{
+	int rc;
+	int err;
+	size_t len = 0;
+	char buf[128];
+
+	/* Read socket until no data left */
+	while (true) {
+		rc = zsock_recv(socket, buf + len, sizeof(buf) - len,
+				ZSOCK_MSG_DONTWAIT);
+
+		/* Update len and check for more data */
+		if (rc > 0) {
+			len += rc;
+			continue;
+		}
+		/* Save errno to avoid changes by interruption */
+		err = errno;
+
+		if (rc == 0) {
+			if (len == 0) {
+				LOG_ERR("No message found");
+				return -EIO;
+			}
+			/* Read finished */
+			LOG_WRN("Nothing left to read");
+			break;
+		}
+
+		/* rc < 0 */
+		/* Finish if EAGAIN and EWOULDBLOCK */
+		if (err == EAGAIN || err == EWOULDBLOCK)
+			break;
+
+		LOG_ERR("Socket read err: %d", rc);
+		return -err;
+	}
+
+	return recv_cb(buf, len);
+}
+
 static void set_fds(void)
 {
 	fds.fd = socket;
@@ -132,4 +174,33 @@ int tcp6_init(void)
 	}
 
 	return 0;
+}
+
+int tcp6_event_poll(void)
+{
+	int ret, rc;
+
+	/*
+	 * Check if any event occurred on fds poll fds.
+	 */
+	ret = zsock_poll(&fds, 1, 0);
+	if (ret < 0)
+		LOG_ERR("Error in poll: %d", ret);
+
+	if(fds.revents & ZSOCK_POLLIN) {
+		LOG_DBG("Msg received");
+		rc = receive();
+		if (rc)
+			LOG_ERR("Read failure: %d", rc);
+	}
+
+	// TODO: Handle POLLHUP
+	if(fds.revents & ZSOCK_POLLHUP)
+		LOG_DBG("Event HUP");
+
+	// TODO: Handle POLLERR
+	if(fds.revents & ZSOCK_POLLERR)
+		LOG_DBG("Event ERR");
+
+	return ret;
 }

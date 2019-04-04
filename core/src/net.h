@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-typedef bool (*net_recv_t) (struct net_buf *netbuf);
+typedef int (*net_recv_t) (void *buf, size_t len);
 typedef void (*net_close_t) (void);
 
 int net_start(struct k_pipe *p2n, struct k_pipe *n2p);
