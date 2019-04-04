@@ -36,13 +36,33 @@ static K_THREAD_STACK_DEFINE(rx_stack, 1024);
 static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
 
+extern struct k_sem conn_sem;
+
 /*
  * Handle connection and disconnection events. Return true if connected.
  */
 static bool check_connection()
 {
-	// TODO: Not returning connection status
-	return false;
+	static bool last_connected = false;
+	bool connected;
+
+	/* Semaphore available means connected */
+	connected = (k_sem_count_get(&conn_sem) == 1);
+
+	/* Finish if no state change */
+	if (connected == last_connected)
+		goto done;
+
+	/* Control SM at transitions */
+	if (connected)
+		sm_start();
+	else
+		sm_stop();
+
+	last_connected = connected;
+
+done:
+	return connected;
 }
 
 static void proto_thread(void)

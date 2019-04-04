@@ -31,9 +31,13 @@ static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
 static bool connected;
 
+K_SEM_DEFINE(conn_sem, 0, 1);
+
 static void close_cb(void)
 {
-	// TODO: Not closing net
+	/* Flag as not connected */
+	k_sem_take(&conn_sem, K_NO_WAIT);
+	connected = false;
 }
 
 static bool recv_cb(struct net_buf *netbuf)
@@ -66,7 +70,10 @@ static void connection_start(void)
 		return;
 	}
 
+	LOG_DBG("NET: TCP started");
+
 	connected = true;
+	k_sem_give(&conn_sem);
 }
 
 static void net_thread(void)
