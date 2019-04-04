@@ -8,43 +8,29 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x000000000 0x0000c000>;
-		};
 		/*
 		 * Hack: Split image-0 into two sub-images
 		 * (knot-setup and knot-app) so they can be refer to each other
 		 * and recognized by MCUBOOT as a single image.
 		 */
-		slot0_partition: partition@c000 {
-			label = "image-0";
-			reg = <0x0000c000 0x000069000>;
-		};
+
 		slot_0_0_sub_partition: sub-partition@c000 {
 			label = "image-knot-setup";
-			reg = <0x0000c000 0x000020000>;
-		};
-		slot_0_1_sub_partition: sub-partition@2c000 {
-			label = "image-knot-app";
-			reg = <0x0002c000 0x000049000>;
-		};
-		slot1_partition: partition@75000 {
-			label = "image-1";
-			reg = <0x00075000 0x000069000>;
-		};
-		scratch_partition: partition@de000 {
-			label = "image-scratch";
-			reg = <0x000de000 0x0001e000>;
-		};
-		storage_partition: partition@fc000 {
-			label = "storage";
-			reg = <0x000fc000 0x00002000>;
-		};
-		ot_partition: partition@fe000 {
-			label = "ot-storage";
-			reg = <0x000fe000 0x00002000>;
+			reg = <0x0000C000 0x000020000>;
 		};
 
+		slot_0_1_sub_partition: sub-partition@2c000 {
+			label = "image-knot-app";
+			reg = <0x0002C000 0x000047000>;
+		};
+
+		/*
+		 * Using last 4 pages of storage partition
+		 */
+
+		ot_partition: partition@fe000 {
+			label = "ot-storage";
+			reg = <0x000fc000 0x00004000>;
+		};
 	};
 };

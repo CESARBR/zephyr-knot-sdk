@@ -35,25 +35,14 @@ static struct k_thread rx_thread_data;
 static K_THREAD_STACK_DEFINE(rx_stack, 1024);
 static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
-extern struct k_alert connection_lost;
-extern struct k_alert connection_established;
 
 /*
  * Handle connection and disconnection events. Return true if connected.
  */
 static bool check_connection()
 {
-	static bool connected = false;
-	if (k_alert_recv(&connection_lost, K_NO_WAIT) == 0) {
-		connected = false;
-		sm_stop();
-	}
-	if (k_alert_recv(&connection_established, K_NO_WAIT) == 0) {
-		connected = true;
-		sm_start();
-	}
-
-	return connected;
+	// TODO: Not returning connection status
+	return false;
 }
 
 static void proto_thread(void)

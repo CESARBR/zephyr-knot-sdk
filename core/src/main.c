@@ -13,7 +13,6 @@
 
 #include <zephyr.h>
 #include <net/net_core.h>
-#include <net/net_app.h>
 #include <logging/log.h>
 #include <settings/settings.h>
 #if CONFIG_SETTINGS_OT

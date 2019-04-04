@@ -38,15 +38,13 @@ static void set_reset(struct k_timer *timer_id)
 
 static void rst_btn_edge(struct device *gpiob, struct gpio_callback *cb, u32_t pins)
 {
-	u32_t port_value;
-	bool rise_edge;
+	int port_value;
 
 	/* Rising or falling edge */
-	gpio_port_read(gpiob, &port_value);
-	rise_edge = port_value & pins ? true : false;
+	port_value = gpio_pin_read(gpiob, RST_FLASH_PIN, NULL);
 
 	/* Stop reset timer on rising edge */
-	if (rise_edge) {
+	if (port_value) {
 		k_timer_stop(&rst_timer);
 		return;
 	}

@@ -60,7 +60,7 @@ void nrf_bootloader_app_start_final(uint32_t start_addr);
 
 void nrf_bootloader_app_start(void)
 {
-    uint32_t start_addr = FLASH_AREA_IMAGE_KNOT_APP_OFFSET;
+    uint32_t start_addr = DT_FLASH_AREA_IMAGE_KNOT_APP_OFFSET;
 
     // Disable and clear interrupts
     // Notice that this disables only 'external' interrupts (positive IRQn).

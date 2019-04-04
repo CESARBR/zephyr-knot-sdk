@@ -29,8 +29,8 @@ int clear_ot_nvs(void)
 	/* Erase OpenThread flash partition */
 	flash_write_protection_set(flash_dev, false);
 	rc = flash_erase(flash_dev,
-			 FLASH_AREA_OT_STORAGE_OFFSET,
-			 FLASH_AREA_OT_STORAGE_SIZE);
+			 DT_FLASH_AREA_OT_STORAGE_OFFSET,
+			 DT_FLASH_AREA_OT_STORAGE_SIZE);
 	if (rc)
 		LOG_ERR("Failed to clear OpenThread's NVS");
 
@@ -53,8 +53,8 @@ static int clear_settings(void)
 	/* Erase Storage flash partition */
 	flash_write_protection_set(flash_dev, false);
 	rc = flash_erase(flash_dev,
-			 FLASH_AREA_STORAGE_OFFSET,
-			 FLASH_AREA_STORAGE_SIZE);
+			 DT_FLASH_AREA_STORAGE_OFFSET,
+			 DT_FLASH_AREA_STORAGE_SIZE);
 	if (rc)
 		LOG_ERR("Failed to clear Storage flash partition");
 

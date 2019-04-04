@@ -30,43 +30,15 @@ static K_THREAD_STACK_DEFINE(rx_stack, 1024);
 static struct k_pipe *proto2net;
 static struct k_pipe *net2proto;
 static bool connected;
-K_ALERT_DEFINE(connection_lost, NULL, 1);
-K_ALERT_DEFINE(connection_established, NULL, 1);
 
 static void close_cb(void)
 {
-	if (connected) {
-		connected = false;
-		k_alert_send(&connection_lost);
-	}
+	// TODO: Not closing net
 }
 
 static bool recv_cb(struct net_buf *netbuf)
 {
-	u8_t opdu[128];
-	struct net_buf *frag = netbuf;
-	size_t olen = 0;
-	size_t frag_len = 0;
-	u16_t pos = 0;
-
-	memset(opdu, 0, sizeof(opdu));
-
-	while (frag) {
-		/* Data comming from network */
-		if ((olen + frag->len) > sizeof(opdu)) {
-			LOG_ERR("Small MTU");
-			return true;
-		}
-
-		frag_len = frag->len;
-		frag = net_frag_read(frag, pos, &pos, frag_len,
-				     (u8_t *) (opdu + olen));
-		olen += frag_len;
-	}
-
-	/* Sending recv data to PROTO thread */
-	k_pipe_put(net2proto, opdu, olen, &olen, olen, K_NO_WAIT);
-
+	// TODO: Not handling received messages
 	return true;
 }
 
@@ -95,7 +67,6 @@ static void connection_start(void)
 	}
 
 	connected = true;
-	k_alert_send(&connection_established);
 }
 
 static void net_thread(void)
