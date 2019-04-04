@@ -66,7 +66,6 @@ static void connection_start(void)
 	ret = tcp6_start(recv_cb, close_cb);
 	if (ret < 0) {
 		LOG_DBG("NET: TCP start failure");
-		tcp6_stop();
 		return;
 	}
 

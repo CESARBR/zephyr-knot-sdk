@@ -14,6 +14,7 @@
 #include <net/net_pkt.h>
 #include <net/net_core.h>
 #include <net/net_context.h>
+#include <net/socket.h>
 
 #include "net.h"
 #include "tcp6.h"
@@ -24,42 +25,80 @@ LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 #define PEER_IPV6_PORT 8886
 #define IPV6_LEN	40
 
-#define BUF_TIMEOUT	K_MSEC(100)
-#define WAIT_TIME	K_SECONDS(10)
-#define CONNECT_TIME	K_SECONDS(10)
-
 static char peer_ipv6[IPV6_LEN];
-static net_recv_t recv;
+static struct zsock_pollfd fds;
+static net_recv_t recv_cb;
+static net_close_t close_cb;
+static int socket;
 
-static int connect_tcp6(const char *peer, int port, void *user_data)
+static void set_fds(void)
 {
-	LOG_DBG("TCP Connecting to %s %d ...", peer, port);
-
-	// TODO: Not connecting TCP
-
-	return 0;
+	fds.fd = socket;
+	fds.events = ZSOCK_POLLIN;
 }
 
-int tcp6_start(net_recv_t recv_cb, net_close_t close_cb)
+static int start_tcp_proto(const struct sockaddr *addr, socklen_t addrlen)
 {
-	int ret = -EPERM;
+	int rc;
+	int err;
 
-	LOG_DBG("Starting TCP IPv6 ...");
-
-	recv = recv_cb;
-
-	if (IS_ENABLED(CONFIG_NET_IPV6)) {
-		ret = connect_tcp6(peer_ipv6, PEER_IPV6_PORT, close_cb);
-		if (ret < 0)
-			LOG_ERR("Cannot init IPv6 TCP client (%d)", ret);
+	socket = zsock_socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
+	if (socket < 0) {
+		err = errno;
+		LOG_ERR("Failed to create TCP socket: %d", err);
+		return -err;
 	}
 
-	return ret;
+	rc = zsock_connect(socket, addr, addrlen);
+	if (rc < 0) {
+		err = errno;
+		LOG_ERR("Cannot connect to TCP remote: %d", err);
+		return -err;
+	}
+
+	return rc;
+}
+
+static void socket_close(void)
+{
+	if (socket >= 0) {
+		LOG_DBG("Closing socket %d", socket);
+		(void)zsock_close(socket);
+	}
+}
+
+int tcp6_start(net_recv_t recv, net_close_t close)
+{
+	int rc;
+	struct sockaddr_in6 addr6;
+
+	memset(&addr6, 0, sizeof(addr6));
+	addr6.sin6_family = AF_INET6;
+	addr6.sin6_port = htons(PEER_IPV6_PORT);
+	rc = zsock_inet_pton(AF_INET6, peer_ipv6, &addr6.sin6_addr);
+	if (rc <= 0)
+		return -EFAULT;
+
+	rc = start_tcp_proto((struct sockaddr *)&addr6, sizeof(addr6));
+
+	/* Close socket if connection fail */
+	if (rc) {
+		socket_close();
+		return rc;
+	}
+
+	/* Successful start */
+	LOG_DBG("TCP connected");
+	set_fds();
+	recv_cb = recv;
+	close_cb = close;
+
+	return rc;
 }
 
 void tcp6_stop(void)
 {
-	// TODO: Not stopping connection
+	socket_close();
 }
 
 int tcp6_send(const u8_t *opdu, size_t olen)
