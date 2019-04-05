@@ -180,6 +180,10 @@ int tcp6_init(void)
 {
 	int rc;
 
+	/* Reset callbacks */
+	recv_cb = NULL;
+	close_cb = NULL;
+
 	LOG_DBG("Initializing TCP handler");
 
 	rc = storage_read(STORAGE_PEER_IPV6, peer_ipv6, sizeof(peer_ipv6));
