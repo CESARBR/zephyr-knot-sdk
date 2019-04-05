@@ -52,13 +52,18 @@ static int receive(void)
 		err = errno;
 
 		if (rc == 0) {
-			if (len == 0) {
-				LOG_ERR("No message found");
-				return -EIO;
+			if (len != 0) {
+				/* Read finished */
+				LOG_WRN("Nothing left to read");
+				break;
 			}
-			/* Read finished */
-			LOG_WRN("Nothing left to read");
-			break;
+			LOG_ERR("No message found (errno %d)", errno);
+
+			/* Disconnected */
+			if (err == EALREADY)
+				tcp6_stop();
+
+			return -EIO;
 		}
 
 		/* rc < 0 */
@@ -67,6 +72,10 @@ static int receive(void)
 			break;
 
 		LOG_ERR("Socket read err: %d", rc);
+
+		if (err == EBADF)
+			tcp6_stop();
+
 		return -err;
 	}
 
@@ -141,6 +150,12 @@ int tcp6_start(net_recv_t recv, net_close_t close)
 void tcp6_stop(void)
 {
 	socket_close();
+
+	/* Call connection closed callback */
+	if (close_cb != NULL) {
+		LOG_WRN("Calling close cb");
+		close_cb();
+	}
 }
 
 int tcp6_send(const u8_t *buf, size_t len)
