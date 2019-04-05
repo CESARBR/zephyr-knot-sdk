@@ -33,6 +33,8 @@ static bool connected;
 
 K_SEM_DEFINE(conn_sem, 0, 1);
 
+#define CONN_RETRY_TIME K_SECONDS(5)
+
 static void close_cb(void)
 {
 	/* Flag as not connected */
@@ -66,7 +68,7 @@ void ot_disconn(void)
 	close_cb();
 }
 
-static void connection_start(void)
+static int connection_start(void)
 {
 	int ret;
 
@@ -79,13 +81,16 @@ static void connection_start(void)
 	ret = tcp6_start(recv_cb, close_cb);
 	if (ret < 0) {
 		LOG_DBG("NET: TCP start failure");
-		return;
+		goto done;
 	}
 
 	LOG_DBG("NET: TCP started");
 
 	connected = true;
 	k_sem_give(&conn_sem);
+
+done:
+	return ret;
 }
 
 static void net_thread(void)
@@ -142,8 +147,13 @@ static void net_thread(void)
 
 	while (1) {
 		if (!connected) {
-			connection_start();
-			goto done;
+			ret = connection_start();
+			if (ret) {
+				/* Wait before retrying connecting */
+				LOG_ERR("Waiting to retry to connecting...");
+				k_sleep(CONN_RETRY_TIME);
+				goto done;
+			}
 		}
 		/* Look for incoming messages */
 		tcp6_event_poll();
