@@ -198,6 +198,14 @@ class KnotSDK(metaclass=Singleton):
         if os.path.exists(core_dir):
             shutil.rmtree(core_dir)
 
+        core_build_dir = os.path.join(self.knot_path,
+                                self.Constants.CORE_PATH,
+                                self.Constants.BUILD_PATH)
+        logging.info('Deleting {}'.format(core_build_dir))
+        if os.path.exists(core_build_dir):
+            shutil.rmtree(core_build_dir)
+
+
     def make_core_dir(self):
         core_dir = os.path.join(self.knot_path,
                                 self.Constants.BUILD_PATH)
