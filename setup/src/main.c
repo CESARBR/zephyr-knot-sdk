@@ -84,12 +84,11 @@ void main(void)
 	}
 
 	/*
-	 * Run Setup App if button pressed or failed to read or if PAN Settings
+	 * Run Setup App if button pressed or if PAN Settings
 	 * not set.
 	 */
-	/* TODO: Check for OpenThread Settings */
-	if ( btn != PERIPHERAL_BTN_NOT_PRESSED ||
-	     ipv6_set == false || ot_set == false)
+	if (btn == PERIPHERAL_BTN_PRESSED ||
+	    ipv6_set == false || ot_set == false)
 		goto setup;
 
 	/* Load Main App */
