@@ -58,6 +58,10 @@ int peripheral_btn_status(void)
 	int val;
 	int rc;
 
+	/* Fail if port not defined */
+	if (!gpiob)
+		return PERIPHERAL_BTN_ERROR;
+
 	/* Read pin value */
 	rc = gpio_pin_read(gpiob, BUTTON_PIN, &val);
 
