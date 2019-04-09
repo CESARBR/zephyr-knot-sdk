@@ -18,7 +18,11 @@
 #include <logging/log.h>
 
 #include "net.h"
+#if CONFIG_NET_UDP
+#include "udp6.h"
+#elif CONFIG_NET_TCP
 #include "tcp6.h"
+#endif
 #if CONFIG_SETTINGS_OT
 	#include "ot_config.h"
 #endif
@@ -78,13 +82,22 @@ static int connection_start(void)
 			k_sleep(100);
 	#endif
 
-	ret = tcp6_start(recv_cb, close_cb);
-	if (ret < 0) {
-		LOG_DBG("NET: TCP start failure");
-		goto done;
-	}
+	#if CONFIG_NET_UDP
+		ret = udp6_start(recv_cb, close_cb);
+		if (ret < 0) {
+			LOG_DBG("NET: UDP start failure");
+			goto done;
+		}
+		LOG_DBG("NET: UDP started");
+	#elif CONFIG_NET_TCP
+		ret = tcp6_start(recv_cb, close_cb);
+		if (ret < 0) {
+			LOG_DBG("NET: TCP start failure");
+			goto done;
+		}
 
-	LOG_DBG("NET: TCP started");
+		LOG_DBG("NET: TCP started");
+	#endif
 
 	connected = true;
 	k_sem_give(&conn_sem);
@@ -135,12 +148,21 @@ static void net_thread(void)
 		}
 	#endif
 
-	/* Start TCP layer */
-	ret = tcp6_init();
-	if (ret) {
-		LOG_ERR("Failed to init TCP handler. Aborting net thread");
-		return;
-	}
+	#if CONFIG_NET_UDP
+		/* Start UDP layer */
+		ret = udp6_init();
+		if (ret) {
+			LOG_ERR("Failed to init UDP handler. Aborting net thread");
+			return;
+		}
+	#elif CONFIG_NET_TCP
+		/* Start TCP layer */
+		ret = tcp6_init();
+		if (ret) {
+			LOG_ERR("Failed to init TCP handler. Aborting net thread");
+			return;
+		}
+	#endif
 
 	memset(ipdu, 0, sizeof(ipdu));
 	connection_start();
@@ -180,7 +202,11 @@ done:
 		k_yield();
 	}
 
-	tcp6_stop();
+	#if CONFIG_NET_UDP
+		udp6_stop();
+	#elif CONFIG_NET_TCP
+		tcp6_stop();
+	#endif
 }
 
 int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
