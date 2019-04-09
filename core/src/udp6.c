@@ -30,6 +30,24 @@ static net_recv_t recv_cb;
 static net_close_t close_cb;
 static int socket;
 
+int udp6_send(const u8_t *buf, size_t len)
+{
+	ssize_t out_len;
+
+	LOG_DBG("Sending msg");
+	while (len) {
+		out_len = zsock_send(socket, buf, len, 0);
+
+		if (out_len < 0)
+			return -errno;
+
+		buf = buf + out_len;
+		len -= out_len;
+	}
+
+	return 0;
+}
+
 static int start_udp_proto(const struct sockaddr *addr, socklen_t addrlen)
 {
 	int rc;

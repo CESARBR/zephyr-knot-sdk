@@ -194,7 +194,12 @@ static void net_thread(void)
 			goto done;
 
 		/* Send message */
-		ret = tcp6_send(ipdu, ilen);
+		#if CONFIG_NET_UDP
+			ret = udp6_send(ipdu, ilen);
+		#elif CONFIG_NET_TCP
+			ret = tcp6_send(ipdu, ilen);
+		#endif
+
 		if (ret)
 			LOG_ERR("Msg send fail (%d)", ret);
 
