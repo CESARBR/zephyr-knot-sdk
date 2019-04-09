@@ -11,4 +11,5 @@ void udp6_stop(void);
 
 int udp6_send(const u8_t *buf, size_t len);
 
+int udp6_event_poll(void);
 int udp6_init(void);

@@ -26,9 +26,60 @@ LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 #define IPV6_LEN	40
 
 static char peer_ipv6[IPV6_LEN];
+static struct zsock_pollfd fds;
 static net_recv_t recv_cb;
 static net_close_t close_cb;
 static int socket;
+
+static int receive(void)
+{
+	int rc;
+	int err;
+	size_t len = 0;
+	char buf[128];
+
+	/* Read socket until no data left */
+	while (true) {
+		rc = zsock_recv(socket, buf + len, sizeof(buf) - len,
+				ZSOCK_MSG_DONTWAIT);
+
+		/* Update len and check for more data */
+		if (rc > 0) {
+			len += rc;
+			continue;
+		}
+		/* Save errno to avoid changes by interruption */
+		err = errno;
+
+		if (rc == 0) {
+			if (len != 0) {
+				/* Read finished */
+				LOG_WRN("Nothing left to read");
+				break;
+			}
+
+			LOG_ERR("No message found (err %d)", err);
+			return -EIO;
+		}
+
+		/* rc < 0 */
+		/* Finish if EAGAIN and EWOULDBLOCK */
+		if (err == EAGAIN || err == EWOULDBLOCK)
+			break;
+
+		LOG_ERR("Socket read err: %d", rc);
+
+		return -err;
+	}
+
+	return recv_cb(buf, len);
+}
+
+static void set_fds(void)
+{
+	fds.fd = socket;
+	fds.events = ZSOCK_POLLIN;
+}
 
 int udp6_send(const u8_t *buf, size_t len)
 {
@@ -95,7 +146,7 @@ int udp6_start(net_recv_t recv, net_close_t close)
 
 	/* Successful start */
 	LOG_DBG("UDP connected");
-
+	set_fds();
 	recv_cb = recv;
 	close_cb = close;
 
@@ -134,4 +185,27 @@ int udp6_init(void)
 	}
 
 	return 0;
+}
+
+int udp6_event_poll(void)
+{
+	int ret, rc;
+
+	/*
+	 * Check if any event occurred on fds poll.
+	 */
+	ret = zsock_poll(&fds, 1, 0);
+	if (ret < 0)
+		LOG_ERR("Error in poll: %d", ret);
+
+	if (fds.revents & ZSOCK_POLLIN) {
+		LOG_DBG("Msg received");
+		rc = receive();
+		if (rc) {
+			LOG_ERR("Read failure: %d", rc);
+			k_sleep(K_FOREVER);
+		}
+	}
+
+	return ret;
 }

@@ -178,7 +178,11 @@ static void net_thread(void)
 			}
 		}
 		/* Look for incoming messages */
-		tcp6_event_poll();
+		#if CONFIG_NET_UDP
+			udp6_event_poll();
+		#elif CONFIG_NET_TCP
+			tcp6_event_poll();
+		#endif
 
 		ilen = 0;
 		/* Reading data from PROTO thread */
