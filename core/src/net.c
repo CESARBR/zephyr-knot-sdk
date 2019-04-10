@@ -204,8 +204,10 @@ static void net_thread(void)
 			ret = tcp6_send(ipdu, ilen);
 		#endif
 
-		if (ret)
+		if (ret <= 0)
 			LOG_ERR("Msg send fail (%d)", ret);
+		else
+			LOG_DBG("Sent %d bytes", ret);
 
 done:
 		k_yield();
