@@ -257,11 +257,13 @@ done:
 
 static size_t process_event(u8_t *xpt_opcode,
 			    const u8_t *ipdu, size_t ilen,
-			    u8_t *opdu, size_t olen)
+			    u8_t *opdu, size_t olen,
+			    bool *perm_error)
 {
 	knot_msg *omsg = (knot_msg *) opdu;
 	const knot_msg *imsg = (knot_msg *) ipdu;
 	const knot_value_type *value;
+	int8_t err;
 	u8_t value_len = 0;
 	static u8_t id_index = 0;
 	u8_t old_id;
@@ -279,9 +281,17 @@ static size_t process_event(u8_t *xpt_opcode,
 	 * If timeout expired or received an error message simply ignore it
 	 * and send data of the next sensor.
 	 */
-	if (to_xpr || imsg->action.result != 0)
-		LOG_ERR("FAIL SEND FOR ID: %d", id_index);
-	else
+	if (to_xpr || imsg->action.result != 0) {
+		err = imsg->action.result;
+		LOG_ERR("FAIL SEND FOR ID %d (err: %d)", id_index, err);
+
+		if (err != KNOT_ERR_PERM)
+			goto polling;
+
+		/* Permission error found */
+		*perm_error = true;
+		return 0;
+	} else
 		proxy_confirm_sent(id_index);
 
 polling:
@@ -388,6 +398,7 @@ static enum sm_state state_online(u8_t *xpt_opcode,
 {
 	enum sm_state next = STATE_ONLINE;
 	size_t ret_len = 0;
+	bool perm_error = false;
 
 	/* Incoming commands: higher priority */
 	if (ilen != 0)
@@ -395,9 +406,17 @@ static enum sm_state state_online(u8_t *xpt_opcode,
 		ret_len = process_cmd(ipdu, ilen, opdu, olen);
 
 	/* Local sensor/actuator */
-	if (ret_len == 0)
+	if (ret_len == 0) {
 		/* Local event */
-		ret_len = process_event(xpt_opcode, ipdu, ilen, opdu, olen);
+		ret_len = process_event(xpt_opcode, ipdu, ilen,
+					opdu, olen, &perm_error);
+
+		/* Need to authenticate to fix permission error */
+		if (perm_error) {
+			LOG_WRN("Re-authenticating");
+			next = STATE_AUTH;
+		}
+	}
 
 	if (ret_len > 0)
 		*len = ret_len;
