@@ -2,32 +2,46 @@
 
 Zephyr KNoT SDK provides libraries, tools and samples to make a KNoT application for Zephyr environment.
 
-## How to Build it
-
-### KNoT Requirements
 ---
-#### In order to build a KNoT application, some requirements are needed:
+## KNoT Requirements
+
+### In order to build a KNoT application, some requirements are needed:
 
 #### 1 - Zephyr
 
 KNoT uses a fork of Zephyr repository.
 
+- Set up a Zephyr development environment on your system
+	> Follow these [instructions](https://docs.zephyrproject.org/latest/getting_started/index.html#set-up-a-development-system)
+- Install the west binary and bootstrapper
+	```bash
+	$ pip3 install --user west
+	```
+- Create an enclosing folder and change directory
+	```bash
+	$ mkdir zephyrproject
+	$ cd zephyrproject
+	```
 - Clone KNoT Zephyr fork
 	```bash
 	$ git clone https://github.com/CESARBR/zephyr.git
 	```
+- Initialize west, inside zephyrproject directory run
+	```bash
+	$ west init -l zephyr/
+	$ west update
+	```
 - Checkout to KNoT branch
 	```bash
-	$ git checkout -b ot-setup origin/ot-setup
+	$ cd <zephyr-dir>
+	$ git checkout -b zephyr-port-1.14-rcx origin/zephyr-port-1.14-rcx
 	```
-- Set up a Zephyr development environment on your system
-	> Follow these [instructions](https://docs.zephyrproject.org/latest/getting_started/index.html#set-up-a-development-system)
-
 - Set up zephyr environment variables
 	```bash
 	$ cd <zephyr-dir>
 	$ source zephyr-env.sh
 	```
+	> It is necessary to source zephyr-env.sh every time a new terminal is opened.
 
 #### 2 - Openthread
 
@@ -37,94 +51,125 @@ KNoT uses Openthread stack.
 	```bash
 	$ git clone https://github.com/openthread/openthread.git
 	```
-- Checkout to `2a75d30684654e0348bce9327c6f45f4e9ea71a5` hash
+- Checkout to `f9d757a161fea4775d033a1ce88cf7962fe24a93` hash
 	```bash
-	$ git checkout -b knot_hash 2a75d30684654e0348bce9327c6f45f4e9ea71a5
+	$ cd <openthread-dir>
+	$ git checkout -b knot_hash f9d757a161fea4775d033a1ce88cf7962fe24a93
 	```
 
 #### 3 - nRF5x Command Line Tools
 
-- Download and install nrfjprog and mergehex cli applications .
+- Download and install nrfjprog and mergehex cli applications.
 
 > To download and more info [check this link.](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF5-Command-Line-Tools)
 
-#### 4 - MCUBOOT
-- Requirements
-	- python 3
-	- virtualenv
-	- Zephyr repository (installed at step 2)
-	- nrfjprog (installed at step 3)
+> Make sure that you have the nrfjprog and the mergehex in your path.
 
-- Clone MCUBOOT repository
-	```bash
-	$ git clone https://github.com/JuulLabs-OSS/mcuboot.git
-	```
-- Checkout to `5e9078f1e0bfed493b4265dd435cccb856cf2d6f` hash
-	```bash
-	$ cd <mcuboot-dir>
-	$ git checkout -b knot_hash 5e9078f1e0bfed493b4265dd435cccb856cf2d6f
-	```
-- Create and activate virtual environment
-	```bash
-	$ virtualenv -p `which python3` venv
-	$ source venv/bin/activate
-	```
-- Install python dependencies
-	```bash
-	$ pip3 install asn1crypto==0.24.0 cffi==1.11.5 Click==7.0 colorama==0.4.1 cryptography==2.4.2 docopt==0.6.2 idna==2.8 intelhex==2.2.1 pkg-resources==0.0.0 pycparser==2.19 pyelftools==0.25 pykwalify==1.7.0 python-dateutil==2.7.5 PyYAML==3.13 six==1.11.0
-	```
-- Set up zephyr environment variables
-	```bash
-	$ source <zephyr_dir>/zephyr-env.sh
-	```
-- Generate MCUBOOT Makefile
-	```bash
-	$ cd <mcuboot_dir>/boot/zephyr
-	$ mkdir build && cd build
-	$ cmake -DBOARD=nrf52840_pca10056 ..
-	```
-- Use config interface to set up signature settings
-	```bash
-	$ make menuconfig
-	> MCUBoot settings
-	> Signature type
-		> Select ECDSA_P256
-	> PEM key file
-		> root-ec-p256.pem
-	```
-	> KNoT uses ECDSA_P256 type and root-ec-p256.pem file, available on MCUBOOT root directory. You can change this to your own settings.
-
-- Build MCUBOOT for zephyr
-	```bash
-	$ make
-	```
-- Flash MCUBOOT
-	```bash
-	$ make flash
-	```
-
-#### 5 - Source KNoT environment configuration file.
+#### 4 - Source KNoT environment configuration file
 
 The environment configuration file is used to set up KNOT_BASE path.
 ```bash
 $ cd zephyr-knot-sdk
 $ source knot-env.sh
 ```
+> It is necessary to source knot-env.sh every time a new terminal is opened.
 
-#### 6 - Create KNoT build directory.
+> There are two ways to build and run a KNoT Application [Using cli script](#using-cli-script) or [Not using cli script](#not-using-cli-script).
 
-KNoT image will be generated on this directory.
+---
+## Using cli script
+#### Installing dependencies
+- Use pip to install requirements
+	```bash
+	$ pip3 install --user -r ${KNOT_BASE}/scripts/requirements.txt
+	```
+
+#### Flash MCUBOOT
+- Flash stock MCUBOOT image using signature type ECDSA_P256
+	```bash
+	$ python3 ${KNOT_BASE}/scripts/cli.py mcuboot
+	```
+
+#### Build KNoT App
+- Build KNoT Core and KNoT Setup applications
+	```bash
+	$ python3 ${KNOT_BASE}/scripts/cli.py make --ot_path=<path-to-openthread>
+	```
+
+#### Flash KNoT App
+- Build and flash KNoT Core and KNoT Setup applications
+	```bash
+	$ python3 ${KNOT_BASE}/scripts/cli.py make flash
+	```
+#### Monitor the output
+- You can use minicon to monitor the serial logger.
+The device may be different depending on your system.
+	```bash
+	$ minicom -D <your-device> -b 115200
+	```
+	> If you are using debian the device usually is /dev/ttyACM0 and you can install minicom using:
+	> ``
+	> $ sudo apt-get install minicom
+	> ``
+---
+## Not using cli script
+
+### Build MCUBOOT
+- Requirements
+	- python 3
+	- virtualenv
+	- Zephyr repository (installed at step 2)
+	- nrfjprog (installed at step 3)
+
+#### 1 - Clone MCUBOOT repository
 ```bash
-$ cd zephyr-knot-sdk
-$ mkdir build
+$ git clone https://github.com/JuulLabs-OSS/mcuboot.git
+```
+#### 2 - Checkout to knot_hash
+```bash
+$ cd <mcuboot-dir>
+$ git checkout -b knot_hash fda937ab02296f6fd8e7195e2846d631f3d70559
+```
+#### 3 - Create and activate virtual environment
+```bash
+$ virtualenv -p `which python3` venv
+$ source venv/bin/activate
+```
+#### 4 - Install python dependencies
+```bash
+$ pip3 install asn1crypto==0.24.0 cffi==1.11.5 Click==7.0 colorama==0.4.1 cryptography==2.4.2 docopt==0.6.2 idna==2.8 intelhex==2.2.1 pycparser==2.19 pyelftools==0.25 pykwalify==1.7.0 python-dateutil==2.7.5 PyYAML==3.013 six==1.11.0
+```
+#### 5 - Set up zephyr environment variables
+```bash
+$ source <zephyr_dir>/zephyr-env.sh
+```
+#### 6 - Generate MCUBOOT Makefile
+```bash
+$ cd <mcuboot_dir>/boot/zephyr
+$ mkdir build && cd build
+$ cmake -DBOARD=nrf52840_pca10056 ..
+```
+#### 7 - Use config interface to set up signature settings
+```bash
+$ make menuconfig
+> MCUBoot settings
+> Signature type
+	> Select ECDSA_P256
+> PEM key file
+	> root-ec-p256.pem
+```
+> KNoT uses ECDSA_P256 type and root-ec-p256.pem file, available on MCUBOOT root directory. You can change this to your own settings.
+
+#### 8 - Build MCUBOOT for zephyr
+```bash
+$ make
 ```
 
----
 ### Build KNoT application
----
+
 #### 1 - Application folder
 ```bash
-$ cd zephyr-knot-sdk/<app-dir>
+$ cd zephyr-knot-sdk/apps/<app-dir>
 ```
 > You can use the KNoT hello app as an example
 
@@ -143,9 +188,7 @@ $ cmake -DEXTERNAL_PROJECT_PATH_OPENTHREAD=<path-to-openthread> -DOVERLAY_CONFIG
 $ make
 ```
 
----
 ### Build KNoT Setup App
----
 #### 1 - Application folder
 ```bash
 $ cd zephyr-knot-sdk/<setup-dir>
@@ -164,7 +207,7 @@ $ make
 ```
 
 
-## How to flash
+### How to flash
 
 #### 1 - Flash MCUBOOT
 ```bash
@@ -188,11 +231,13 @@ $ <mcuboot-dir>/scripts/imgtool.py sign --key <mcuboot-dir>/root-ec-p256.pem --h
 ```bash
 $ nrfjprog --program ${KNOT_BASE}/build/slot0_merged_signed.hex --sectorerase -f nrf52 --reset
 ```
-#### 5 - Use serial monitor
-```bash
-$ minicom -D /dev/ttyACM0 -b 115200
-```
-> You can install minicom using:
-> ``
-> $ sudo apt-get install minicom
-> ``
+#### 5 - Monitor the output
+- You can use minicon to monitor the serial logger.
+The device may be different depending on your system.
+	```bash
+	$ minicom -D <your-device> -b 115200
+	```
+	> If you are using debian the device usually is /dev/ttyACM0 and you can install minicom using:
+	> ``
+	> $ sudo apt-get install minicom
+	> ``
