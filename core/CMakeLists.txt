@@ -7,7 +7,7 @@ macro(set_conf_file)
 endmacro()
 
 if(NOT BOARD)
-        set(BOARD nrf52840_pca10056)
+        error("Board not defined!")
 endif ()
 
 set(KCONFIG_ROOT $ENV{KNOT_BASE}/core/Kconfig)
