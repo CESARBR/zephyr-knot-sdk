@@ -34,7 +34,7 @@ static bool led = true;
 #include <gpio.h>
 #define GPIO_PORT		SW0_GPIO_CONTROLLER /* General GPIO Controller */
 #define BUTTON_PIN		DT_GPIO_KEYS_SW1_GPIO_PIN /* User button */
-#define LED_PIN			13 /* User button */
+#define LED_PIN			LED1_GPIO_PIN /* User LED */
 
 static struct device *gpiob;		/* GPIO device */
 static struct gpio_callback button_cb; /* Button pressed callback */
