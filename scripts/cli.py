@@ -99,6 +99,7 @@ class KnotSDK(metaclass=Singleton):
     signed_hex_path = None  # Path to signed merged hex file
     board = None  # Target board
     quiet = False  # Suppress command sub-process successful outputs if set
+    debug_app = None  # Compile app in debug mode
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -116,6 +117,7 @@ class KnotSDK(metaclass=Singleton):
         SIGN_IMG_ALIGN = "8"
         SIGN_SCRIPT_VERSION = "1.5"
         SIGN_IMG_SLOT_SIZE = "0x69000"
+        CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
 
     def __init__(self):
         self.check_env()
@@ -151,6 +153,9 @@ class KnotSDK(metaclass=Singleton):
     def set_quiet(self, quiet):
         self.quiet = quiet
 
+    def set_debug(self, debug):
+        self.debug_app = debug
+
     def __flash(self, file_path):
         logging.info('Flashing file ' + file_path)
         cmd = 'nrfjprog --program ' + \
@@ -174,7 +179,13 @@ class KnotSDK(metaclass=Singleton):
         """
         Create build folder and make setup app
         """
-        self.setup_app.make()
+        # Debug mode
+        if self.debug_app:
+            opt = '-D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
+        else:
+            opt = ''
+
+        self.setup_app.make(opt)
 
     def make_main(self):
         """
@@ -196,6 +207,11 @@ class KnotSDK(metaclass=Singleton):
 
         # Build main app with compiling options
         opt = '{} {}'.format(overlay_config, external_ot)
+
+        # Debug mode
+        if self.debug_app:
+            opt += ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
+
         self.main_app.make(options=opt)
 
     def clear_core_dir(self):
@@ -343,9 +359,13 @@ def cli():
 @click.option('-q', '--quiet', help='Suppress successful sub-command messages',
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
-def make(ctx, ot_path, quiet, board):
+@click.option('-d', '--debug', help='Build app in debug mode', is_flag=True)
+def make(ctx, ot_path, quiet, board, debug):
     if quiet:
         KnotSDK().set_quiet(True)
+
+    if debug:
+        KnotSDK().set_debug(True)
 
     # Initialize App objects
     KnotSDK().apps_init()

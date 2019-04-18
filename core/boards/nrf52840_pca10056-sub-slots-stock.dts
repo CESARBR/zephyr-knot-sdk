@@ -1,3 +1,6 @@
+/*
+ * Overlay file to permit using sub-slots with reduced space for setup app.
+ */
 &flash0 {
 	/*
 	 * For more information, see:

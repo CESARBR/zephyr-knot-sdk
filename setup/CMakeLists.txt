@@ -4,9 +4,16 @@ cmake_minimum_required(VERSION 3.8.2)
 set(KCONFIG_ROOT $ENV{KNOT_BASE}/core/Kconfig)
 
 # Change dts with sub-partitions and use specific sub-partition to flash code
-set(DTC_OVERLAY_MULTI_SLOT
-	$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
-)
+# Use special dts overlay in case of debugging
+if (KNOT_DEBUG)
+	set(DTC_OVERLAY_MULTI_SLOT
+		$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots-debug.dts
+	)
+else()
+	set(DTC_OVERLAY_MULTI_SLOT
+		$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots-stock.dts
+	)
+endif()
 set(DTC_OVERLAY_SET_SLOT
 	$ENV{KNOT_BASE}/core/boards/overlay-setup.dts
 )
