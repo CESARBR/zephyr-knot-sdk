@@ -18,7 +18,7 @@ if (NOT ${BOARD} STREQUAL qemu_x86)
                 $ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
         )
         set(DTC_OVERLAY_SET_SLOT
-                $ENV{KNOT_BASE}/core/boards/${BOARD}-code-slot.overlay
+                $ENV{KNOT_BASE}/core/boards/overlay-main.dts
         )
         set(DTC_OVERLAY_FILE
                 "${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"

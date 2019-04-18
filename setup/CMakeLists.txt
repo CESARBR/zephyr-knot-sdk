@@ -8,7 +8,7 @@ set(DTC_OVERLAY_MULTI_SLOT
 	$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots.overlay
 )
 set(DTC_OVERLAY_SET_SLOT
-	${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD}-code-slot.overlay
+	$ENV{KNOT_BASE}/core/boards/overlay-setup.dts
 )
 set(DTC_OVERLAY_FILE
 	"${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"
