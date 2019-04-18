@@ -22,8 +22,8 @@
 #include "peripheral.h"
 
 /* General GPIO Controller */
-#define GPIO_PORT		SW3_GPIO_CONTROLLER
-#define BUTTON_PIN		SW3_GPIO_PIN
+#define GPIO_PORT		SW0_GPIO_CONTROLLER
+#define BUTTON_PIN		SW0_GPIO_PIN
 
 static struct device *gpiob = NULL;
 
