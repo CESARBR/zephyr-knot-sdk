@@ -10,7 +10,7 @@
 #define GPIO_PORT		SW0_GPIO_CONTROLLER
 
 /* Reset flash controller */
-#define RST_FLASH_PIN		SW3_GPIO_PIN
+#define RST_FLASH_PIN		SW0_GPIO_PIN
 #define RST_FLASH_TIMEOUT	2000 /* Millis */
 #define RST_FLASH_PERIOD	200 /* Millis */
 
