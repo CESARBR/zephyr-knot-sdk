@@ -52,9 +52,15 @@ class App(object):
 
         # Cmake
         if not os.listdir(self.build_path):
+            # Exit if no board defined
+            if KnotSDK().board is None:
+                logging.critical('Error: No target board defined')
+                logging.info('You need to provide a target board')
+                exit()
+
             logging.warn("Build directory is empty")
             logging.info("Creating make files for {} App".format(self.name))
-            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().Constants.BOARD,
+            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().board,
                                                   options,
                                                   self.root_path)
             run_cmd(cmd, workdir=self.build_path)
@@ -91,11 +97,11 @@ class KnotSDK(metaclass=Singleton):
     main_app = None  # Main app
     merged_hex_path = None  # Path to hex file merged from main and setup app
     signed_hex_path = None  # Path to signed merged hex file
+    board = None  # Target board
     quiet = False  # Suppress command sub-process successful outputs if set
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
-        BOARD = "nrf52840_pca10056"
         CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
@@ -137,6 +143,10 @@ class KnotSDK(metaclass=Singleton):
     def set_ext_ot_path(self, ot_path):
         logging.info('Using OT path: {}'.format(ot_path))
         self.ext_ot_path = ot_path
+
+    def set_board(self, board):
+        logging.info('Selected board: {}'.format(board))
+        self.board = board
 
     def set_quiet(self, quiet):
         self.quiet = quiet
@@ -332,7 +342,8 @@ def cli():
 @click.option('--ot_path', help='Define OpenThread repository path')
 @click.option('-q', '--quiet', help='Suppress successful sub-command messages',
               is_flag=True)
-def make(ctx, ot_path, quiet):
+@click.option('-b', '--board', help='Target board')
+def make(ctx, ot_path, quiet, board):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -344,6 +355,9 @@ def make(ctx, ot_path, quiet):
 
     if ot_path is not None:
         KnotSDK().set_ext_ot_path(ot_path)
+
+    if board is not None:
+        KnotSDK().set_board(board)
 
     # Make apps
     KnotSDK().make_setup()
