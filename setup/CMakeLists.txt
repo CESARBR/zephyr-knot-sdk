@@ -30,7 +30,7 @@ set(core_sources
 	$ENV{KNOT_BASE}/core/src/ot_config.c
 	$ENV{KNOT_BASE}/core/src/clear.c
 	$ENV{KNOT_BASE}/core/src/storage.c
-	$ENV{KNOT_BASE}/core/src/storage.nrf52840)
+)
 
 target_sources(app PRIVATE
 		${app_sources}
