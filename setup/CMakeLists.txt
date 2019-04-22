@@ -9,6 +9,12 @@ if (KNOT_DEBUG)
 	set(DTC_OVERLAY_MULTI_SLOT
 		$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots-debug.dts
 	)
+
+	# Add debug conf file if there is any
+	set(DEBUG_OVERLAY $ENV{KNOT_BASE}/setup/boards/${BOARD}-debug.conf)
+	if(EXISTS ${DEBUG_OVERLAY})
+		set(OVERLAY_CONFIG "${OVERLAY_CONFIG} ${DEBUG_OVERLAY}")
+	endif()
 else()
 	set(DTC_OVERLAY_MULTI_SLOT
 		$ENV{KNOT_BASE}/core/boards/${BOARD}-sub-slots-stock.dts
