@@ -1,0 +1,40 @@
+/*
+ * Overlay file to permit using sub-slots with reduced space for setup app.
+ */
+&flash0 {
+	/*
+	 * For more information, see:
+	 * http://docs.zephyrproject.org/latest/devices/dts/flash_partitions.html
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * Hack: Split image-0 into two sub-images
+		 * (knot-setup and knot-app) so they can be refer to each other
+		 * and recognized by MCUBOOT as a single image.
+		 */
+
+		slot_0_0_sub_partition: sub-partition@c000 {
+			label = "image-knot-setup";
+			reg = <0x00010000 0x000020000>;
+		};
+
+		slot_0_1_sub_partition: sub-partition@2c000 {
+			label = "image-knot-app";
+			reg = <0x00030000 0x00003E000>;
+		};
+
+		ot_partition: partition@fe000 {
+			label = "ot-storage";
+			reg = <0x000ce000 0x00002000>;
+		};
+		/* Nordic nRF5 bootloader <0xe0000 0x1c000>
+		 *
+		 * In addition, the last and second last flash pages
+		 * are used by the nRF5 bootloader and MBR to store settings.
+		 */
+	};
+};

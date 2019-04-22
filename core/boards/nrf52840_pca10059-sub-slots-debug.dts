@@ -1,0 +1,39 @@
+/*
+ * Overlay file to permit using sub-slots with extend space for setup app.
+ * This file is meant for apps on debug mode, not stock mode.
+ */
+&flash0 {
+	/*
+	 * For more information, see:
+	 * http://docs.zephyrproject.org/latest/devices/dts/flash_partitions.html
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * Hack: Split image-0 into two sub-images
+		 * (knot-setup and knot-app) so they can be refer to each other
+		 * and recognized by MCUBOOT as a single image.
+		 */
+
+		slot_0_0_sub_partition: sub-partition@c000 {
+			label = "image-knot-setup";
+			reg = <0x00010000 0x00002a000>;
+		};
+
+		slot_0_1_sub_partition: sub-partition@2c000 {
+			label = "image-knot-app";
+			reg = <0x0003a000 0x000034000>;
+		};
+
+		/*
+		 * Using last 2 pages of storage partition
+		 */
+		ot_partition: partition@fe000 {
+			label = "ot-storage";
+			reg = <0x000ce000 0x00002000>;
+		};
+	};
+};
