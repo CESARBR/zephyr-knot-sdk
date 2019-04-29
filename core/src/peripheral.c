@@ -55,17 +55,22 @@ static void set_reset(struct k_timer *timer_id)
 static void rst_btn_edge(struct device *rst_gpio,
 			 struct gpio_callback *cb, u32_t pins)
 {
-	int port_value;
+	u32_t pin_val;
+	int rc;
 
 	/* Rising or falling edge */
-	port_value = gpio_pin_read(rst_gpio, RST_FLASH_PIN, NULL);
+	rc = gpio_pin_read(rst_gpio, RST_FLASH_PIN, &pin_val);
+	if (rc)
+		LOG_ERR("Failed to read port");
 
 	/* Stop reset timer on rising edge */
-	if (port_value) {
+	if (pin_val || rc) {
+		LOG_DBG("Reset button released");
 		k_timer_stop(&rst_timer);
 		return;
 	}
 	/* Start reset timer on falling edge */
+	LOG_DBG("Reset button pressed");
 	k_timer_start(&rst_timer, RST_FLASH_TIMEOUT, RST_FLASH_PERIOD);
 }
 
