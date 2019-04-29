@@ -46,7 +46,7 @@ static void btn_press(struct device *gpiob,
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Update GPIO */
 
 }
-#elif CONFIG_BOARD_QEMU_X86
+#else
 
 #define UPDATE_PERIOD K_SECONDS(3) /* Update values each 3 seconds */
 static void val_update(struct k_timer *timer_id)
@@ -111,7 +111,7 @@ void setup(void)
 	/* Led pin */
 	gpio_pin_configure(gpiob, LED_PIN, GPIO_DIR_OUT);
 
-#elif CONFIG_BOARD_QEMU_X86
+#else
 	k_timer_start(&val_update_timer, UPDATE_PERIOD, UPDATE_PERIOD);
 #endif
 
