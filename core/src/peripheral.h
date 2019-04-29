@@ -6,8 +6,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* General GPIO Controller */
-#define GPIO_PORT		SW0_GPIO_CONTROLLER
+/* General GPIO Controllers */
+#define RST_FLASH_PORT		SW0_GPIO_CONTROLLER
+#define STATUS_LED_PORT		LED0_GPIO_CONTROLLER
 
 /* Reset flash controller */
 #define RST_FLASH_PIN		SW0_GPIO_PIN

@@ -33,7 +33,8 @@ LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #include "peripheral.h"
 
-static struct device *gpiob;
+static struct device *rst_gpio;
+static struct device *status_gpio;
 
 /* Reset configs */
 static bool rst_flag;
@@ -51,12 +52,13 @@ static void set_reset(struct k_timer *timer_id)
 	rst_flag = true;
 }
 
-static void rst_btn_edge(struct device *gpiob, struct gpio_callback *cb, u32_t pins)
+static void rst_btn_edge(struct device *rst_gpio,
+			 struct gpio_callback *cb, u32_t pins)
 {
 	int port_value;
 
 	/* Rising or falling edge */
-	port_value = gpio_pin_read(gpiob, RST_FLASH_PIN, NULL);
+	port_value = gpio_pin_read(rst_gpio, RST_FLASH_PIN, NULL);
 
 	/* Stop reset timer on rising edge */
 	if (port_value) {
@@ -69,18 +71,23 @@ static void rst_btn_edge(struct device *gpiob, struct gpio_callback *cb, u32_t p
 
 static int reset_init(void)
 {
+	/* Init GPIO port */
+	rst_gpio = device_get_binding(RST_FLASH_PORT);
+	if (unlikely(!rst_gpio))
+		return -1;
+
 	/* Initializing reset KNoT storage timer */
 	k_timer_init(&rst_timer, set_reset, NULL);
 
 	/* Reset Pin: Input, Pull up, Interruption on every edge */
-	gpio_pin_configure(gpiob, RST_FLASH_PIN,
+	gpio_pin_configure(rst_gpio, RST_FLASH_PIN,
 		GPIO_DIR_IN | GPIO_PUD_PULL_UP |
 		GPIO_INT | GPIO_INT_EDGE | GPIO_INT_DOUBLE_EDGE);
 
 	/* Pin callback init */
 	gpio_init_callback(&rst_btn_cb, rst_btn_edge, BIT(RST_FLASH_PIN));
-	gpio_add_callback(gpiob, &rst_btn_cb);
-	gpio_pin_enable_callback(gpiob, RST_FLASH_PIN);
+	gpio_add_callback(rst_gpio, &rst_btn_cb);
+	gpio_pin_enable_callback(rst_gpio, RST_FLASH_PIN);
 
 	rst_flag = false;
 
@@ -91,13 +98,18 @@ static int reset_init(void)
 static void toggle_led(void)
 {
 	status_led = !status_led;
-	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
+	gpio_pin_write(status_gpio, STATUS_LED_PIN, status_led);
 }
 
 static int status_init(void)
 {
+	/* Init GPIO port */
+	status_gpio = device_get_binding(STATUS_LED_PORT);
+	if (unlikely(!status_gpio))
+		return -1;
+
 	/* Led Pin: Output */
-	gpio_pin_configure(gpiob, STATUS_LED_PIN, GPIO_DIR_OUT);
+	gpio_pin_configure(status_gpio, STATUS_LED_PIN, GPIO_DIR_OUT);
 
 	/* If led frequency is not set, show as an error */
 	peripheral_set_status_period(STATUS_ERROR_PERIOD);
@@ -110,12 +122,6 @@ static int status_init(void)
 
 int peripheral_init(void)
 {
-	/* Initializing GPIO port */
-	gpiob = device_get_binding(GPIO_PORT);
-	if (unlikely(!gpiob)) {
-		return -1;
-	}
-
 	if (unlikely(reset_init()))
 		return -1;
 
@@ -135,7 +141,7 @@ void peripheral_set_status_period(s64_t status_period)
 
 	/* Led on at period update */
 	status_led = false;
-	gpio_pin_write(gpiob, STATUS_LED_PIN, status_led);
+	gpio_pin_write(status_gpio, STATUS_LED_PIN, status_led);
 
 	toggle_led_period = status_period;
 }
