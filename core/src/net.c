@@ -231,7 +231,7 @@ int net_start(struct k_pipe *p2n, struct k_pipe *n2p)
 	k_thread_create(&rx_thread_data, rx_stack,
 			K_THREAD_STACK_SIZEOF(rx_stack),
 			(k_thread_entry_t) net_thread,
-			NULL, NULL, NULL, K_PRIO_COOP(10), 0, K_NO_WAIT);
+			NULL, NULL, NULL, K_PRIO_PREEMPT(15), 0, K_NO_WAIT);
 
 	return 0;
 }
