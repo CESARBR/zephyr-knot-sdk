@@ -5,6 +5,13 @@ The following images are included:
 MCUBOOT-EC-P256
 File: mcuboot-ec-p256.hex
 Content: MCUBOOT image using signature type ECDSA_P256 and the signature file
-`root-ec-p256.pem` at `<mcuboot-repo>/root-ec-p256.pem`
+`root-ec-p256.pem` at `<mcuboot-repo>/root-ec-p256.pem` for the board
+nrf52840_pca10056.
 Version: 5e9078f1e0bfed493b4265dd435cccb856cf2d6f
 
+MCUBOOT-EC-P256-DONGLE
+File: mcuboot-ec-p256-dongle.hex
+Content: MCUBOOT image using signature type ECDSA_P256 and the signature file
+`root-ec-p256.pem` at `<mcuboot-repo>/root-ec-p256.pem` for the board
+nrf52840_pca10059.
+Version: 5e6f5e0165d141cd514409ef56490cb0ebdcadf9
