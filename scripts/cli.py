@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from configparser import ConfigParser
+
 import os
 import shutil
 import errno
@@ -117,6 +119,7 @@ class KnotSDK(metaclass=Singleton):
         SIGN_SCRIPT_VERSION = "1.5"
         SIGN_IMG_SLOT_SIZE = "0x69000"
         CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
+        CONFIG_PATH = "config"
 
     def __init__(self):
         self.check_env()
@@ -289,6 +292,27 @@ class KnotSDK(metaclass=Singleton):
         logging.info('KNoT Thing memory erased')
 
 
+class Config(metaclass=Singleton):
+    """
+    Stored configuration proxy and handler.
+    """
+    parser = None
+
+    def __init__(self):
+        self.load()
+
+    def load(self):
+        try:
+            config_path = os.path.join(KnotSDK().knot_path,
+                                       KnotSDK().Constants.CONFIG_PATH)
+            self.parser = ConfigParser()
+            self.parser.read(config_path)
+        except Exception as err:
+            logging.critical("Failed to read config file with exception:")
+            logging.info(str(err))
+            exit()
+
+
 def run_cmd(cmd, workdir=KnotSDK().cwd):
     """
     Run subprocess and get raise error if any
@@ -339,6 +363,7 @@ def cli():
     """
     try:
         KnotSDK()
+        Config()
     except KeyError as err:
         sys.exit(err)
 
