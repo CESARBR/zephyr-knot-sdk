@@ -296,6 +296,7 @@ class Config(metaclass=Singleton):
     """
     Stored configuration proxy and handler.
     """
+    config_path = None
     parser = None
 
     # Constants
@@ -307,10 +308,10 @@ class Config(metaclass=Singleton):
 
     def load(self):
         try:
-            config_path = os.path.join(KnotSDK().knot_path,
-                                       KnotSDK().Constants.CONFIG_PATH)
+            self.config_path = os.path.join(KnotSDK().knot_path,
+                                            KnotSDK().Constants.CONFIG_PATH)
             self.parser = ConfigParser()
-            self.parser.read(config_path)
+            self.parser.read(self.config_path)
         except Exception as err:
             logging.critical("Failed to read config file with exception:")
             logging.info(str(err))
@@ -323,6 +324,16 @@ class Config(metaclass=Singleton):
         Return None if not set.
         """
         return self.parser.get(self.SECTION, key, fallback=None)
+
+    def set(self, key, value):
+        """
+        Set value with specified key to config file as a string.
+        Use default section for all keys.
+        """
+        self.parser[self.SECTION][key] = str(value)
+
+        with open(self.config_path, 'w') as configfile:
+            self.parser.write(configfile)
 
 
 def run_cmd(cmd, workdir=KnotSDK().cwd):
@@ -442,6 +453,17 @@ def erase():
 @cli.command(help='Flash stock MCUBOOT')
 def mcuboot():
     KnotSDK().flash_mcuboot()
+
+
+@cli.group(help='Set config default values')
+def set():
+    pass
+
+
+@set.command(help='Default target board')
+@click.argument('board')
+def board(board):
+    Config().set(Config().KEY_BOARD, board)
 
 if __name__ == '__main__':
     """
