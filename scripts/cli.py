@@ -109,7 +109,6 @@ class KnotSDK(metaclass=Singleton):
         MERGED_HEX_PATH = "merged.hex"
         SIGNED_HEX_PATH = "signed.hex"
         IMG_PATH = "img"
-        OT_CONFIG_PATH = "overlay-knot-ot.conf"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
@@ -191,22 +190,13 @@ class KnotSDK(metaclass=Singleton):
         """
         Create build folder and make main app
         """
-        # Define overlay file to be used
-        overlay_path = os.path.join(self.knot_path,
-                                    self.Constants.CORE_PATH,
-                                    self.Constants.OT_CONFIG_PATH)
-        overlay_config = '-DOVERLAY_CONFIG={}'.format(overlay_path)
-
         # Use external OpenThread path if provided
         if self.ext_ot_path is not None:
-            external_ot =\
+            opt =\
                 '-DEXTERNAL_PROJECT_PATH_OPENTHREAD={}'.format(
                     self.ext_ot_path)
         else:
-            external_ot = ''
-
-        # Build main app with compiling options
-        opt = '{} {}'.format(overlay_config, external_ot)
+            opt = ''
 
         # Debug mode
         if self.debug_app:

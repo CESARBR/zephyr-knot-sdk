@@ -3,7 +3,11 @@ find_package(Git REQUIRED)
 
 macro(set_conf_file)
     set(CONF_FILE
-      "prj.conf $ENV{KNOT_BASE}/core/core.conf $ENV{KNOT_BASE}/core/boards/${BOARD}.conf")
+      "prj.conf \
+       $ENV{KNOT_BASE}/core/core.conf \
+       $ENV{KNOT_BASE}/core/overlay-knot-ot.conf \
+       $ENV{KNOT_BASE}/core/boards/${BOARD}.conf \
+       ")
 endmacro()
 
 if(NOT BOARD)
