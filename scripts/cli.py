@@ -300,6 +300,7 @@ class Config(metaclass=Singleton):
 
     # Constants
     SECTION = "DEFAULT"
+    KEY_BOARD = "board"
 
     def __init__(self):
         self.load()
@@ -402,8 +403,12 @@ def make(ctx, ot_path, quiet, board, debug):
     if ot_path is not None:
         KnotSDK().set_ext_ot_path(ot_path)
 
-    if board is not None:
-        KnotSDK().set_board(board)
+    # Use default board if none specified.
+    # In case of no default board defined, the passed board will be set as None
+    # and, if used, an "Undefined board" error will be raised.
+    if board is None:
+        board = Config().get(Config().KEY_BOARD)
+    KnotSDK().set_board(board)
 
     # Make apps
     KnotSDK().make_setup()
