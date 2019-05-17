@@ -298,6 +298,9 @@ class Config(metaclass=Singleton):
     """
     parser = None
 
+    # Constants
+    SECTION = "DEFAULT"
+
     def __init__(self):
         self.load()
 
@@ -311,6 +314,14 @@ class Config(metaclass=Singleton):
             logging.critical("Failed to read config file with exception:")
             logging.info(str(err))
             exit()
+
+    def get(self, key):
+        """
+        Read value with specified key provided by config file.
+        Use default section for all keys.
+        Return None if not set.
+        """
+        return self.parser.get(self.SECTION, key, fallback=None)
 
 
 def run_cmd(cmd, workdir=KnotSDK().cwd):
