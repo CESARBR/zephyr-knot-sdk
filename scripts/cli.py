@@ -144,9 +144,22 @@ class KnotSDK(metaclass=Singleton):
         # Get current working directory
         self.cwd = os.getcwd()
 
-    def set_ext_ot_path(self, ot_path):
-        logging.info('Using OT path: {}'.format(ot_path))
-        self.ext_ot_path = ot_path
+    def set_ext_ot_path(self, ot_path=None):
+        """
+        Use default external OpenThread path if none specified.
+        In case of no default path defined, keep it as None.
+        """
+        # Use default is none is passed
+        if ot_path is not None:
+            self.ext_ot_path = ot_path
+        else:
+            self.ext_ot_path = Config().get(Config().KEY_OT_PATH)
+
+        # Log in case of valid OT path passed
+        if self.ext_ot_path is not None:
+            logging.info('Using OT path: {}'.format(self.ext_ot_path))
+        else:
+            logging.info('No OpenThread path passed')
 
     def set_board(self, board=None):
         """
@@ -318,6 +331,7 @@ class Config(metaclass=Singleton):
     # Constants
     SECTION = "DEFAULT"
     KEY_BOARD = "board"
+    KEY_OT_PATH = "ot_path"
 
     def __init__(self):
         self.load()
@@ -427,8 +441,8 @@ def make(ctx, ot_path, quiet, board, debug):
     if ctx.invoked_subcommand == "clean":
         return
 
-    if ot_path is not None:
-        KnotSDK().set_ext_ot_path(ot_path)
+    # Optional external OpenThread path
+    KnotSDK().set_ext_ot_path(ot_path=ot_path)
 
     # Defined board required
     KnotSDK().set_board(board=board)
