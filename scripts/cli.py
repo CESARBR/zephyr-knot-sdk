@@ -468,7 +468,7 @@ def make(ctx, ot_path, quiet, board, debug):
     KnotSDK().sign_merged()
 
 
-@make.command(help='Flash setup and main apps')
+@make.command(help='Build and flash Setup and Main apps')
 def flash():
     KnotSDK().flash_signed()
 
@@ -489,6 +489,11 @@ def erase():
 @cli.command(help='Flash stock MCUBOOT')
 def mcuboot():
     KnotSDK().flash_mcuboot()
+
+
+@cli.command(help='Flash Setup and Main apps')
+def flash():
+    KnotSDK().flash_signed()
 
 
 @cli.group(help='Set config default values')
