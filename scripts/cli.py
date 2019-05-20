@@ -469,7 +469,8 @@ def cli():
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
 @click.option('-d', '--debug', help='Build app in debug mode', is_flag=True)
-def make(ctx, ot_path, quiet, board, debug):
+@click.option('-f', '--flash', help='Flash image after build', is_flag=True)
+def make(ctx, ot_path, quiet, board, debug, flash):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -479,8 +480,8 @@ def make(ctx, ot_path, quiet, board, debug):
     # Initialize App objects
     KnotSDK().apps_init()
 
-    # Don't build apps if using 'clean' or 'menuconfig' subcommands
-    if ctx.invoked_subcommand in ["clean", "menuconfig"]:
+    # Don't build apps if using any subcommand
+    if ctx.invoked_subcommand:
         return
 
     # Optional external OpenThread path
@@ -499,6 +500,10 @@ def make(ctx, ot_path, quiet, board, debug):
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
 
+    # Flash if flagged to
+    if flash:
+        KnotSDK().flash_signed()
+
 
 @make.command(help='Open menuconfig for main app')
 @click.option('-b', '--board', help='Target board')
@@ -508,11 +513,6 @@ def menuconfig(board):
 
     opt = KnotSDK().get_main_options()
     KnotSDK().main_app.menuconfig(opt)
-
-
-@make.command(help='Build and flash Setup and Main apps')
-def flash():
-    KnotSDK().flash_signed()
 
 
 @make.command(help='Delete building files')
