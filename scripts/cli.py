@@ -202,6 +202,12 @@ class KnotSDK(metaclass=Singleton):
         logging.info('MCUBOOT flashed')
 
     def flash_signed(self):
+        # Abort if no flash image found
+        if not os.path.exists(self.signed_hex_path):
+            logging.critical('Signed image not found!')
+            logging.info("To create a signed image, run 'make'")
+            exit()
+
         logging.info('Flashing signed image...')
         self.__flash(self.signed_hex_path)
         logging.info('Signed image flashed')
