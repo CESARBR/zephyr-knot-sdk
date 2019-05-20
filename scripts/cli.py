@@ -46,27 +46,36 @@ class App(object):
         self.build_path = os.path.join(path, self.Constants.BUILD_PATH)
         self.hex_path = os.path.join(self.build_path, self.Constants.HEX_PATH)
 
-    def make(self, options=''):
+    def gen_make(self, options=''):
+        """
+        Generate make files if build directory missing or empty
+        """
         # Create build directory if doesn't exist
         if not os.path.exists(self.build_path):
             logging.info('Creating dir: {}'.format(self.build_path))
             os.makedirs(self.build_path)
 
-        # Cmake
-        if not os.listdir(self.build_path):
-            # Exit if no board defined
-            if KnotSDK().board is None:
-                logging.critical('Error: No target board defined')
-                logging.info('You need to provide a target board')
-                exit()
+        # Ignore if build directory is not empty
+        if os.listdir(self.build_path):
+            return
 
-            logging.warn("Build directory is empty")
-            logging.info("Creating make files for {} App".format(self.name))
-            cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().board,
-                                                  options,
-                                                  self.root_path)
-            run_cmd(cmd, workdir=self.build_path)
-            logging.info('Created make files for {} App'.format(self.name))
+        # Exit if no board defined
+        if KnotSDK().board is None:
+            logging.critical('Error: No target board defined')
+            logging.info('You need to provide a target board')
+            exit()
+
+        logging.warn("Build directory is empty")
+        logging.info("Creating make files for {} App".format(self.name))
+        cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().board,
+                                              options,
+                                              self.root_path)
+        run_cmd(cmd, workdir=self.build_path)
+        logging.info('Created make files for {} App'.format(self.name))
+
+    def make(self, options):
+        # Generate build environment
+        self.gen_make(options=options)
 
         # make
         logging.info('Building {} App ...'.format(self.name))
@@ -81,6 +90,16 @@ class App(object):
             exit()
         else:
             logging.info('Hex file generated at {}'.format(self.hex_path))
+
+    def menuconfig(self, options):
+        # Generate build environment
+        self.gen_make(options=options)
+
+        # Open menuconfig
+        logging.info('Opening {} App menuconfig ...'.format(self.name))
+        cmd = 'make menuconfig -C {}'.format(self.build_path)
+        run_cmd(cmd, workdir=self.build_path)
+
 
     def clean(self):
         logging.info('Clearing {} App'.format(self.name))
@@ -224,21 +243,26 @@ class KnotSDK(metaclass=Singleton):
         self.__flash(self.signed_hex_path)
         logging.info('Signed image flashed')
 
-    def make_setup(self):
+    def get_setup_options(self):
         """
-        Create build folder and make setup app
+        Return build options for setup app
         """
         # Debug mode
         if self.debug_app:
-            opt = '-D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
+            return '-D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
         else:
-            opt = ''
+            return ''
 
+    def make_setup(self):
+        """
+        Generate build environment if doesn't exist and Make setup app
+        """
+        opt = self.get_setup_options()
         self.setup_app.make(opt)
 
-    def make_main(self):
+    def get_main_options(self):
         """
-        Create build folder and make main app
+        Create build folder for main app
         """
         # Use external OpenThread path if provided
         if self.ext_ot_path is not None:
@@ -252,7 +276,14 @@ class KnotSDK(metaclass=Singleton):
         if self.debug_app:
             opt += ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
 
-        self.main_app.make(options=opt)
+        return opt
+
+    def make_main(self):
+        """
+        Generate build environment if doesn't exist and Make setup app
+        """
+        opt = self.get_main_options()
+        self.main_app.make(opt)
 
     def clear_core_dir(self):
         """
@@ -448,7 +479,8 @@ def make(ctx, ot_path, quiet, board, debug):
     # Initialize App objects
     KnotSDK().apps_init()
 
-    if ctx.invoked_subcommand == "clean":
+    # Don't build apps if using 'clean' or 'menuconfig' subcommands
+    if ctx.invoked_subcommand in ["clean", "menuconfig"]:
         return
 
     # Optional external OpenThread path
@@ -466,6 +498,16 @@ def make(ctx, ot_path, quiet, board, debug):
     KnotSDK().make_core_dir()
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
+
+
+@make.command(help='Open menuconfig for main app')
+@click.option('-b', '--board', help='Target board')
+def menuconfig(board):
+    # Defined board required
+    KnotSDK().set_board(board=board)
+
+    opt = KnotSDK().get_main_options()
+    KnotSDK().main_app.menuconfig(opt)
 
 
 @make.command(help='Build and flash Setup and Main apps')
