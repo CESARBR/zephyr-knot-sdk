@@ -361,6 +361,12 @@ class KnotSDK(metaclass=Singleton):
         run_cmd(cmd)
         logging.info('KNoT Thing memory erased')
 
+    def clean(self):
+        logging.info('Deleting building files...')
+        self.setup_app.clean()
+        self.main_app.clean()
+        self.clear_core_dir()
+
 
 class Config(metaclass=Singleton):
     """
@@ -470,7 +476,8 @@ def cli():
 @click.option('-b', '--board', help='Target board')
 @click.option('-d', '--debug', help='Build app in debug mode', is_flag=True)
 @click.option('-f', '--flash', help='Flash image after build', is_flag=True)
-def make(ctx, ot_path, quiet, board, debug, flash):
+@click.option('-c', '--clean', help='Clean before build', is_flag=True)
+def make(ctx, ot_path, quiet, board, debug, flash, clean):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -479,6 +486,10 @@ def make(ctx, ot_path, quiet, board, debug, flash):
 
     # Initialize App objects
     KnotSDK().apps_init()
+
+    # Clean before build if flagged to
+    if clean:
+        KnotSDK().clean()
 
     # Don't build apps if using any subcommand
     if ctx.invoked_subcommand:
@@ -517,10 +528,7 @@ def menuconfig(board):
 
 @make.command(help='Delete building files')
 def clean():
-    logging.info('Deleting building files...')
-    KnotSDK().setup_app.clean()
-    KnotSDK().main_app.clean()
-    KnotSDK().clear_core_dir()
+    KnotSDK().clean()
 
 
 @cli.command(help='Erase flash memory')
