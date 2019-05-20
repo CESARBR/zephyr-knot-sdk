@@ -491,6 +491,13 @@ def set():
 def board(board):
     Config().set(Config().KEY_BOARD, board)
 
+
+@set.command(help='Default external OpenThread path')
+@click.argument('ot_path')
+def ot_path(ot_path):
+    Config().set(Config().KEY_OT_PATH, ot_path)
+
+
 if __name__ == '__main__':
     """
     Run cli
