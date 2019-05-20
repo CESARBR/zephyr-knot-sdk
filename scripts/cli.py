@@ -148,9 +148,25 @@ class KnotSDK(metaclass=Singleton):
         logging.info('Using OT path: {}'.format(ot_path))
         self.ext_ot_path = ot_path
 
-    def set_board(self, board):
+    def set_board(self, board=None):
+        """
+        Use default board if none specified.
+        In case of no default board defined, an "Undefined board" error will be
+        raised.
+        """
         logging.info('Selected board: {}'.format(board))
-        self.board = board
+
+        # Use default board if none passed
+        if board is None:
+            self.board = Config().get(Config().KEY_BOARD)
+        else:
+            self.board = board
+
+        # Abort in case of no board set
+        if self.board in [None, '']:
+            logging.critical('Error: No target board defined')
+            logging.info("To define a board, use '--board <TARGET BOARD>'")
+            exit()
 
     def set_quiet(self, quiet):
         self.quiet = quiet
@@ -414,12 +430,8 @@ def make(ctx, ot_path, quiet, board, debug):
     if ot_path is not None:
         KnotSDK().set_ext_ot_path(ot_path)
 
-    # Use default board if none specified.
-    # In case of no default board defined, the passed board will be set as None
-    # and, if used, an "Undefined board" error will be raised.
-    if board is None:
-        board = Config().get(Config().KEY_BOARD)
-    KnotSDK().set_board(board)
+    # Defined board required
+    KnotSDK().set_board(board=board)
 
     # Make apps
     KnotSDK().make_setup()
