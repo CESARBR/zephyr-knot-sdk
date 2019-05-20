@@ -123,6 +123,7 @@ class KnotSDK(metaclass=Singleton):
 
     def __init__(self):
         self.check_env()
+        self.__def_paths()
 
     def apps_init(self):
         # Setup
@@ -143,6 +144,17 @@ class KnotSDK(metaclass=Singleton):
 
         # Get current working directory
         self.cwd = os.getcwd()
+
+    def __def_paths(self):
+        """
+        Define SDK required paths
+        """
+        self.signed_hex_path = os.path.join(self.knot_path,
+                                            self.Constants.BUILD_PATH,
+                                            self.Constants.SIGNED_HEX_PATH)
+        self.merged_hex_path = os.path.join(self.knot_path,
+                                            self.Constants.BUILD_PATH,
+                                            self.Constants.MERGED_HEX_PATH)
 
     def set_ext_ot_path(self, ot_path=None):
         """
@@ -270,10 +282,6 @@ class KnotSDK(metaclass=Singleton):
         """
         Merge main and setup apps
         """
-        self.merged_hex_path = os.path.join(self.knot_path,
-                                            self.Constants.BUILD_PATH,
-                                            self.Constants.MERGED_HEX_PATH)
-
         # Output hex at merge_hex_path
         cmd = 'mergehex -m {} {} -o {}'.format(self.setup_app.hex_path,
                                                self.main_app.hex_path,
@@ -290,10 +298,6 @@ class KnotSDK(metaclass=Singleton):
         """
         Sign merged hex file
         """
-        self.signed_hex_path = os.path.join(self.knot_path,
-                                            self.Constants.BUILD_PATH,
-                                            self.Constants.SIGNED_HEX_PATH)
-
         # Sign merged image using imgtool script
         imgtool_path = os.path.join(self.knot_path,
                                     self.Constants.SIGN_SCRIPT_PATH)
