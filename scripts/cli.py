@@ -133,7 +133,8 @@ class KnotSDK(metaclass=Singleton):
         MERGED_HEX_PATH = "merged.hex"
         SIGNED_HEX_PATH = "signed.hex"
         IMG_PATH = "img"
-        MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
+        MCUBOOT_STOCK_FILES = {'dk':     'mcuboot-ec-p256-dk.hex',
+                               'dongle': 'mcuboot-ec-p256-dongle.hex'}
         # Board Ids used for compiling
         BOARD_IDS = {'dk':      'nrf52840_pca10056',
                      'dongle':  'nrf52840_pca10059'}
@@ -241,9 +242,11 @@ class KnotSDK(metaclass=Singleton):
 
     def flash_mcuboot(self):
         logging.info('Flashing stock MCUBOOT...')
+        # Get target MCUBOOT file based on board
+        mcuboot_file = self.Constants.MCUBOOT_STOCK_FILES[self.board]
         self.__flash(os.path.join(self.knot_path,
                                   self.Constants.IMG_PATH,
-                                  self.Constants.MCUBOOT_STOCK_FILE))
+                                  mcuboot_file))
         logging.info('MCUBOOT flashed')
 
     def flash_signed(self):
@@ -555,7 +558,10 @@ def erase():
 
 
 @cli.command(help='Flash stock MCUBOOT')
-def mcuboot():
+@click.option('-b', '--board', help='Target board')
+def mcuboot(board):
+    KnotSDK().set_board(board)
+
     KnotSDK().flash_mcuboot()
 
 
