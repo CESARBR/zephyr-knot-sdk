@@ -253,16 +253,27 @@ class KnotSDK(metaclass=Singleton):
                                   mcuboot_file))
         logging.info('MCUBOOT flashed')
 
-    def flash_signed(self):
+    def flash_prj(self, full):
+        """
+        Flash signed image to board. If full flag is set, flash
+        mcuboot + signed image merged file.
+        """
+        if full:
+            logging.info("Flashing apps with mcuboot")
+            target_path = self.full_hex_path
+        else:
+            logging.info("Flashing apps")
+            target_path = self.signed_hex_path
+
         # Abort if no flash image found
-        if not os.path.exists(self.signed_hex_path):
-            logging.critical('Signed image not found!')
-            logging.info("To create a signed image, run 'make'")
+        if not os.path.exists(target_path):
+            logging.critical('Target image not found!')
+            logging.info("To create an image, run 'cli.py make'")
             exit()
 
-        logging.info('Flashing signed image...')
-        self.__flash(self.signed_hex_path)
-        logging.info('Signed image flashed')
+        logging.info('Flashing device...')
+        self.__flash(target_path)
+        logging.info('Board flashed')
 
     def get_setup_options(self):
         """
@@ -518,9 +529,11 @@ def cli():
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
 @click.option('-d', '--debug', help='Build app in debug mode', is_flag=True)
-@click.option('-f', '--flash', help='Flash image after build', is_flag=True)
+@click.option('-f', '--flash', help='Flash apps after build', is_flag=True)
 @click.option('-c', '--clean', help='Clean before build', is_flag=True)
-def make(ctx, ot_path, quiet, board, debug, flash, clean):
+@click.option('-m', '--mcuboot', help='Flash apps and mcuboot after build',
+              is_flag=True)
+def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -556,8 +569,8 @@ def make(ctx, ot_path, quiet, board, debug, flash, clean):
     KnotSDK().gen_full_img()
 
     # Flash if flagged to
-    if flash:
-        KnotSDK().flash_signed()
+    if flash or mcuboot:
+        KnotSDK().flash_prj(mcuboot)
 
 
 @make.command(help='Open menuconfig for main app')
@@ -587,14 +600,16 @@ def erase():
 @cli.command(help='Flash stock MCUBOOT')
 @click.option('-b', '--board', help='Target board')
 def mcuboot(board):
+    # Defined board required
     KnotSDK().set_board(board)
 
     KnotSDK().flash_mcuboot()
 
 
 @cli.command(help='Flash Setup and Main apps')
-def flash():
-    KnotSDK().flash_signed()
+@click.option('-m', '--mcuboot', help='Flash mcuboot too', is_flag=True)
+def flash(mcuboot):
+    KnotSDK().flash_prj(mcuboot)
 
 
 @cli.group(help='Set config default values')
