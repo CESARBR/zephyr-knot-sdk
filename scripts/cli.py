@@ -526,8 +526,12 @@ def menuconfig(board):
     KnotSDK().main_app.menuconfig(opt)
 
 
-@make.command(help='Delete building files')
+@cli.command(help='Delete building files')
 def clean():
+    # Initialize App objects so they can be cleared
+    KnotSDK().apps_init()
+
+    # Clear all building files
     KnotSDK().clean()
 
 
