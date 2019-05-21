@@ -130,8 +130,9 @@ class KnotSDK(metaclass=Singleton):
         CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
-        MERGED_HEX_PATH = "merged.hex"
-        SIGNED_HEX_PATH = "signed.hex"
+        MERGED_HEX_PATH = "apps.hex"
+        SIGNED_HEX_PATH = "sgn_apps.hex"
+        FULL_HEX_PATH = "boot_sgn_apps.hex"
         IMG_PATH = "img"
         MCUBOOT_STOCK_FILES = {'dk':     'mcuboot-ec-p256-dk.hex',
                                'dongle': 'mcuboot-ec-p256-dongle.hex'}
@@ -181,6 +182,9 @@ class KnotSDK(metaclass=Singleton):
         self.merged_hex_path = os.path.join(self.knot_path,
                                             self.Constants.BUILD_PATH,
                                             self.Constants.MERGED_HEX_PATH)
+        self.full_hex_path = os.path.join(self.knot_path,
+                                          self.Constants.BUILD_PATH,
+                                          self.Constants.FULL_HEX_PATH)
 
     def set_ext_ot_path(self, ot_path=None):
         """
@@ -326,21 +330,28 @@ class KnotSDK(metaclass=Singleton):
         logging.info('Creating {}'.format(core_dir))
         os.mkdir(core_dir)
 
+    def merge_imgs(self, input_1, input_2, output):
+        """
+        Merge hex inputs to hex output
+        """
+        # Output hex at merge_hex_path
+        cmd = 'mergehex -m {} {} -o {}'.format(input_1, input_2, output)
+        run_cmd(cmd)
+        if not os.path.isfile(output):
+            logging.critical('Error: No hex file found at {}'.format(output))
+            logging.info('Clear the building files and try again')
+            exit()
+        else:
+            logging.info('Hex file generated at {}'.format(output))
+
     def merge_setup_main(self):
         """
         Merge main and setup apps
         """
-        # Output hex at merge_hex_path
-        cmd = 'mergehex -m {} {} -o {}'.format(self.setup_app.hex_path,
-                                               self.main_app.hex_path,
-                                               self.merged_hex_path)
         logging.info('Merging main and setup apps')
-        run_cmd(cmd)
-        if not os.path.isfile(self.merged_hex_path):
-            exit('Error: No hex file found at {}'.format(self.merged_hex_path))
-        else:
-            logging.info('Hex file generated at {}'.format(
-                self.merged_hex_path))
+        self.merge_imgs(self.setup_app.hex_path,
+                        self.main_app.hex_path,
+                        self.merged_hex_path)
 
     def sign_merged(self):
         """
@@ -368,6 +379,21 @@ class KnotSDK(metaclass=Singleton):
         else:
             logging.info('Hex file generated at {}'.format(
                 self.signed_hex_path))
+
+    def gen_full_img(self):
+        """
+        Generate full image by merging signed apps image and mcuboot.
+        """
+        # Get mcuboot path based on target board
+        mcuboot_file = self.Constants.MCUBOOT_STOCK_FILES[self.board]
+        mcuboot_path = os.path.join(self.knot_path,
+                                    self.Constants.IMG_PATH,
+                                    mcuboot_file)
+
+        logging.info('Merging apps to mcuboot')
+        self.merge_imgs(self.signed_hex_path,
+                        mcuboot_path,
+                        self.full_hex_path)
 
     def erase_thing(self):
         """
@@ -527,6 +553,7 @@ def make(ctx, ot_path, quiet, board, debug, flash, clean):
     KnotSDK().make_core_dir()
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
+    KnotSDK().gen_full_img()
 
     # Flash if flagged to
     if flash:
