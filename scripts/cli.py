@@ -67,7 +67,10 @@ class App(object):
 
         logging.warn("Build directory is empty")
         logging.info("Creating make files for {} App".format(self.name))
-        cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().board,
+
+        # Get board Id from alias
+        board_id = KnotSDK().Constants.BOARD_IDS[KnotSDK().board]
+        cmd = 'cmake -DBOARD={} {} {}'.format(board_id,
                                               options,
                                               self.root_path)
         run_cmd(cmd, workdir=self.build_path)
@@ -131,6 +134,9 @@ class KnotSDK(metaclass=Singleton):
         SIGNED_HEX_PATH = "signed.hex"
         IMG_PATH = "img"
         MCUBOOT_STOCK_FILE = "mcuboot-ec-p256.hex"
+        # Board Ids used for compiling
+        BOARD_IDS = {'dk':      'nrf52840_pca10056',
+                     'dongle':  'nrf52840_pca10059'}
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
         SIGN_HEADER_SIZE = "0x200"
@@ -210,6 +216,14 @@ class KnotSDK(metaclass=Singleton):
         if self.board in [None, '']:
             logging.critical('Error: No target board defined')
             logging.info("To define a board, use '--board <TARGET BOARD>'")
+            exit()
+
+        # Abort in case of invalid board set
+        valid_boards = self.Constants.BOARD_IDS.keys()
+        if self.board not in valid_boards:
+            logging.critical('Error: Invalid board set')
+            logging.info("The valid boards are: " +
+                         ', '.join(list(valid_boards)))
             exit()
 
     def set_quiet(self, quiet):
@@ -558,6 +572,7 @@ def set():
 @set.command(help='Default target board')
 @click.argument('board')
 def board(board):
+    KnotSDK().set_board(board)
     Config().set(Config().KEY_BOARD, board)
 
 
