@@ -14,6 +14,7 @@ import click
 import subprocess
 import logging
 import coloredlogs
+import serial.tools.list_ports
 
 
 class Singleton(type):
@@ -152,6 +153,8 @@ class KnotSDK(metaclass=Singleton):
         SIGN_IMG_SLOT_SIZE = "0x69000"
         CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
         CONFIG_PATH = "config"
+        USB_HID_RE = "VID:PID={}:{}"  # USB Vendor Id and Product Id regex
+        USB_HID_NORDIC_OPEN_DFU = ('1915', '521F')
 
     def __init__(self):
         self.check_env()
@@ -247,6 +250,31 @@ class KnotSDK(metaclass=Singleton):
     def set_debug(self, debug):
         self.debug_app = debug
 
+    def find_flash_dev(self, vid, pid):
+        """
+        Return device port based on Vendor Id and Product Id.
+        Abort if no board or more than one found.
+        """
+        # Get ports that match the desired Hardware Id
+        re = self.Constants.USB_HID_RE.format(vid, pid)
+        ports = list(serial.tools.list_ports.grep(re))
+
+        # Abort if no board found
+        if not ports:
+            logging.critical('Error: No target board connected!')
+            logging.info('Make sure the board is connected and programable')
+            exit()
+
+        # Abort if more than one boards found
+        if len(ports) > 1:
+            logging.critical('Error: Too many target boards connected!')
+            logging.info("Provide the target device with '--port <PORT>' \
+or remove the other boards")
+            exit()
+
+        # Return single device
+        return ports[0].device
+
     def __flash(self, file_path, port):
         # Use nrfjprog for DK and nrfutil for Dongle
         if self.board == self.Constants.BOARD_DK_ALIAS:
@@ -259,9 +287,8 @@ class KnotSDK(metaclass=Singleton):
         elif self.board == self.Constants.BOARD_DONGLE_ALIAS:
             # Abort if device port is not set
             if port is None:
-                logging.critical('Device port not set!')
-                logging.info("Set it with the option '--port <DEV_PORT>'")
-                exit()
+                port = self.find_flash_dev(
+                                       *self.Constants.USB_HID_NORDIC_OPEN_DFU)
 
             # Create DFU package
             cmd = '{} pkg generate --hw-version 52 --sd-req=0x00  \
