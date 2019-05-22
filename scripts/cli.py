@@ -295,7 +295,7 @@ or remove the other boards")
 --application {} --application-version 1 {}'.format(
                    self.nrfutil_path, file_path, self.dfu_package_path)
             logging.info('Creating DFU package for file ' + file_path)
-            run_cmd(cmd)
+            run_cmd(cmd, quiet=True)
 
             # Flash DFU package
             logging.info('Flashing DFU package')
@@ -528,12 +528,12 @@ class Config(metaclass=Singleton):
             self.parser.write(configfile)
 
 
-def run_cmd(cmd, workdir=KnotSDK().cwd):
+def run_cmd(cmd, workdir=KnotSDK().cwd, quiet=False):
     """
     Run subprocess and get raise error if any
     """
     # Pipe outputs if quiet selected
-    if KnotSDK().quiet:
+    if KnotSDK().quiet or quiet:
         out_pipe = subprocess.PIPE
         err_pipe = subprocess.PIPE
     else:
@@ -562,7 +562,7 @@ def run_cmd(cmd, workdir=KnotSDK().cwd):
     logging.info('Return code: {}'.format(rc))
 
     # Log process output if not printed already
-    if KnotSDK().quiet:
+    if KnotSDK().quiet or quiet:
         if out is not None:
             logging.info('Process stdout: \n{}'.format(out.decode('utf_8')))
         if err is not None:
