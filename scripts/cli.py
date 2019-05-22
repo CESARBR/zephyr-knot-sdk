@@ -216,6 +216,9 @@ class KnotSDK(metaclass=Singleton):
         else:
             logging.info('No OpenThread path passed')
 
+    def get_valid_boards(self):
+        return self.Constants.BOARD_IDS.keys()
+
     def set_board(self, board=None):
         """
         Use default board if none specified.
@@ -237,7 +240,7 @@ class KnotSDK(metaclass=Singleton):
             exit()
 
         # Abort in case of invalid board set
-        valid_boards = self.Constants.BOARD_IDS.keys()
+        valid_boards = self.get_valid_boards()
         if self.board not in valid_boards:
             logging.critical('Error: Invalid board set')
             logging.info("The valid boards are: " +
@@ -685,7 +688,8 @@ def set():
     pass
 
 
-@set.command(help='Default target board')
+@set.command(help=('Set default target board. Supported boards: [{}]'.format(
+                   ', '.join(KnotSDK().get_valid_boards()))))
 @click.argument('board')
 def board(board):
     KnotSDK().set_board(board)
