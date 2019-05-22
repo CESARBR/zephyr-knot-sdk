@@ -133,12 +133,17 @@ class KnotSDK(metaclass=Singleton):
         MERGED_HEX_PATH = "apps.hex"
         SIGNED_HEX_PATH = "sgn_apps.hex"
         FULL_HEX_PATH = "boot_sgn_apps.hex"
+        DFU_PACKAGE_PATH = "dfu_package.zip"
         IMG_PATH = "img"
-        MCUBOOT_STOCK_FILES = {'dk':     'mcuboot-ec-p256-dk.hex',
-                               'dongle': 'mcuboot-ec-p256-dongle.hex'}
+        BOARD_DK_ALIAS = 'dk'
+        BOARD_DONGLE_ALIAS = 'dongle'
+        MCUBOOT_STOCK_FILES = {BOARD_DK_ALIAS:     'mcuboot-ec-p256-dk.hex',
+                               BOARD_DONGLE_ALIAS: 'mcuboot-ec-p256-dongle.hex'
+                               }
         # Board Ids used for compiling
-        BOARD_IDS = {'dk':      'nrf52840_pca10056',
-                     'dongle':  'nrf52840_pca10059'}
+        BOARD_IDS = {BOARD_DK_ALIAS:      'nrf52840_pca10056',
+                     BOARD_DONGLE_ALIAS:  'nrf52840_pca10059'}
+        NRFUTIL_PATH = "third_party/pc-nrfutil/nrfutil"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
         SIGN_HEADER_SIZE = "0x200"
@@ -185,6 +190,11 @@ class KnotSDK(metaclass=Singleton):
         self.full_hex_path = os.path.join(self.knot_path,
                                           self.Constants.BUILD_PATH,
                                           self.Constants.FULL_HEX_PATH)
+        self.dfu_package_path = os.path.join(self.knot_path,
+                                             self.Constants.BUILD_PATH,
+                                             self.Constants.DFU_PACKAGE_PATH)
+        self.nrfutil_path = os.path.join(self.knot_path,
+                                         self.Constants.NRFUTIL_PATH)
 
     def set_ext_ot_path(self, ot_path=None):
         """
@@ -237,28 +247,52 @@ class KnotSDK(metaclass=Singleton):
     def set_debug(self, debug):
         self.debug_app = debug
 
-    def __flash(self, file_path):
-        logging.info('Flashing file ' + file_path)
-        cmd = 'nrfjprog --program ' + \
-              file_path + \
-              ' --sectorerase -f nrf52 --reset'
-        run_cmd(cmd)
+    def __flash(self, file_path, port):
+        # Use nrfjprog for DK and nrfutil for Dongle
+        if self.board == self.Constants.BOARD_DK_ALIAS:
+            cmd = 'nrfjprog --program ' + file_path + \
+                  ' --sectorerase -f nrf52 --reset'
 
-    def flash_mcuboot(self):
+            logging.info('Flashing file ' + file_path)
+            run_cmd(cmd)
+
+        elif self.board == self.Constants.BOARD_DONGLE_ALIAS:
+            # Abort if device port is not set
+            if port is None:
+                logging.critical('Device port not set!')
+                logging.info("Set it with the option '--port <DEV_PORT>'")
+                exit()
+
+            # Create DFU package
+            cmd = '{} pkg generate --hw-version 52 --sd-req=0x00  \
+--application {} --application-version 1 {}'.format(
+                   self.nrfutil_path, file_path, self.dfu_package_path)
+            logging.info('Creating DFU package for file ' + file_path)
+            run_cmd(cmd)
+
+            # Flash DFU package
+            logging.info('Flashing DFU package')
+            cmd = '{} dfu usb-serial -pkg {} -p {}'.format(
+                   self.nrfutil_path, self.dfu_package_path, port)
+            run_cmd(cmd)
+
+    def flash_mcuboot(self, port):
         logging.info('Flashing stock MCUBOOT...')
         # Get target MCUBOOT file based on board
         mcuboot_file = self.Constants.MCUBOOT_STOCK_FILES[self.board]
-        self.__flash(os.path.join(self.knot_path,
-                                  self.Constants.IMG_PATH,
-                                  mcuboot_file))
+        mcuboot_path = os.path.join(self.knot_path,
+                                    self.Constants.IMG_PATH,
+                                    mcuboot_file)
+        self.__flash(mcuboot_path, port)
         logging.info('MCUBOOT flashed')
 
-    def flash_prj(self, full):
+    def flash_prj(self, full, port):
         """
         Flash signed image to board. If full flag is set, flash
         mcuboot + signed image merged file.
         """
-        if full:
+        # Flash full image if board is dongle
+        if full or self.board == self.Constants.BOARD_DONGLE_ALIAS:
             logging.info("Flashing apps with mcuboot")
             target_path = self.full_hex_path
         else:
@@ -272,7 +306,7 @@ class KnotSDK(metaclass=Singleton):
             exit()
 
         logging.info('Flashing device...')
-        self.__flash(target_path)
+        self.__flash(target_path, port)
         logging.info('Board flashed')
 
     def get_setup_options(self):
@@ -533,7 +567,8 @@ def cli():
 @click.option('-c', '--clean', help='Clean before build', is_flag=True)
 @click.option('-m', '--mcuboot', help='Flash apps and mcuboot after build',
               is_flag=True)
-def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot):
+@click.option('-p', '--port', help='Device port')
+def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot, port):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -570,7 +605,7 @@ def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot):
 
     # Flash if flagged to
     if flash or mcuboot:
-        KnotSDK().flash_prj(mcuboot)
+        KnotSDK().flash_prj(mcuboot, port)
 
 
 @make.command(help='Open menuconfig for main app')
@@ -599,17 +634,23 @@ def erase():
 
 @cli.command(help='Flash stock MCUBOOT')
 @click.option('-b', '--board', help='Target board')
-def mcuboot(board):
+@click.option('-p', '--port', help='Device port')
+def mcuboot(board, port):
     # Defined board required
     KnotSDK().set_board(board)
 
-    KnotSDK().flash_mcuboot()
+    KnotSDK().flash_mcuboot(port)
 
 
 @cli.command(help='Flash Setup and Main apps')
 @click.option('-m', '--mcuboot', help='Flash mcuboot too', is_flag=True)
-def flash(mcuboot):
-    KnotSDK().flash_prj(mcuboot)
+@click.option('-b', '--board', help='Target board')
+@click.option('-p', '--port', help='Device port')
+def flash(mcuboot, board, port):
+    # Defined board required
+    KnotSDK().set_board(board)
+
+    KnotSDK().flash_prj(mcuboot, port)
 
 
 @cli.group(help='Set config default values')
