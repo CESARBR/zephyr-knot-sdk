@@ -70,8 +70,7 @@ class App(object):
         logging.info("Creating make files for {} App".format(self.name))
 
         # Get board Id from alias
-        board_id = KnotSDK().Constants.BOARD_IDS[KnotSDK().board]
-        cmd = 'cmake -DBOARD={} {} {}'.format(board_id,
+        cmd = 'cmake -DBOARD={} {} {}'.format(KnotSDK().board,
                                               options,
                                               self.root_path)
         run_cmd(cmd, workdir=self.build_path)
@@ -136,14 +135,15 @@ class KnotSDK(metaclass=Singleton):
         FULL_HEX_PATH = "boot_sgn_apps.hex"
         DFU_PACKAGE_PATH = "dfu_package.zip"
         IMG_PATH = "img"
-        BOARD_DK_ALIAS = 'dk'
-        BOARD_DONGLE_ALIAS = 'dongle'
-        MCUBOOT_STOCK_FILES = {BOARD_DK_ALIAS:     'mcuboot-ec-p256-dk.hex',
-                               BOARD_DONGLE_ALIAS: 'mcuboot-ec-p256-dongle.hex'
-                               }
         # Board Ids used for compiling
-        BOARD_IDS = {BOARD_DK_ALIAS:      'nrf52840_pca10056',
-                     BOARD_DONGLE_ALIAS:  'nrf52840_pca10059'}
+        BOARD_DK = 'nrf52840_pca10056'
+        BOARD_DONGLE = 'nrf52840_pca10059'
+        MCUBOOT_STOCK_FILES = {
+            BOARD_DK:     'mcuboot-ec-p256-dk.hex',
+            BOARD_DONGLE: 'mcuboot-ec-p256-dongle.hex'}
+        # Board Aliases used for compiling
+        BOARD_ALIASES = {'dk':     BOARD_DK,
+                         'dongle': BOARD_DONGLE}
         NRFUTIL_PATH = "third_party/pc-nrfutil/nrfutil"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
@@ -216,12 +216,26 @@ class KnotSDK(metaclass=Singleton):
         else:
             logging.info('No OpenThread path passed')
 
-    def get_valid_boards(self):
-        return self.Constants.BOARD_IDS.keys()
+    def true_board_name(self, board):
+        """
+        Get true board name if alias or true name is passed.
+        Return None if no matching board found.
+        """
+        # Board name passed
+        if board in self.Constants.BOARD_ALIASES.values():
+            return board
+
+        # Board alias passed
+        elif board in self.Constants.BOARD_ALIASES.keys():
+            return self.Constants.BOARD_ALIASES[board]
+
+        # Invalid parameter passed
+        return None
 
     def set_board(self, board=None):
         """
         Use default board if none specified.
+        Use true board name if alias is passed.
         In case of no default board defined, an "Undefined board" error will be
         raised.
         """
@@ -229,23 +243,28 @@ class KnotSDK(metaclass=Singleton):
 
         # Use default board if none passed
         if board is None:
-            self.board = Config().get(Config().KEY_BOARD)
-        else:
-            self.board = board
+            board = Config().get(Config().KEY_BOARD)
 
         # Abort in case of no board set
-        if self.board in [None, '']:
+        if board in [None, '']:
             logging.critical('Error: No target board defined')
             logging.info("To define a board, use '--board <TARGET BOARD>'")
+            logging.info('Supported board aliases: [{}]'.format(
+                         ', '.join(self.Constants.BOARD_ALIASES.keys())))
             exit()
 
+        # Use true board name if alias is passed
+        board = self.true_board_name(board)
+
         # Abort in case of invalid board set
-        valid_boards = self.get_valid_boards()
-        if self.board not in valid_boards:
+        if board is None:
             logging.critical('Error: Invalid board set')
-            logging.info("The valid boards are: " +
-                         ', '.join(list(valid_boards)))
+            logging.info('Supported board aliases: [{}]'.format(
+                         ', '.join(self.Constants.BOARD_ALIASES.keys())))
             exit()
+
+        # Set board name
+        self.board = board
 
     def set_quiet(self, quiet):
         self.quiet = quiet
@@ -280,14 +299,14 @@ or remove the other boards")
 
     def __flash(self, file_path, port):
         # Use nrfjprog for DK and nrfutil for Dongle
-        if self.board == self.Constants.BOARD_DK_ALIAS:
+        if self.board == self.Constants.BOARD_DK:
             cmd = 'nrfjprog --program ' + file_path + \
                   ' --sectorerase -f nrf52 --reset'
 
             logging.info('Flashing file ' + file_path)
             run_cmd(cmd)
 
-        elif self.board == self.Constants.BOARD_DONGLE_ALIAS:
+        elif self.board == self.Constants.BOARD_DONGLE:
             # Abort if device port is not set
             if port is None:
                 port = self.find_flash_dev(
@@ -322,7 +341,7 @@ or remove the other boards")
         mcuboot + signed image merged file.
         """
         # Flash full image if board is dongle
-        if full or self.board == self.Constants.BOARD_DONGLE_ALIAS:
+        if full or self.board == self.Constants.BOARD_DONGLE:
             logging.info("Flashing apps with mcuboot")
             target_path = self.full_hex_path
         else:
@@ -688,8 +707,8 @@ def set():
     pass
 
 
-@set.command(help=('Set default target board. Supported boards: [{}]'.format(
-                   ', '.join(KnotSDK().get_valid_boards()))))
+@set.command(help=('Set default target board. Supported board aliases: \
+[{}]'.format(', '.join(KnotSDK().Constants.BOARD_ALIASES.keys()))))
 @click.argument('board')
 def board(board):
     KnotSDK().set_board(board)
