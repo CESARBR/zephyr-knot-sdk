@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from configparser import ConfigParser
+from prettytable import PrettyTable
 
 import os
 import shutil
@@ -216,6 +217,20 @@ class KnotSDK(metaclass=Singleton):
         else:
             logging.info('No OpenThread path passed')
 
+    def print_supported_boards(self):
+        """
+        Print all supported boards and their aliases in a table
+        """
+        # Define table fields
+        table = PrettyTable(['ALIAS', 'BOARD'])
+
+        # Create a row for each alias and board pair
+        for alias, board in self.Constants.BOARD_ALIASES.items():
+            table.add_row([alias, board])
+
+        # Print boards
+        logging.info("Supported boards:\n" + str(table))
+
     def true_board_name(self, board):
         """
         Get true board name if alias or true name is passed.
@@ -249,8 +264,7 @@ class KnotSDK(metaclass=Singleton):
         if board in [None, '']:
             logging.critical('Error: No target board defined')
             logging.info("To define a board, use '--board <TARGET BOARD>'")
-            logging.info('Supported board aliases: [{}]'.format(
-                         ', '.join(self.Constants.BOARD_ALIASES.keys())))
+            self.print_supported_boards()
             exit()
 
         # Use true board name if alias is passed
@@ -259,8 +273,7 @@ class KnotSDK(metaclass=Singleton):
         # Abort in case of invalid board set
         if board is None:
             logging.critical('Error: Invalid board set')
-            logging.info('Supported board aliases: [{}]'.format(
-                         ', '.join(self.Constants.BOARD_ALIASES.keys())))
+            self.print_supported_boards()
             exit()
 
         # Set board name
@@ -702,20 +715,27 @@ def flash(mcuboot, board, port):
     KnotSDK().flash_prj(mcuboot, port)
 
 
-@cli.group(help='Set config default values')
-def set():
-    pass
-
-
-@set.command(help=('Set default target board. Supported board aliases: \
+@cli.command(help=('Set default target board. Supported board aliases: \
 [{}]'.format(', '.join(KnotSDK().Constants.BOARD_ALIASES.keys()))))
-@click.argument('board')
-def board(board):
-    KnotSDK().set_board(board)
-    Config().set(Config().KEY_BOARD, board)
+@click.argument('board', required=False)
+@click.option('-l', '--list', 'list_all', help='List all supported boards',
+              is_flag=True)
+def board(board, list_all):
+    # Set board if list_all not asked
+    if not list_all and board is not None:
+        KnotSDK().set_board(board)
+        Config().set(Config().KEY_BOARD, board)
+        return
+
+    # Warn that no board was passed:
+    if not list_all:
+        logging.warning("No board specified")
+
+    # List all supported boards if board is not set or list option passed
+    KnotSDK().print_supported_boards()
 
 
-@set.command(help='Default external OpenThread path')
+@cli.command(help='Set default external OpenThread path')
 @click.argument('ot_path')
 def ot_path(ot_path):
     Config().set(Config().KEY_OT_PATH, ot_path)
