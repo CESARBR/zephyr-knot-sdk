@@ -151,7 +151,10 @@ class KnotSDK(metaclass=Singleton):
         SIGN_HEADER_SIZE = "0x200"
         SIGN_IMG_ALIGN = "8"
         SIGN_SCRIPT_VERSION = "1.5"
-        SIGN_IMG_SLOT_SIZE = "0x69000"
+        # The image slot size may vary based on the target board
+        SIGN_IMG_SLOT_SIZES = {
+            BOARD_DK:     '0x67000',
+            BOARD_DONGLE: '0x5E000'}
         CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
         CONFIG_PATH = "config"
         USB_HID_RE = "VID:PID={}:{}"  # USB Vendor Id and Product Id regex
@@ -469,13 +472,14 @@ or remove the other boards")
                                     self.Constants.SIGN_SCRIPT_PATH)
         key_path = os.path.join(self.knot_path,
                                 self.Constants.SIGN_KEY_PATH)
+        slot_size = self.Constants.SIGN_IMG_SLOT_SIZES[self.board]
 
         cmd = ('{} sign'.format(imgtool_path) +
                ' --key {}'.format(key_path) +
                ' --header-size {}'.format(self.Constants.SIGN_HEADER_SIZE) +
                ' --align {}'.format(self.Constants.SIGN_IMG_ALIGN) +
                ' --version {}'.format(self.Constants.SIGN_SCRIPT_VERSION) +
-               ' --slot-size {}'.format(self.Constants.SIGN_IMG_SLOT_SIZE) +
+               ' --slot-size {}'.format(slot_size) +
                ' --pad' +
                ' {}'.format(self.merged_hex_path) +
                ' {}'.format(self.signed_hex_path))
