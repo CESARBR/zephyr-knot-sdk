@@ -7,12 +7,22 @@ Zephyr KNoT SDK provides libraries, tools and samples to make a KNoT application
 
 ### In order to build a KNoT application, some requirements are needed:
 
-#### 1 - Zephyr
+#### 1 - Linux based OS
+The actual version of KNoT Zephyr SDK is only available for Linux based systems.
+You may consider using a Virtual Machine running a Linux distribution on other systems.
 
+
+#### 2 - Zephyr
 KNoT uses a fork of Zephyr repository.
 
-- Set up a Zephyr development environment on your system
-	> Follow these [instructions](https://docs.zephyrproject.org/latest/getting_started/index.html#set-up-a-development-system)
+- Set up a Zephyr development environment by following these [instructions](https://docs.zephyrproject.org/latest/getting_started/index.html#set-up-a-development-system).
+- Program the `$HOME/.profile` to always set ZEPHYR_TOOLCHAIN_VARIANT and ZEPHYR_SDK_INSTALL_DIR.
+	```bash
+	$ echo "export ZEPHYR_TOOLCHAIN_VARIANT=zephyr" >> $HOME/.profile
+	$ echo "export ZEPHYR_SDK_INSTALL_DIR=`readlink -f <SDK-INSTALLATION-DIRECTORY>`" >> $HOME/.profile
+	```
+	> *Replace **`<SDK-INSTALLATION-DIRECTORY>`** by the actual Zephyr SDK install path*
+
 - Install the west binary and bootstrapper
 	```bash
 	$ pip3 install --user west
@@ -24,220 +34,183 @@ KNoT uses a fork of Zephyr repository.
 	```
 - Clone KNoT Zephyr fork
 	```bash
-	$ git clone https://github.com/CESARBR/zephyr.git
+	$ git clone -b zephyr-knot-v1.14.0 https://github.com/CESARBR/zephyr.git
 	```
-- Initialize west, inside zephyrproject directory run
+- Initialize west. Inside zephyrproject directory run:
 	```bash
 	$ west init -l zephyr/
 	$ west update
 	```
-- Checkout to KNoT branch
-	```bash
-	$ cd <zephyr-dir>
-	$ git checkout -b zephyr-port-1.14-rcx origin/zephyr-port-1.14-rcx
-	```
+	> If the system can't find west, try logging out and in again.
 - Set up zephyr environment variables
 	```bash
-	$ cd <zephyr-dir>
-	$ source zephyr-env.sh
+	$ source zephyr/zephyr-env.sh
 	```
-	> It is necessary to source zephyr-env.sh every time a new terminal is opened.
+- Program the `$HOME/.profile` to always source zephyr-env.sh when you log in.
+	```bash
+	$ echo "source $ZEPHYR_BASE/zephyr-env.sh" >> $HOME/.profile
+	```
+	> If you skip this step, it will be necessary to manually source zephyr-env.sh every time a new terminal is opened.
 
-#### 2 - Openthread
 
-KNoT uses Openthread stack.
+#### 3 - nRF5x Command Line Tools
 
+- Download and install **nrfjprog** and **mergehex** cli applications at [nRF5 Command Line Tools](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF5-Command-Line-Tools).
+
+- Add the nrfjprog and mergehex executables to the `~/.local/bin/` folder.
+	```bash
+	$ ln -s `readlink -f <MERGEHEX-PATH>` >> $HOME/.local/bin/mergehex
+	$ ln -s `readlink -f <NRFJPROG-PATH>` >> $HOME/.local/bin/nrfjprog
+	```
+	> *Replace `<MERGEHEX-PATH>` and `<NRFJPROG-PATH>` by path to the downloaded apps*
+
+#### 4 - Install Segger JLink
+> This is only necessary if you're going to use the [DK board](https://docs.zephyrproject.org/latest/boards/arm/nrf52840_pca10056/doc/index.html).
+
+- Download the appropriate package from the [J-Link Software](https://www.segger.com/downloads/jlink/) and install it.
+
+#### 5 - Source KNoT environment configuration file
+
+- Download the zephyr-knot-sdk repository to a folder you prefer.
+	```bash
+	$ git clone https://github.com/cesarbr/zephyr-knot-sdk/
+	```
+- The environment configuration file is used to set up KNOT_BASE path.
+	```bash
+	$ source zephyr-knot-sdk/knot-env.sh
+	```
+
+- Program the `$HOME/.profile` to always source knot-env.sh when you log in.
+	```bash
+	$ echo "source $KNOT_BASE/knot-env.sh" >> $HOME/.profile
+	```
+
+
+#### 6 - Add support to the KNoT command line interface
+
+- Add cli.py to the path files.
+	```bash
+	$ ln -s $KNOT_BASE/scripts/cli.py $HOME/.local/bin/knot
+	```
+	> This will allow you to call the knot command line interface from any folder.
+
+- Use pip to install cli requirements
+	```bash
+	$ pip3 install --user -r ${KNOT_BASE}/scripts/requirements.txt
+	```
+	> If you skip this step, it will be necessary to manually source knot-env.sh every time a new terminal is opened.
+
+#### 7 - KNoT protocol
+- Follow the instructions to install the [KNoT protocol library](https://github.com/CESARBR/knot-protocol-source).
+
+#### 8 - Add USB access to your user
+- Add your user to the dialout group.
+	```bash
+	$ sudo usermod -a -G dialout `whoami`
+	```
+
+#### 9 - Apply changes to profile
+- In order to apply the changes to your user, you must log out and log in again.
+---
+## Building and flashing a KNoT App
+> Make sure that you have sourced the knot-env.sh, zephyr-env.sh and defined the values for ZEPHYR_SDK_INSTALL_DIR and ZEPHYR_TOOLCHAIN_VARIANT.
+
+#### Connect and set the target board
+You may be using one of the two supported boards: DK (nrf52840_pca10056) or Dongle (nrf52840_pca10059).
+- If using the [DK](https://docs.zephyrproject.org/latest/boards/arm/nrf52840_pca10056/doc/index.html):
+	- Connect the board to a USB port
+	- Set the DK as the default target board
+		```bash
+		$ knot board dk
+		```
+
+- If using the [Dongle](https://docs.zephyrproject.org/latest/boards/arm/nrf52840_pca10059/doc/index.html):
+	- Connect the board to a USB port
+	- Press the reset button. The red led will blink.
+	- Set the Dongle as the default target board
+		```bash
+		$ knot board dongle
+		```
+
+#### Build KNoT App
+- Go to the KNoT App file.
+	```bash
+	$ cd <path-to-app>
+	```
+	> If you don't have an app, you may use the example at $KNOT_BASE/apps/hello
+
+- Build and flash apps
+	```bash
+	$ knot make --mcuboot
+	```
+	> The option 'mcuboot' flashes the compiled program and the mcuboot booloader at the end of building.
+
+#### Monitor the output
+> You can use minicom or any other serial port reader to monitor the app output.
+- Install minicom
+	> You can install minicom on debian based systems by using:
+	> ``
+	> $ sudo apt-get install minicom
+	> ``
+
+	```bash
+	$ minicom -D <your-device>
+	```
+	> If you are using debian the device usually is something like /dev/ttyACM0.
+
+---
+## Building configure
+There are many commands that you can call when using the knot script (cli.py). Some of their functions are:
+
+#### Set default target board
+- You can set the default target board with the command:
+	```bash
+	$ knot board <BOARD>
+	```
+	Where `<BOARD>` can be 'dk' or 'dongle'
+
+#### Set external OpenThread path
+To avoid downloading the OpenThread repo on every new build, set an external path:
 - Clone Openthread Github repository:
 	```bash
 	$ git clone https://github.com/openthread/openthread.git
 	```
-- Checkout to `f9d757a161fea4775d033a1ce88cf7962fe24a93` hash
+
+- Checkout to the compatible hash and set it as default
 	```bash
-	$ cd <openthread-dir>
+	$ cd openthread
 	$ git checkout -b knot_hash f9d757a161fea4775d033a1ce88cf7962fe24a93
+	$ knot ot-path `pwd`
 	```
 
-#### 3 - nRF5x Command Line Tools
-
-- Download and install nrfjprog and mergehex cli applications.
-
-> To download and more info [check this link.](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF5-Command-Line-Tools)
-
-> Make sure that you have the nrfjprog and the mergehex in your path.
-
-#### 4 - Source KNoT environment configuration file
-
-The environment configuration file is used to set up KNOT_BASE path.
-```bash
-$ cd zephyr-knot-sdk
-$ source knot-env.sh
-```
-> It is necessary to source knot-env.sh every time a new terminal is opened.
-
-> There are two ways to build and run a KNoT Application [Using cli script](#using-cli-script) or [Not using cli script](#not-using-cli-script).
-
----
-## Using cli script
-#### Installing dependencies
-- Use pip to install requirements
+#### Clear project before building
+The user can delete old building files before compiling again:
+> This is especially useful when the project had important changes like different target board or dependency repository.
+- Clear old files before compiling:
 	```bash
-	$ pip3 install --user -r ${KNOT_BASE}/scripts/requirements.txt
+	$ knot make --clean
 	```
 
-#### Flash MCUBOOT
-- Flash stock MCUBOOT image using signature type ECDSA_P256
+#### Flash board when done
+The user can flash the board just after building it:
+- Flash board after building:
 	```bash
-	$ python3 ${KNOT_BASE}/scripts/cli.py mcuboot
+	$ knot make --flash
 	```
+	> This option also flashes the bootloader when targeting the Dongle.
 
-#### Build KNoT App
-- Build KNoT Core and KNoT Setup applications
+#### Flash bootloader
+When using the DK, it's possible for the board to be flashed without the bootloader.
+	To fix that, the user should flash it separately.
+- Flash bootloader to board.
 	```bash
-	$ python3 ${KNOT_BASE}/scripts/cli.py make --ot_path=<path-to-openthread>
+	$ knot mcuboot
 	```
+	> This option also erases the main app when targeting the Dongle.
 
-#### Flash KNoT App
-- Build and flash KNoT Core and KNoT Setup applications
+#### Other commands
+These and the other commands are described when using the command:
+- Read help
 	```bash
-	$ python3 ${KNOT_BASE}/scripts/cli.py make flash
+	$ knot --help
 	```
-#### Monitor the output
-- You can use minicon to monitor the serial logger.
-The device may be different depending on your system.
-	```bash
-	$ minicom -D <your-device> -b 115200
-	```
-	> If you are using debian the device usually is /dev/ttyACM0 and you can install minicom using:
-	> ``
-	> $ sudo apt-get install minicom
-	> ``
----
-## Not using cli script
-
-### Build MCUBOOT
-- Requirements
-	- python 3
-	- virtualenv
-	- Zephyr repository (installed at step 2)
-	- nrfjprog (installed at step 3)
-
-#### 1 - Clone MCUBOOT repository
-```bash
-$ git clone https://github.com/JuulLabs-OSS/mcuboot.git
-```
-#### 2 - Checkout to knot_hash
-```bash
-$ cd <mcuboot-dir>
-$ git checkout -b knot_hash fda937ab02296f6fd8e7195e2846d631f3d70559
-```
-#### 3 - Create and activate virtual environment
-```bash
-$ virtualenv -p `which python3` venv
-$ source venv/bin/activate
-```
-#### 4 - Install python dependencies
-```bash
-$ pip3 install asn1crypto==0.24.0 cffi==1.11.5 Click==7.0 colorama==0.4.1 cryptography==2.4.2 docopt==0.6.2 idna==2.8 intelhex==2.2.1 pycparser==2.19 pyelftools==0.25 pykwalify==1.7.0 python-dateutil==2.7.5 PyYAML==3.013 six==1.11.0
-```
-#### 5 - Set up zephyr environment variables
-```bash
-$ source <zephyr_dir>/zephyr-env.sh
-```
-#### 6 - Generate MCUBOOT Makefile
-```bash
-$ cd <mcuboot_dir>/boot/zephyr
-$ mkdir build && cd build
-$ cmake -DBOARD=nrf52840_pca10056 ..
-```
-#### 7 - Use config interface to set up signature settings
-```bash
-$ make menuconfig
-> MCUBoot settings
-> Signature type
-	> Select ECDSA_P256
-> PEM key file
-	> root-ec-p256.pem
-```
-> KNoT uses ECDSA_P256 type and root-ec-p256.pem file, available on MCUBOOT root directory. You can change this to your own settings.
-
-#### 8 - Build MCUBOOT for zephyr
-```bash
-$ make
-```
-
-### Build KNoT application
-
-#### 1 - Application folder
-```bash
-$ cd zephyr-knot-sdk/apps/<app-dir>
-```
-> You can use the KNoT hello app as an example
-
-#### 2 - Create build directory
-```bash
-$ mkdir build && cd build
-```
-#### 3 - Generate Makefile
-```bash
-$ cmake -DEXTERNAL_PROJECT_PATH_OPENTHREAD=<path-to-openthread> -DOVERLAY_CONFIG=${KNOT_BASE}/core/overlay-knot-ot.conf ..
-```
-> The default (and only supported) board used by KNoT is nrf52840_pca10056.
-
-#### 4 - Build it!
-```bash
-$ make
-```
-
-### Build KNoT Setup App
-#### 1 - Application folder
-```bash
-$ cd zephyr-knot-sdk/<setup-dir>
-```
-#### 2 - Create build directory
-```bash
-$ mkdir build && cd build
-```
-#### 3 - Generate Makefile
-```bash
-$ cmake -DBOARD=nrf52840_pca10056 ..
-```
-#### 4 - Build it!
-```bash
-$ make
-```
-
-
-### How to flash
-
-#### 1 - Flash MCUBOOT
-```bash
-$ cd <mcuboot-dir>/boot/zephyr/build
-$ make flash
-```
-> For more details check How To Build it -> KNoT Requirements -> MCUBOOT
-
-#### 2 - Merge KNoT Setup and KNoT App images
-```bash
-$ mergehex -m ${KNOT_BASE}/setup/build/zephyr/zephyr.hex ${KNOT_BASE}/apps/hello/build/zephyr/zephyr.hex -o ${KNOT_BASE}/build/slot0_merged.hex
-```
-#### 3 - Sign image
-
-> For this step, make sure MCUBOOT virtualenv is activated.
-
-```bash
-$ <mcuboot-dir>/scripts/imgtool.py sign --key <mcuboot-dir>/root-ec-p256.pem --header-size 0x200 --align 8 --version 1.5 --slot-size 0x69000 --pad ${KNOT_BASE}/build/slot0_merged.hex  ${KNOT_BASE}/build/slot0_merged_signed.hex
-```
-#### 4 - Flash signed image
-```bash
-$ nrfjprog --program ${KNOT_BASE}/build/slot0_merged_signed.hex --sectorerase -f nrf52 --reset
-```
-#### 5 - Monitor the output
-- You can use minicon to monitor the serial logger.
-The device may be different depending on your system.
-	```bash
-	$ minicom -D <your-device> -b 115200
-	```
-	> If you are using debian the device usually is /dev/ttyACM0 and you can install minicom using:
-	> ``
-	> $ sudo apt-get install minicom
-	> ``
