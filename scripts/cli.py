@@ -658,7 +658,9 @@ def cli():
 @click.option('-m', '--mcuboot', help='Flash apps and mcuboot after build',
               is_flag=True)
 @click.option('-p', '--port', help='Device port')
-def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot, port):
+@click.option('-o', '--output', help='Output path')
+def make(ctx, ot_path, quiet, board, debug,
+         flash, clean, mcuboot, port, output):
     if quiet:
         KnotSDK().set_quiet(True)
 
@@ -692,6 +694,10 @@ def make(ctx, ot_path, quiet, board, debug, flash, clean, mcuboot, port):
     KnotSDK().merge_setup_main()
     KnotSDK().sign_merged()
     KnotSDK().gen_full_img()
+
+    # Export to output path if provided
+    if output:
+        KnotSDK().export(output)
 
     # Flash if flagged to
     if flash or mcuboot:
