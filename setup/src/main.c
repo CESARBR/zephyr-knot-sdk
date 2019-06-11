@@ -112,4 +112,8 @@ setup:
 		LOG_ERR("Failed to initialize bluetooth");
 		return;
 	}
+
+	while (1) {
+		bt_srv_toggle_advertising();
+	}
 }
