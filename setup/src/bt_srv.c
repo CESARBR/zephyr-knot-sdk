@@ -37,6 +37,8 @@
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
+#define ADVERTISING_TOGGLE_MS 500
+
 bool active_conn;
 
 /* Advertise Peer's IPV6 GATT service's UUID  */
@@ -130,11 +132,8 @@ static void ot_updated(void)
 int bt_srv_init(void)
 {
 	int err;
-	bool adv_bool;
-	const struct bt_data *adv_tmp;
 
 	active_conn = false;
-	adv_bool = false;
 
 	/* Peer's IPV6 GATT service */
 	err = gatt_inet6_init();
@@ -165,17 +164,33 @@ int bt_srv_init(void)
 
 	settings_load();
 
-	LOG_INF("Advertising...");
-
-	while (1) {
-		k_sleep(500);
-
-		if (!active_conn) {
-			adv_tmp = (adv_bool) ? ad_inet6 : ad_mcumgr;
-			advertise(adv_tmp);
-			adv_bool = !adv_bool;
-		}
-	}
+	LOG_INF("Bluetooth ready for advertising...");
 
 	return 0;
+}
+
+/* Alternate advertising if not connected */
+void bt_srv_toggle_advertising(void)
+{
+	const struct bt_data *adv_tmp;
+	static s64_t last_toggle_time = 0;
+	s64_t current_time;
+	static bool adv_bool = false;
+
+	/* Ignore if connected */
+	if (active_conn)
+		return;
+
+	/* Wait for toggle time */
+	current_time = k_uptime_get();
+	if (current_time - last_toggle_time < ADVERTISING_TOGGLE_MS)
+		return;
+
+	/* Toggle advertising */
+	adv_tmp = (adv_bool) ? ad_inet6 : ad_mcumgr;
+	advertise(adv_tmp);
+	adv_bool = !adv_bool;
+
+	/* Update time */
+	last_toggle_time = current_time;
 }

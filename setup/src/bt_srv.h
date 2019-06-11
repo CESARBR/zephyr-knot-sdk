@@ -16,3 +16,5 @@
  */
 
 int bt_srv_init(void);
+
+void bt_srv_toggle_advertising(void);
