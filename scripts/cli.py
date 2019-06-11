@@ -374,6 +374,30 @@ or remove the other boards")
         self.__flash(target_path, port)
         logging.info('Board flashed')
 
+    def export(self, output):
+        # Copy existing files
+        targets = [self.signed_hex_path,
+                   self.merged_hex_path,
+                   self.full_hex_path,
+                   self.dfu_package_path]
+        targets = [path for path in targets if os.path.exists(path)]
+
+        if not targets:
+            logging.critical("Error: No target file available")
+            exit()
+
+        # Create folder or abort in case of existing file
+        if not os.path.exists(output):
+            os.makedirs(output)
+        elif not os.path.isdir(output):
+            logging.critical("Error: '{}' is not a directory!".format(output))
+            exit()
+
+        for src in targets:
+            logging.info("'{}' copied to '{}'".format(
+                         src,
+                         shutil.copy(src, output)))
+
     def get_setup_options(self):
         """
         Return build options for setup app
@@ -717,6 +741,12 @@ def flash(mcuboot, board, port):
     KnotSDK().set_board(board)
 
     KnotSDK().flash_prj(mcuboot, port)
+
+
+@cli.command(help='Copy generated files to output directory')
+@click.argument('output')
+def export(output):
+    KnotSDK().export(output)
 
 
 @cli.command(help=('Set default target board. Supported board aliases: \
