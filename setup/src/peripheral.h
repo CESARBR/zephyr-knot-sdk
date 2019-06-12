@@ -13,6 +13,7 @@
 
 int peripheral_init(void);
 int peripheral_btn_status(void);
+void peripheral_toggle_led(void);
 
 enum {
 	PERIPHERAL_BTN_PRESSED = 0,

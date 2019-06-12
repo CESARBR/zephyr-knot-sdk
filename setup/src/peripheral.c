@@ -116,3 +116,24 @@ int peripheral_btn_status(void)
 
 	return val;
 }
+
+void peripheral_toggle_led(void)
+{
+	static s64_t last_toggle_time = 0;
+	s64_t current_time;
+	static bool led_state = false;
+
+	/* Wait for toggle time */
+	current_time = k_uptime_get();
+	if (current_time - last_toggle_time < LED_TOGGLE_PERIOD)
+		return;
+
+	/* Toggle led */
+	gpio_pin_write(gpio_led_dev[0], gpio_led_pin[0],  led_state);
+	gpio_pin_write(gpio_led_dev[1], gpio_led_pin[1], !led_state);
+
+	led_state = !led_state;
+
+	/* Update time */
+	last_toggle_time = current_time;
+}

@@ -115,5 +115,6 @@ setup:
 
 	while (1) {
 		bt_srv_toggle_advertising();
+		peripheral_toggle_led();
 	}
 }
