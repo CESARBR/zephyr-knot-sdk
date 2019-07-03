@@ -183,6 +183,14 @@ To avoid downloading the OpenThread repo on every new build, set an external pat
 	$ knot ot-path `pwd`
 	```
 
+#### See Log messages through USB
+It is possible to get the logging messages through the USB connector when using
+the Dongle by enabling the USB stack:
+- Compile with USB stack:
+	```bash
+	$ knot make --usb
+	```
+
 #### Clear project before building
 The user can delete old building files before compiling again:
 > This is especially useful when the project had important changes like different target board or dependency repository.

@@ -125,6 +125,7 @@ class KnotSDK(metaclass=Singleton):
     board = None  # Target board
     quiet = False  # Suppress command sub-process successful outputs if set
     debug_app = None  # Compile app in debug mode
+    usb_log = None  # Use USB stack for Logging
 
     class Constants:
         KNOT_BASE_VAR = "KNOT_BASE"
@@ -156,6 +157,7 @@ class KnotSDK(metaclass=Singleton):
             BOARD_DK:     '0x67000',
             BOARD_DONGLE: '0x5E000'}
         CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
+        CMAKE_KNOT_USB_LOG = "KNOT_USB_LOG"
         CONFIG_PATH = "config"
         USB_HID_RE = "VID:PID={}:{}"  # USB Vendor Id and Product Id regex
         USB_HID_NORDIC_OPEN_DFU = ('1915', '521F')
@@ -287,6 +289,9 @@ class KnotSDK(metaclass=Singleton):
 
     def set_debug(self, debug):
         self.debug_app = debug
+
+    def set_usb_log(self, usb_log):
+        self.usb_log = usb_log
 
     def find_flash_dev(self, vid, pid):
         """
@@ -430,6 +435,10 @@ or remove the other boards")
         # Debug mode
         if self.debug_app:
             opt += ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
+
+        # USB Logging
+        if self.usb_log:
+            opt += ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_USB_LOG)
 
         return opt
 
@@ -653,19 +662,22 @@ def cli():
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
 @click.option('-d', '--debug', help='Build app in debug mode', is_flag=True)
+@click.option('-u', '--usb', help='Enable USB Log for main app', is_flag=True)
 @click.option('-f', '--flash', help='Flash apps after build', is_flag=True)
 @click.option('-c', '--clean', help='Clean before build', is_flag=True)
 @click.option('-m', '--mcuboot', help='Flash apps and mcuboot after build',
               is_flag=True)
 @click.option('-p', '--port', help='Device port')
 @click.option('-o', '--output', help='Output path')
-def make(ctx, ot_path, quiet, board, debug,
+def make(ctx, ot_path, quiet, board, debug, usb,
          flash, clean, mcuboot, port, output):
     if quiet:
         KnotSDK().set_quiet(True)
 
     if debug:
         KnotSDK().set_debug(True)
+    if usb:
+        KnotSDK().set_usb_log(True)
 
     # Initialize App objects
     KnotSDK().apps_init()

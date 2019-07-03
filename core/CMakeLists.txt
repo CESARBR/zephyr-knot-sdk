@@ -1,11 +1,21 @@
 cmake_minimum_required(VERSION 3.8.2)
 find_package(Git REQUIRED)
 
+set(KNOT_OPT_OVERLAY "")
+
+if (KNOT_USB_LOG)
+        set(KNOT_OPT_OVERLAY
+          "${KNOT_OPT_OVERLAY} \
+           $ENV{KNOT_BASE}/core/overlay-usb.conf"
+        )
+endif()
+
 macro(set_conf_file)
     set(CONF_FILE
       "$ENV{KNOT_BASE}/core/core.conf \
        $ENV{KNOT_BASE}/core/overlay-knot-ot.conf \
        $ENV{KNOT_BASE}/core/boards/${BOARD}.conf \
+       ${KNOT_OPT_OVERLAY} \
        prj.conf \
        ")
 endmacro()
