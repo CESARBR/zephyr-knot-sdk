@@ -9,21 +9,10 @@ To build or run the image, you have to [install Docker](https://docs.docker.com/
 
 ## Building image
 
-If you want build the Docker image, it is necessary to provide a Segger J-Link
-`.deb` installer for Linux path.
-
-It can be downloaded at [Segger J-Link download page](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack).
-
-Copy the installer to the Dockerfile folder.
+Build it by the tag `zephyr-knot-sdk`.
 
 ```shell
-cp <PATH to downloaded file> jlink.deb
-```
-
-Build it by the tag `zephyr-knot-sdk` and passing the path to the jlink installer `deb` file.
-
-```shell
-docker build --tag=zephyr-knot-sdk --build-arg jlink_installer_path=jlink.deb .
+docker build --tag=zephyr-knot-sdk .
 ```
 
 ## Running the container

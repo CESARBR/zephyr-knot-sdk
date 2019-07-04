@@ -123,18 +123,18 @@ RUN (cd ${ZEPHYR_BASE}/.. && west init -l ${ZEPHYR_BASE} && west update)
 
 ENV KNOT_BASE=/home/user/knot-sdk
 
-# Install Segger JLink using external file
-ARG jlink_installer_path
-COPY ${jlink_installer_path} jlink.deb
-RUN dpkg -i jlink.deb && rm jlink.deb
+# Download nRF Command Line Tools
+RUN wget -qO nrf5_tools.tar.gz https://www.nordicsemi.com/-/media/Software-and-other-downloads/Desktop-software/nRF-command-line-tools/sw/Versions-10-x-x/nRFCommandLineTools1021Linuxamd64tar.gz
 
-# Download and install nRF5 Command line tools
-RUN wget -qO nrf5_tools.tar https://www.nordicsemi.com/-/media/Software-and-other-downloads/Desktop-software/nRF5-command-line-tools/sw/nRF-Command-Line-Tools_9_8_1_Linux-x86_64.tar && \
-	mkdir nrf5_tools && \
-	tar -xf nrf5_tools.tar -C nrf5_tools && \
-	rm -f nrf5_tools.tar && \
-	ln -s `readlink -f nrf5_tools/nrfjprog/nrfjprog` /usr/local/bin/nrfjprog && \
-	ln -s `readlink -f nrf5_tools/mergehex/mergehex` /usr/local/bin/mergehex
+# Extract nRF Command Line Tools
+RUN mkdir nrf5_tools
+RUN tar -xvzf nrf5_tools.tar.gz -C nrf5_tools
+
+# Install JLink and nRF Command Line Tools
+RUN dpkg -i nrf5_tools/JLink_Linux_V644e_x86_64.deb
+RUN dpkg -i nrf5_tools/nRF-Command-Line-Tools_10_2_1_Linux-amd64.deb
+
+RUN rm -rf nrf5_tools nrf5_tools.tar.gz
 
 # KNoT Protocol
 RUN apt install automake libtool
