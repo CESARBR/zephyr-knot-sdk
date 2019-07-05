@@ -9,10 +9,10 @@ To build or run the image, you have to [install Docker](https://docs.docker.com/
 
 ## Building image
 
-Build it by the tag `zephyr-knot-sdk`.
+Build it by the tag `knot-zephyr-sdk`.
 
 ```shell
-docker build --tag=zephyr-knot-sdk .
+docker build --tag=knot-zephyr-sdk .
 ```
 
 ## Running the container
@@ -24,10 +24,10 @@ This folder shall contain all your project files.
 At your project folder, run:
 
 ```shell
-docker run -ti -v $(pwd)/:/workdir cesarbr/zephyr-knot-sdk:latest
+docker run -ti -v $(pwd)/:/workdir cesarbr/knot-zephyr-sdk:latest
 ```
 
-If you want to run it from an image you built, replace `cesarbr/zephyr-knot-sdk:latest`
+If you want to run it from an image you built, replace `cesarbr/knot-zephyr-sdk:latest`
 by the tag you used.
 
 Compile for your target board
@@ -61,7 +61,7 @@ sudo usermod -a -G dialout `whoami`
 You can now access the container using the host `/dev` directory.
 
 ```shell
-docker run -ti --privileged -v /dev:/dev -v $(pwd)/:/workdir cesarbr/zephyr-knot-sdk:latest
+docker run -ti --privileged -v /dev:/dev -v $(pwd)/:/workdir cesarbr/knot-zephyr-sdk:latest
 ```
 
 This will allow you to use the `--flash` flag to flash after building the project.
