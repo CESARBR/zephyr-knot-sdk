@@ -1,0 +1,2 @@
+#!/bin/bash
+docker build --no-cache -f $DOCKERFILE_PATH -t $IMAGE_NAME .
