@@ -131,6 +131,7 @@ class KnotSDK(metaclass=Singleton):
         CORE_PATH = "core"
         SETUP_PATH = "setup"
         BUILD_PATH = "build"
+        SETUP_CONF_OVERLAY_PATH = "setup.conf"
         MERGED_HEX_PATH = "apps.hex"
         SIGNED_HEX_PATH = "sgn_apps.hex"
         FULL_HEX_PATH = "boot_sgn_apps.hex"
@@ -202,6 +203,9 @@ class KnotSDK(metaclass=Singleton):
                                              self.Constants.DFU_PACKAGE_PATH)
         self.nrfutil_path = os.path.join(self.knot_path,
                                          self.Constants.NRFUTIL_PATH)
+        self.setup_conf_overlay_path = os.path.join(
+            self.cwd,
+            self.Constants.SETUP_CONF_OVERLAY_PATH)
 
     def set_ext_ot_path(self, ot_path=None):
         """
@@ -402,11 +406,18 @@ or remove the other boards")
         """
         Return build options for setup app
         """
+        opt = ''
+
         # Debug mode
         if self.debug_app:
-            return '-D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
-        else:
-            return ''
+            opt = opt + ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
+
+        # Config overlay
+        if os.path.isfile(self.setup_conf_overlay_path):
+            opt = opt + ' -DOVERLAY_CONFIG={}'.format(
+                self.setup_conf_overlay_path)
+
+        return opt
 
     def make_setup(self):
         """
