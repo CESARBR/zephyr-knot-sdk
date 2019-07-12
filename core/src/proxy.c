@@ -108,16 +108,26 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	struct knot_proxy *proxy;
 
 	/* Out of index? */
-	if (id >= CONFIG_KNOT_THING_DATA_MAX)
+	if (id >= CONFIG_KNOT_THING_DATA_MAX) {
+		LOG_ERR("Register for ID %d failed: "
+			"id >= CONFIG_KNOT_THING_DATA_MAX (%d)",
+			id, CONFIG_KNOT_THING_DATA_MAX);
 		return NULL;
+	}
 
 	/* Assigned already? */
-	if (proxy_pool[id].id != 0xff)
+	if (proxy_pool[id].id != 0xff) {
+		LOG_ERR("Register for ID %d failed: "
+			"Id already registered", id);
 		return NULL;
+	}
 
 	/* Basic field validation */
-	if (knot_schema_is_valid(type_id, value_type, unit) != 0 || !name)
+	if (knot_schema_is_valid(type_id, value_type, unit) != 0 || !name) {
+		LOG_ERR("Register for ID %d failed: "
+			"Invalid schema", id);
 		return NULL;
+	}
 
 	proxy = &proxy_pool[id];
 
@@ -159,13 +169,20 @@ bool knot_proxy_set_config(u8_t id, ...)
 	lower_limit.val_i = 0;
 	upper_limit.val_i = 0;
 
-	if (id >= CONFIG_KNOT_THING_DATA_MAX)
+	if (id >= CONFIG_KNOT_THING_DATA_MAX) {
+		LOG_ERR("Config for ID %d failed: "
+			"id >= CONFIG_KNOT_THING_DATA_MAX (%d)",
+			id, CONFIG_KNOT_THING_DATA_MAX);
 		return false;
+	}
 
 	proxy = &proxy_pool[id];
 
-	if (proxy->id != id)
+	if (proxy->id != id) {
+		LOG_ERR("Config for ID %d failed: "
+			"Proxy not found!", id);
 		return false;
+	}
 
 	/* Read arguments and set event_flags */
 	va_start(event_args, id);
@@ -201,6 +218,8 @@ bool knot_proxy_set_config(u8_t id, ...)
 			break;
 		default:
 			va_end(event_args);
+			LOG_ERR("Config for ID %d failed: "
+				"Invalid config flags", id);
 			return false;
 		}
 
@@ -208,8 +227,11 @@ bool knot_proxy_set_config(u8_t id, ...)
 	va_end(event_args);
 
 	if (knot_config_is_valid(event_flags, proxy->schema.value_type,
-		 timeout_sec, &lower_limit, &upper_limit) != 0)
+				 timeout_sec, &lower_limit, &upper_limit) != 0) {
+		LOG_ERR("Config for ID %d failed: "
+			"Invalid config values", id);
 		return false;
+	}
 
 	/* Set upper and lower limits */
 	if (event_flags & KNOT_EVT_FLAG_UPPER_THRESHOLD)
