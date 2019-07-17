@@ -117,6 +117,7 @@ class KnotSDK(metaclass=Singleton):
     """
     knot_path = ""  # Common directory and files used by images
     ext_ot_path = None  # External OpenThread repository
+    ext_proto_path = None  # External KNoT Protocol repository
     cwd = ""  # Current working directory from where cli was called
     setup_app = None  # Setup app
     main_app = None  # Main app
@@ -223,6 +224,23 @@ class KnotSDK(metaclass=Singleton):
             logging.info('Using OT path: {}'.format(self.ext_ot_path))
         else:
             logging.info('No OpenThread path passed')
+
+    def set_ext_proto_path(self, proto_path=None):
+        """
+        Use default external KNoT Protocol path if none specified.
+        In case of no default path defined, keep it as None.
+        """
+        # Use default if none is passed
+        if proto_path is not None:
+            self.ext_proto_path = proto_path
+        else:
+            self.ext_proto_path = Config().get(Config().KEY_PROTO_PATH)
+
+        # Log in case of valid proto path passed
+        if self.ext_proto_path is not None:
+            logging.info('Using KNoT Protocol path: {}'.format(self.ext_proto_path))
+        else:
+            logging.info('No KNoT Protocol path passed')
 
     def print_supported_boards(self):
         """
@@ -438,6 +456,12 @@ or remove the other boards")
         else:
             opt = ''
 
+        # Use external KNoT Protocol path if provided
+        if self.ext_proto_path is not None:
+            opt +=\
+                ' -DEXTERNAL_PROJECT_PATH_KNOT_PROTOCOL={}'.format(
+                    self.ext_proto_path)
+
         # Debug mode
         if self.debug_app:
             opt += ' -D{}=y'.format(KnotSDK().Constants.CMAKE_KNOT_DEBUG)
@@ -568,6 +592,7 @@ class Config(metaclass=Singleton):
     SECTION = "DEFAULT"
     KEY_BOARD = "board"
     KEY_OT_PATH = "ot_path"
+    KEY_PROTO_PATH = "proto_path"
 
     def __init__(self):
         self.load()
@@ -660,6 +685,7 @@ def cli():
 @cli.group(help='Build setup and main apps', invoke_without_command=True)
 @click.pass_context
 @click.option('--ot_path', help='Define OpenThread repository path')
+@click.option('--proto_path', help='Define KNoT Protocol repository path')
 @click.option('-q', '--quiet', help='Suppress successful sub-command messages',
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
@@ -670,7 +696,7 @@ def cli():
               is_flag=True)
 @click.option('-p', '--port', help='Device port')
 @click.option('-o', '--output', help='Output path')
-def make(ctx, ot_path, quiet, board, debug,
+def make(ctx, ot_path, proto_path, quiet, board, debug,
          flash, clean, mcuboot, port, output):
     if quiet:
         KnotSDK().set_quiet(True)
@@ -691,6 +717,9 @@ def make(ctx, ot_path, quiet, board, debug,
 
     # Optional external OpenThread path
     KnotSDK().set_ext_ot_path(ot_path=ot_path)
+
+    # Optional external KNoT Protocol path
+    KnotSDK().set_ext_proto_path(proto_path=proto_path)
 
     # Defined board required
     KnotSDK().set_board(board=board)
@@ -790,6 +819,12 @@ def board(board, list_all):
 @click.argument('ot_path')
 def ot_path(ot_path):
     Config().set(Config().KEY_OT_PATH, ot_path)
+
+@cli.command(help='Set default external KNoT Protocol path')
+@click.argument('proto_path')
+def proto_path(proto_path):
+    Config().set(Config().KEY_PROTO_PATH, proto_path)
+
 
 
 if __name__ == '__main__':
