@@ -48,6 +48,12 @@ set(PROTO_ROOT ${CMAKE_CURRENT_LIST_DIR}/build/external/proto)
 set(PROTO_LIB_DIR ${PROTO_ROOT}/lib)
 set(PROTO_INCLUDE_DIR ${PROTO_ROOT}/include)
 set(PROTO_LIB knotprotocol)
+if(EXTERNAL_PROJECT_PATH_KNOT_PROTOCOL)
+        set(PROTO_SOURCE ${EXTERNAL_PROJECT_PATH_KNOT_PROTOCOL})
+else()
+        set(PROTO_GIT_REPO https://github.com/CESARBR/knot-protocol-source.git)
+        set(PROTO_SOURCE ${PROTO_ROOT}/src/proto)
+endif()
 
 set(configure_flags
   "CC=${CMAKE_C_COMPILER}"
@@ -71,9 +77,9 @@ target_link_libraries(app INTERFACE ${PROTO_LIB})
 
 ExternalProject_Add(proto
     PREFIX ${PROTO_ROOT}
-    BINARY_DIR ${PROTO_ROOT}/src/proto
-    SOURCE_DIR ${PROTO_ROOT}/src/proto
-    GIT_REPOSITORY https://github.com/CESARBR/knot-protocol-source.git
+    BINARY_DIR ${PROTO_SOURCE}
+    SOURCE_DIR ${PROTO_SOURCE}
+    GIT_REPOSITORY ${PROTO_GIT_REPO}
     BUILD_BYPRODUCTS ${PROTO_LIB_DIR}/lib${PROTO_LIB}.a
     CONFIGURE_COMMAND ./bootstrap && ./configure ${configure_flags}
 
