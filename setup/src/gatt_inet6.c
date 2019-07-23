@@ -83,8 +83,8 @@ static struct bt_gatt_attr config_gatt_attrs[] = {
 	BT_GATT_PRIMARY_SERVICE(&config_service_uuid),
 	BT_GATT_CHARACTERISTIC(&peer_ipv6_uuid.uuid,
 			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
-			       BT_GATT_PERM_READ_ENCRYPT |
-			       BT_GATT_PERM_WRITE_ENCRYPT |
+			       BT_GATT_PERM_READ |
+			       BT_GATT_PERM_WRITE |
 			       BT_GATT_PERM_PREPARE_WRITE,
 			       read_ipv6, write_ipv6, peer_ipv6),
 };
