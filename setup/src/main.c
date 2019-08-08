@@ -19,6 +19,7 @@
 #include <logging/log.h>
 #include <settings/settings.h>
 #include <settings/settings_ot.h>
+#include <misc/reboot.h>
 
 #include "bt_srv.h"
 #include "peripheral.h"
@@ -34,6 +35,7 @@ void main(void)
 	int btn;
 	bool ipv6_set;
 	bool ot_set;
+	bool reset_signal = false;  // Avoid early reseting
 
 	LOG_DBG("Initializing storage services");
 
@@ -106,8 +108,8 @@ setup:
 	/* Setup Application */
 	LOG_DBG("Initializing Setup App");
 
-	/* Bluetooth services */
-	err = bt_srv_init();
+	/* Init bluetooth services and give access to signal flags */
+	err = bt_srv_init(&reset_signal);
 	if (err) {
 		LOG_ERR("Failed to initialize bluetooth");
 		return;
@@ -116,5 +118,12 @@ setup:
 	while (1) {
 		bt_srv_toggle_advertising();
 		peripheral_toggle_led();
+
+		/* Reset system if signal received */
+		if (reset_signal == false)
+			continue;
+
+		LOG_INF("Reseting system...");
+		sys_reboot(SYS_REBOOT_WARM);
 	}
 }

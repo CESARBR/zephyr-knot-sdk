@@ -139,7 +139,7 @@ static void ot_updated(void)
 	}
 }
 
-int bt_srv_init(void)
+int bt_srv_init(bool *reset_signal)
 {
 	int err;
 
@@ -153,7 +153,7 @@ int bt_srv_init(void)
 	}
 
 	/* Control device GATT service */
-	err = gatt_ctrl_init();
+	err = gatt_ctrl_init(reset_signal);
 	if (err) {
 		LOG_ERR("Control device GATT service"\
 			" init failed (err %d)", err);
