@@ -58,6 +58,13 @@ static const struct bt_data ad_mcumgr[] = {
 		      0xd3, 0x4c, 0xb7, 0x1d, 0x1d, 0xdc, 0x53, 0x8d),
 };
 
+/* Scan response Control device GATT service's UUID  */
+static const struct bt_data scan_resp_ctrl[] = {
+	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
+		      0x70, 0xba, 0x2b, 0xfb, 0x05, 0x74, 0x4a, 0x64,
+		      0x9a, 0x93, 0xc8, 0x7c, 0xf3, 0x8f, 0x41, 0x81),
+};
+
 /* Scan respond OpenThread Settings GATT service's UUID */
 static const struct bt_data scan_resp_ot[] = {
 	BT_DATA_BYTES(BT_DATA_UUID128_SOME,
@@ -65,16 +72,18 @@ static const struct bt_data scan_resp_ot[] = {
 	              0x41, 0xd4, 0x9a, 0xaa, 0x9c, 0xe4, 0xa9, 0xa8),
 };
 
-static void advertise(const struct bt_data *adv)
+static void advertise(const struct bt_data *adv,
+		      const struct bt_data *scan_resp)
 {
 	int err;
 
 	bt_le_adv_stop();
 
 	/* Using ad_inet6 as default size for all advertises */
+	/* Using scan_resp_ot as default size for all scan responses */
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
 			      adv, ARRAY_SIZE(ad_inet6),
-			      scan_resp_ot, ARRAY_SIZE(scan_resp_ot));
+			      scan_resp, ARRAY_SIZE(scan_resp_ot));
 	if (err) {
 		LOG_ERR("Advertising failed to start (err %d)", err);
 	}
@@ -182,6 +191,7 @@ int bt_srv_init(void)
 void bt_srv_toggle_advertising(void)
 {
 	const struct bt_data *adv_tmp;
+	const struct bt_data *scan_resp_tmp;
 	static s64_t last_toggle_time = 0;
 	s64_t current_time;
 	static bool adv_bool = false;
@@ -195,9 +205,11 @@ void bt_srv_toggle_advertising(void)
 	if (current_time - last_toggle_time < ADVERTISING_TOGGLE_MS)
 		return;
 
-	/* Toggle advertising */
+	/* Toggle advertising arrays */
 	adv_tmp = (adv_bool) ? ad_inet6 : ad_mcumgr;
-	advertise(adv_tmp);
+	scan_resp_tmp = (adv_bool) ? scan_resp_ot : scan_resp_ctrl;
+
+	advertise(adv_tmp, scan_resp_tmp);
 	adv_bool = !adv_bool;
 
 	/* Update time */
