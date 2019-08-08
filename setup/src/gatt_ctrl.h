@@ -6,4 +6,4 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-int gatt_ctrl_init(void);
+int gatt_ctrl_init(bool *reset_signal);

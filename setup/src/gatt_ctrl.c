@@ -16,7 +16,14 @@
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
 
-static u8_t cmd;		// Received command
+/* Available commands */
+enum {
+	CTRL_CMD_UNSET =		0x00,
+	CTRL_CMD_RESET =		0x01,
+};
+
+static u8_t cmd = CTRL_CMD_UNSET;	// Received command
+static bool *out_reset_signal;
 
 /* Custom Service Variables */
 static struct bt_uuid_128 service_uuid = BT_UUID_INIT_128(
@@ -25,6 +32,12 @@ static struct bt_uuid_128 service_uuid = BT_UUID_INIT_128(
 static const struct bt_uuid_128 cmd_uuid = BT_UUID_INIT_128(
 	0x71, 0xba, 0x2b, 0xfb, 0x05, 0x74, 0x4a, 0x64,
 	0x9a, 0x93, 0xc8, 0x7c, 0xf3, 0x8f, 0x41, 0x81);
+
+static void process_cmd()
+{
+	if (cmd == CTRL_CMD_RESET)
+		*out_reset_signal = true;
+}
 
 /* Write characteristic callback function */
 static ssize_t write_cmd(struct bt_conn *conn, const struct bt_gatt_attr *attr,
@@ -40,6 +53,8 @@ static ssize_t write_cmd(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 		memset(value, 0, max_len);
 
 	memcpy(value + offset, buf, len);
+
+	process_cmd();
 
 	return len;
 }
@@ -57,7 +72,7 @@ static struct bt_gatt_attr config_gatt_attrs[] = {
 
 static struct bt_gatt_service config_svc = BT_GATT_SERVICE(config_gatt_attrs);
 
-int gatt_ctrl_init(void)
+int gatt_ctrl_init(bool *reset_signal)
 {
 	int err;
 
@@ -67,6 +82,9 @@ int gatt_ctrl_init(void)
 		LOG_ERR("GATT service init failed (err %d)", err);
 		return err;
 	}
+
+	/* Set signals to be used */
+	out_reset_signal = reset_signal;
 
 	return 0;
 }

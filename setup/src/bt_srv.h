@@ -15,6 +15,6 @@
  * limitations under the License.
  */
 
-int bt_srv_init(void);
+int bt_srv_init(bool *reset_signal);
 
 void bt_srv_toggle_advertising(void);
