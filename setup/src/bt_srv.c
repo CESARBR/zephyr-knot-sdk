@@ -33,6 +33,7 @@
 
 #include "bt_srv.h"
 #include "gatt_inet6.h"
+#include "gatt_ctrl.h"
 #include "clear.h"
 
 LOG_MODULE_DECLARE(knot_setup, LOG_LEVEL_DBG);
@@ -70,7 +71,7 @@ static void advertise(const struct bt_data *adv)
 
 	bt_le_adv_stop();
 
-	/* Using ad_inet6 as default size for ad_inet6 and ad_mcumgr */
+	/* Using ad_inet6 as default size for all advertises */
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
 			      adv, ARRAY_SIZE(ad_inet6),
 			      scan_resp_ot, ARRAY_SIZE(scan_resp_ot));
@@ -139,6 +140,14 @@ int bt_srv_init(void)
 	err = gatt_inet6_init();
 	if (err) {
 		LOG_ERR("Peer's IPV6 Config GATT service init failed (err %d)", err);
+		return err;
+	}
+
+	/* Control device GATT service */
+	err = gatt_ctrl_init();
+	if (err) {
+		LOG_ERR("Control device GATT service"\
+			" init failed (err %d)", err);
 		return err;
 	}
 
