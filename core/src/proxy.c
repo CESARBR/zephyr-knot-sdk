@@ -63,6 +63,10 @@ static struct knot_proxy {
 	/* Data values */
 	knot_value_type		value;
 
+	/* Watched/Controlled variable */
+	void			*target;
+	size_t			 target_len;
+
 	/* Control variable to send data */
 	bool			send; /* 'value' must be sent */
 	bool			wait_resp; /* Will send 'value' until resp */
@@ -98,9 +102,9 @@ void proxy_stop(void)
 }
 
 int knot_data_register(u8_t id, const char *name,
-		       u16_t type_id, u8_t value_type,
-		       u8_t unit, knot_callback_t write_cb,
-		       knot_callback_t read_cb)
+		       u16_t type_id, u8_t value_type, u8_t unit,
+		       void *target, size_t target_len,
+		       knot_callback_t write_cb, knot_callback_t read_cb)
 {
 	struct knot_proxy *proxy;
 
@@ -119,6 +123,49 @@ int knot_data_register(u8_t id, const char *name,
 		return -1;
 	}
 
+	/* Has value? */
+	if (unlikely(!target)) {
+		LOG_ERR("Register for ID %d failed: "
+			"Null value pointer", id);
+		return -1;
+	}
+
+	/* Compatible buffer length? */
+	switch(value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		if (target_len == sizeof(bool))
+			break;
+		LOG_ERR("Register for ID %d failed: "
+			"Incompatible target_len %d for type "
+			"KNOT_VALUE_TYPE_BOOL", id, target_len);
+		return -1;
+	case KNOT_VALUE_TYPE_INT:
+		if (target_len == sizeof(int))
+			break;
+		LOG_ERR("Register for ID %d failed: "
+			"Incompatible target_len %d for type "
+			"KNOT_VALUE_TYPE_INT", id, target_len);
+		return -1;
+	case KNOT_VALUE_TYPE_FLOAT:
+		if (target_len == sizeof(float))
+			break;
+		LOG_ERR("Register for ID %d failed: "
+			"Incompatible target_len %d for type "
+			"KNOT_VALUE_TYPE_FLOAT", id, target_len);
+		return -1;
+	case KNOT_VALUE_TYPE_RAW:
+		if (target_len > 0 && target_len <= KNOT_DATA_RAW_SIZE)
+			break;
+		LOG_ERR("Register for ID %d failed: "
+			"Incompatible target_len %d for type "
+			"KNOT_VALUE_TYPE_RAW", id, target_len);
+		return -1;
+	default:
+		LOG_ERR("Register for ID %d failed: "
+			"Invalid value type", id);
+		return -1;
+	}
+
 	/* Basic field validation */
 	if (knot_schema_is_valid(type_id, value_type, unit) != 0 || !name) {
 		LOG_ERR("Register for ID %d failed: "
@@ -132,6 +179,8 @@ int knot_data_register(u8_t id, const char *name,
 	proxy->schema.type_id = type_id;
 	proxy->schema.unit = unit;
 	proxy->schema.value_type = value_type;
+	proxy->target = target;
+	proxy->target_len = target_len;
 	proxy->send = false;
 	proxy->upper_flag = false;
 	proxy->lower_flag = false;

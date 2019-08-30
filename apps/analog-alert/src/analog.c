@@ -66,7 +66,7 @@ void setup(void)
 	/* Send readings */
 	knot_data_register(0, "Norm", KNOT_TYPE_ID_ANGLE,
 			   KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_ANGLE_DEGREE,
-			   NULL, read_adc);
+			   &adc_norm, sizeof(adc_norm), NULL, read_adc);
 	knot_data_config(0,
 			 KNOT_EVT_FLAG_TIME, 20,
 			 KNOT_EVT_FLAG_LOWER_THRESHOLD, LOWER_LIMIT,

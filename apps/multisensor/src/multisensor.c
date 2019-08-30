@@ -148,6 +148,7 @@ void setup(void)
 	/* THERMO - Sent every 5 seconds or at high temperatures */
 	if (knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 			       KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+			       &thermo, sizeof(thermo),
 			       changed_thermo, poll_thermo) < 0) {
 		LOG_ERR("THERMO_0 failed to register");
 	}
@@ -161,6 +162,7 @@ void setup(void)
 	/* BUTTON - Sent after change */
 	if (knot_data_register(1, "LED", KNOT_TYPE_ID_SWITCH,
 			       KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+			       &led, sizeof(led),
 			       changed_led, poll_led) < 0) {
 		LOG_ERR("LED failed to register");
 	}
@@ -171,6 +173,7 @@ void setup(void)
 	/* PLATE - Sent every 10 seconds */
 	if (knot_data_register(2, "PLATE", KNOT_TYPE_ID_NONE,
 			       KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
+			       &plate, sizeof(plate),
 			       plate_changed, random_plate) < 0) {
 		LOG_ERR("PLATE failed to register");
 	}
