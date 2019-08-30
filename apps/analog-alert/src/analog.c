@@ -64,14 +64,14 @@ void setup(void)
 	adc_channel_setup(adc_dev, &channel_cfg);
 
 	/* Send readings */
-	knot_proxy_register(0, "Norm", KNOT_TYPE_ID_ANGLE,
-			    KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_ANGLE_DEGREE,
-			    NULL, read_adc);
-	knot_proxy_set_config(0,
-			      KNOT_EVT_FLAG_TIME, 20,
-			      KNOT_EVT_FLAG_LOWER_THRESHOLD, LOWER_LIMIT,
-			      KNOT_EVT_FLAG_UPPER_THRESHOLD, UPPER_LIMIT,
-			      NULL);
+	knot_data_register(0, "Norm", KNOT_TYPE_ID_ANGLE,
+			   KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_ANGLE_DEGREE,
+			   NULL, read_adc);
+	knot_data_config(0,
+			 KNOT_EVT_FLAG_TIME, 20,
+			 KNOT_EVT_FLAG_LOWER_THRESHOLD, LOWER_LIMIT,
+			 KNOT_EVT_FLAG_UPPER_THRESHOLD, UPPER_LIMIT,
+			 NULL);
 }
 
 int16_t adc_buffer;

@@ -146,35 +146,35 @@ void setup(void)
 	bool success;
 
 	/* THERMO - Sent every 5 seconds or at high temperatures */
-	if (knot_proxy_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
-		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		      changed_thermo, poll_thermo) < 0) {
+	if (knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
+			       KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+			       changed_thermo, poll_thermo) < 0) {
 		LOG_ERR("THERMO_0 failed to register");
 	}
-	success = knot_proxy_set_config(0,
-					KNOT_EVT_FLAG_TIME, 5,
-					KNOT_EVT_FLAG_UPPER_THRESHOLD,
-					high_temp, NULL);
+	success = knot_data_config(0,
+				   KNOT_EVT_FLAG_TIME, 5,
+				   KNOT_EVT_FLAG_UPPER_THRESHOLD,
+				   high_temp, NULL);
 	if (!success)
 		LOG_ERR("THERMO failed to configure");
 
 	/* BUTTON - Sent after change */
-	if (knot_proxy_register(1, "LED", KNOT_TYPE_ID_SWITCH,
-		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-		      changed_led, poll_led) < 0) {
+	if (knot_data_register(1, "LED", KNOT_TYPE_ID_SWITCH,
+			       KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+			       changed_led, poll_led) < 0) {
 		LOG_ERR("LED failed to register");
 	}
-	success = knot_proxy_set_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
+	success = knot_data_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
 	if (!success)
 		LOG_ERR("LED failed to configure");
 
 	/* PLATE - Sent every 10 seconds */
-	if (knot_proxy_register(2, "PLATE", KNOT_TYPE_ID_NONE,
-		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
-		      plate_changed, random_plate) < 0) {
+	if (knot_data_register(2, "PLATE", KNOT_TYPE_ID_NONE,
+			       KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
+			       plate_changed, random_plate) < 0) {
 		LOG_ERR("PLATE failed to register");
 	}
-	success = knot_proxy_set_config(2, KNOT_EVT_FLAG_TIME, 10, NULL);
+	success = knot_data_config(2, KNOT_EVT_FLAG_TIME, 10, NULL);
 	if (!success)
 		LOG_ERR("PLATE failed to configure");
 
