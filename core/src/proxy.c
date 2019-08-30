@@ -317,8 +317,100 @@ u8_t proxy_get_last_id(void)
 	return last_id;
 }
 
+static bool check_timeout(struct knot_proxy *proxy)
+{
+	u32_t current_time, elapsed_time;
+
+	if (!(KNOT_EVT_FLAG_TIME & proxy->config.event_flags))
+		return false;
+
+	current_time = k_uptime_get();
+	elapsed_time = current_time - proxy->last_timeout;
+	if (elapsed_time >= (proxy->config.time_sec * 1000)) {
+		proxy->last_timeout = current_time;
+		return true;
+	}
+	return false;
+}
+
 static bool set_proxy_value(struct knot_proxy *proxy,
-			    const knot_value_type value, size_t len);
+			    const knot_value_type value, size_t len)
+{
+	bool change;
+	bool upper;
+	bool lower;
+	bool timeout;
+	bool ret;
+
+	bool bval;
+	s32_t s32val;
+	float fval;
+
+	ret = false; /* Default not sending */
+
+	if (unlikely(!proxy))
+		goto done;
+
+	timeout = check_timeout(proxy);
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		bval = value.val_b;
+		change = check_bool_change(proxy, bval);
+
+		if (proxy->send || timeout || change) {
+			proxy->olen = proxy->target_len;
+			proxy->value.val_b = bval;
+			proxy->send = proxy->wait_resp;
+			ret = true;
+		}
+		break;
+	case KNOT_VALUE_TYPE_INT:
+		s32val = value.val_i;
+		change = check_int_change(proxy, s32val);
+		upper = check_int_upper_threshold(proxy, s32val);
+		lower = check_int_lower_threshold(proxy, s32val);
+
+		if ( proxy->send || timeout || change ||
+		    (upper && proxy->upper_flag == false) ||
+		    (lower && proxy->lower_flag == false)) {
+			proxy->olen = proxy->target_len;
+			proxy->value.val_i = s32val;
+			proxy->send = proxy->wait_resp;
+			ret = true;
+		}
+		proxy->upper_flag = upper; /* Send only at crossing */
+		proxy->lower_flag = lower; /* Send only at crossing */
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		fval = value.val_f;
+		change = check_int_change(proxy, fval);
+		upper = check_float_upper_threshold(proxy, fval);
+		lower = check_float_lower_threshold(proxy, fval);
+
+		if ( proxy->send || timeout || change ||
+		    (upper && proxy->upper_flag == false) ||
+		    (lower && proxy->lower_flag == false)) {
+			proxy->olen = proxy->target_len;
+			proxy->value.val_f = fval;
+			proxy->send = proxy->wait_resp;
+			ret = true;
+		}
+		proxy->upper_flag = upper; /* Send only at crossing */
+		proxy->lower_flag = lower; /* Send only at crossing */
+		break;
+	case KNOT_VALUE_TYPE_RAW:
+		change = check_raw_change(proxy, value.raw, len);
+		if (proxy->send || change || timeout) {
+			proxy->olen = len; /* Amount to send */
+			memcpy(proxy->value.raw, value.raw, len);
+			proxy->send = proxy->wait_resp;
+			ret = true;
+		}
+	}
+done:
+	return ret;
+}
+
 /* Return knot_value_type* so it can be flagged as const  */
 const knot_value_type *proxy_read(u8_t id, u8_t *olen, bool wait_resp)
 {
@@ -512,98 +604,4 @@ s8_t proxy_confirm_sent(u8_t id)
 	proxy->send = false;
 
 	return 0;
-}
-
-static bool check_timeout(struct knot_proxy *proxy)
-{
-	u32_t current_time, elapsed_time;
-
-	if (!(KNOT_EVT_FLAG_TIME & proxy->config.event_flags))
-		return false;
-
-	current_time = k_uptime_get();
-	elapsed_time = current_time - proxy->last_timeout;
-	if (elapsed_time >= (proxy->config.time_sec * 1000)) {
-		proxy->last_timeout = current_time;
-		return true;
-	}
-	return false;
-}
-
-static bool set_proxy_value(struct knot_proxy *proxy,
-			    const knot_value_type value, size_t len)
-{
-	bool change;
-	bool upper;
-	bool lower;
-	bool timeout;
-	bool ret;
-
-	bool bval;
-	s32_t s32val;
-	float fval;
-
-	ret = false; /* Default not sending */
-
-	if (unlikely(!proxy))
-		goto done;
-
-	timeout = check_timeout(proxy);
-	switch(proxy->schema.value_type) {
-	case KNOT_VALUE_TYPE_BOOL:
-		bval = value.val_b;
-		change = check_bool_change(proxy, bval);
-
-		if (proxy->send || timeout || change) {
-			proxy->olen = proxy->target_len;
-			proxy->value.val_b = bval;
-			proxy->send = proxy->wait_resp;
-			ret = true;
-		}
-		break;
-	case KNOT_VALUE_TYPE_INT:
-		s32val = value.val_i;
-		change = check_int_change(proxy, s32val);
-		upper = check_int_upper_threshold(proxy, s32val);
-		lower = check_int_lower_threshold(proxy, s32val);
-
-		if ( proxy->send || timeout || change ||
-		    (upper && proxy->upper_flag == false) ||
-		    (lower && proxy->lower_flag == false)) {
-			proxy->olen = proxy->target_len;
-			proxy->value.val_i = s32val;
-			proxy->send = proxy->wait_resp;
-			ret = true;
-		}
-		proxy->upper_flag = upper; /* Send only at crossing */
-		proxy->lower_flag = lower; /* Send only at crossing */
-		break;
-	case KNOT_VALUE_TYPE_FLOAT:
-		fval = value.val_f;
-		change = check_int_change(proxy, fval);
-		upper = check_float_upper_threshold(proxy, fval);
-		lower = check_float_lower_threshold(proxy, fval);
-
-		if ( proxy->send || timeout || change ||
-		    (upper && proxy->upper_flag == false) ||
-		    (lower && proxy->lower_flag == false)) {
-			proxy->olen = proxy->target_len;
-			proxy->value.val_f = fval;
-			proxy->send = proxy->wait_resp;
-			ret = true;
-		}
-		proxy->upper_flag = upper; /* Send only at crossing */
-		proxy->lower_flag = lower; /* Send only at crossing */
-		break;
-	case KNOT_VALUE_TYPE_RAW:
-		change = check_raw_change(proxy, value.raw, len);
-		if (proxy->send || change || timeout) {
-			proxy->olen = len; /* Amount to send */
-			memcpy(proxy->value.raw, value.raw, len);
-			proxy->send = proxy->wait_resp;
-			ret = true;
-		}
-	}
-done:
-	return ret;
 }
