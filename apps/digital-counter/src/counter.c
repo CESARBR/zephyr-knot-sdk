@@ -70,18 +70,18 @@ void setup(void)
 	counter = 0;	/* Reset counter */
 
 	/* KNoT config - LED*/
-	knot_proxy_register(0, "LED", KNOT_TYPE_ID_SWITCH,
-			    KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-			    NULL, read_led);
-	knot_proxy_set_config(0, KNOT_EVT_FLAG_CHANGE, NULL);
+	knot_data_register(0, "LED", KNOT_TYPE_ID_SWITCH,
+			   KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+			   NULL, read_led);
+	knot_data_config(0, KNOT_EVT_FLAG_CHANGE, NULL);
 
 	/* KNoT config - Counter*/
-	knot_proxy_register(1, "Counter", KNOT_TYPE_ID_TEMPERATURE,
-		            KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		            write_counter, read_counter);
-	knot_proxy_set_config(1,
-			      KNOT_EVT_FLAG_TIME, 30,
-			      KNOT_EVT_FLAG_UPPER_THRESHOLD, 10, NULL);
+	knot_data_register(1, "Counter", KNOT_TYPE_ID_TEMPERATURE,
+		           KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+		           write_counter, read_counter);
+	knot_data_config(1,
+			 KNOT_EVT_FLAG_TIME, 30,
+			 KNOT_EVT_FLAG_UPPER_THRESHOLD, 10, NULL);
 }
 
 int64_t last_toggle_time = 0;
