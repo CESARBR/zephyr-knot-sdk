@@ -57,29 +57,14 @@ static void val_update(struct k_timer *timer_id)
 K_TIMER_DEFINE(val_update_timer, val_update, NULL);
 #endif
 
-static void changed_led(struct knot_proxy *proxy)
+int changed_led(int id)
 {
-	knot_proxy_value_get_basic(proxy, &led);
 	LOG_INF("Value for led changed to %d", led);
 
 #if CONFIG_BOARD_NRF52840_PCA10056
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
 #endif
-}
-
-static void poll_led(struct knot_proxy *proxy)
-{
-	/* Pushing status to remote */
-	bool res;
-	res = knot_proxy_value_set_basic(proxy, &led);
-
-	/* Notify if sent */
-	if (res) {
-		if (led)
-			LOG_INF("Sending value true for led");
-		else
-			LOG_INF("Sending value false for led");
-	}
+	return KNOT_CALLBACK_SUCCESS;
 }
 
 void setup(void)
@@ -90,7 +75,7 @@ void setup(void)
 	if (knot_data_register(0, "LED", KNOT_TYPE_ID_SWITCH,
 			       KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
 			       &led, sizeof(led),
-			       changed_led, poll_led) < 0) {
+			       changed_led, NULL) < 0) {
 		LOG_ERR("LED failed to register");
 	}
 	success = knot_data_config(0, KNOT_EVT_FLAG_CHANGE, NULL);

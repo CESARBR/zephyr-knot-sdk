@@ -37,9 +37,14 @@ float adc_norm;
 static struct device *gpiob;		/* GPIO device */
 static struct device *adc_dev;
 
-static void read_adc(struct knot_proxy *proxy)
+/*
+ * Write not supported.
+ * This function signs that it is not possible for KNoT machine to write values
+ * to the target variable, keeping it read-only.
+ */
+int write_fail(int id)
 {
-	knot_proxy_value_set_basic(proxy, &adc_norm);
+	return KNOT_CALLBACK_FAIL;
 }
 
 static const struct adc_channel_cfg channel_cfg = {
@@ -66,7 +71,7 @@ void setup(void)
 	/* Send readings */
 	knot_data_register(0, "Norm", KNOT_TYPE_ID_ANGLE,
 			   KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_ANGLE_DEGREE,
-			   &adc_norm, sizeof(adc_norm), NULL, read_adc);
+			   &adc_norm, sizeof(adc_norm), write_fail, NULL);
 	knot_data_config(0,
 			 KNOT_EVT_FLAG_TIME, 20,
 			 KNOT_EVT_FLAG_LOWER_THRESHOLD, LOWER_LIMIT,

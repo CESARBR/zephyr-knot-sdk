@@ -375,6 +375,8 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 			len = msg_create_error(omsg,
 					       KNOT_MSG_PUSH_DATA_RSP,
 					       KNOT_ERR_INVALID);
+			LOG_WRN("Write failed to Id %d", id);
+
 			break;
 		}
 		/* TODO: Change protocol to not require id nor value for

@@ -30,12 +30,12 @@ LOG_MODULE_REGISTER(toggle, LOG_LEVEL_DBG);
 bool toggle = true; 			/* Tracked value */
 struct device *gpio_led;		/* GPIO device */
 
-void write_led(struct knot_proxy *proxy)
+int write_led(int id)
 {
-	knot_proxy_value_get_basic(proxy, &toggle);
 	LOG_INF("Value for toggle changed to %d", toggle);
-
 	gpio_pin_write(gpio_led, TOGGLE_PIN, !toggle); /* Led is On at LOW */
+
+	return KNOT_CALLBACK_SUCCESS;
 }
 
 void setup(void)

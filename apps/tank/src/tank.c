@@ -28,58 +28,19 @@
 LOG_MODULE_REGISTER(tank, LOG_LEVEL_DBG);
 
 /* Tracked value */
-static float volume = 10000;
-
-static void changed_volume(struct knot_proxy *proxy)
-{
-	u8_t id;
-
-	id = knot_proxy_get_id(proxy);
-	knot_proxy_value_get_basic(proxy, &volume);
-
-	LOG_INF("Value for volume with id %u changed", id);
-}
-
-static void poll_volume(struct knot_proxy *proxy)
-{
-	u8_t id;
-	bool res;
-	int int_part;
-	int dec_part;
-
-	id = knot_proxy_get_id(proxy);
-	/* Get current volume from actual object */
-	int_part = (sys_rand32_get() % 10000);
-	dec_part = (sys_rand32_get() % 1000);
-	volume = int_part + dec_part/1000.0;
-
-	/* Pushing volume to remote */
-	res = knot_proxy_value_set_basic(proxy, &volume);
-
-	/* Notify if sent */
-	if (res)
-		LOG_INF("Sending value %d.%d for tank volume with id %u",
-		 int_part, dec_part, id);
-
-}
+float volume = 10000;
 
 void setup(void)
 {
-	bool success;
-
 	/* VOLUME - Sent every 5 seconds or at low volumes */
-	if (knot_data_register(0, "VOLUME", KNOT_TYPE_ID_VOLUME,
-			       KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_VOLUME_L,
-			       &volume, sizeof(volume),
-			       changed_volume, poll_volume) < 0) {
-		LOG_ERR("VOLUME_0 failed to register");
-	}
-	success = knot_data_config(0, KNOT_EVT_FLAG_TIME, 5, NULL);
-	if (!success)
-		LOG_ERR("VOLUME failed to configure");
+	knot_data_register(0, "VOLUME", KNOT_TYPE_ID_VOLUME,
+			   KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_VOLUME_L,
+			   &volume, sizeof(volume), NULL, NULL);
 
+	knot_data_config(0, KNOT_EVT_FLAG_TIME, 5, NULL);
 }
 
 void loop(void)
 {
+	volume += -5 + (sys_rand32_get() % 100001)/10000.0; // Add random value
 }

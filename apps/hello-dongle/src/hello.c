@@ -30,17 +30,12 @@ LOG_MODULE_REGISTER(hello, LOG_LEVEL_DBG);
 bool led = true; 			/* Tracked value */
 struct device *gpio_led;		/* GPIO device */
 
-void write_led(struct knot_proxy *proxy)
+int write_led(int id)
 {
-	knot_proxy_value_get_basic(proxy, &led);
 	LOG_INF("Value for led changed to %d", led);
-
 	gpio_pin_write(gpio_led, LED_PIN, !led); /* Led is On at LOW */
-}
 
-void read_led(struct knot_proxy *proxy)
-{
-	knot_proxy_value_set_basic(proxy, &led);
+	return KNOT_CALLBACK_SUCCESS;
 }
 
 void setup(void)
@@ -52,8 +47,7 @@ void setup(void)
 	/* KNoT config */
 	knot_data_register(0, "LED", KNOT_TYPE_ID_SWITCH,
 			   KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-			   &led, sizeof(led), write_led, read_led);
-
+			   &led, sizeof(led), write_led, NULL);
 	knot_data_config(0, KNOT_EVT_FLAG_CHANGE, NULL);
 
 }
