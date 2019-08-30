@@ -23,36 +23,8 @@
 LOG_MODULE_REGISTER(thermo, LOG_LEVEL_DBG);
 
 /* Tracked value */
-static int thermo = 0;
-static int high_temp = 100000;
-
-static void changed_thermo(struct knot_proxy *proxy)
-{
-	u8_t id;
-
-	id = knot_proxy_get_id(proxy);
-	knot_proxy_value_get_basic(proxy, &thermo);
-
-	LOG_INF("Value for thermo with id %u changed to %d", id, thermo);
-}
-
-static void poll_thermo(struct knot_proxy *proxy)
-{
-	u8_t id;
-	bool res;
-
-	id = knot_proxy_get_id(proxy);
-	/* Get current temperature from actual object */
-	thermo++;
-
-	/* Pushing temperature to remote */
-	res = knot_proxy_value_set_basic(proxy, &thermo);
-
-	/* Notify if sent */
-	if (res)
-		LOG_INF("Sending value %d for thermo with id %u", thermo, id);
-
-}
+int thermo = 0;
+int high_temp = 100000;
 
 void setup(void)
 {
@@ -62,7 +34,7 @@ void setup(void)
 	if (knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 			       KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
 			       &thermo, sizeof(thermo),
-			       changed_thermo, poll_thermo) < 0) {
+			       NULL, NULL) < 0) {
 		LOG_ERR("THERMO_0 failed to register");
 	}
 	success = knot_data_config(0, KNOT_EVT_FLAG_TIME, 5,
@@ -75,4 +47,5 @@ void setup(void)
 
 void loop(void)
 {
+	thermo++;
 }

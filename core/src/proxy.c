@@ -317,31 +317,53 @@ u8_t proxy_get_last_id(void)
 	return last_id;
 }
 
+static bool set_proxy_value(struct knot_proxy *proxy,
+			    const knot_value_type value, size_t len);
 /* Return knot_value_type* so it can be flagged as const  */
 const knot_value_type *proxy_read(u8_t id, u8_t *olen, bool wait_resp)
 {
 	struct knot_proxy *proxy;
+	knot_value_type read_val;
+	bool send_msg;
 
 	if (proxy_pool[id].id == 0xff)
 		return NULL;
 
 	proxy = &proxy_pool[id];
 
-	if (proxy->read_cb == NULL)
-		return NULL;
-
 	proxy->olen = 0;
 
 	/* Wait for response? */
 	proxy->wait_resp = wait_resp;
 
-	proxy->read_cb(proxy);
+	/* Execute read callback if set */
+	if (proxy->read_cb != NULL &&
+	    proxy->read_cb(id) < 0) {
+		LOG_INF("Read callback failed to ID %d", id);
+		return NULL;
+	}
 
-	/*
-	 * Read callback may set new values. When a
-	 * new value is set "olen" field is set.
-	 */
-	if (proxy->olen <= 0)
+	/* Typecast value and read it */
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		read_val.val_b = *((bool*) proxy->target);
+		break;
+	case KNOT_VALUE_TYPE_INT:
+		read_val.val_i = *((int*) proxy->target);
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		read_val.val_f = *((float*) proxy->target);
+		break;
+	case KNOT_VALUE_TYPE_RAW:
+		memcpy(read_val.raw, proxy->target, proxy->target_len);
+		break;
+	default:
+		return NULL;
+	}
+
+	/* Send message if proxy value is updated */
+	send_msg = set_proxy_value(proxy, read_val, proxy->target_len);
+	if (send_msg == false)
 		return NULL;
 
 	*olen = proxy->olen;
@@ -352,6 +374,9 @@ s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 {
 	struct knot_proxy *proxy;
 
+	/* Backup values */
+	knot_value_type old_value;
+
 	if (id > last_id)
 		return -EINVAL;
 
@@ -360,17 +385,101 @@ s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 	if (proxy->id == 0xff)
 		return -EINVAL;
 
-	if (proxy->write_cb == NULL)
-		return 0;
-
 	memcpy(&proxy->value, value, sizeof(*value));
 
 	/*
 	 * New values sent from cloud are informed to
 	 * the user app through write callback.
 	 */
+	switch(proxy->schema.value_type) {
+	case KNOT_VALUE_TYPE_BOOL:
+		/* Copy without backup if no write callback set */
+		if (proxy->write_cb == NULL) {
+			*((bool*) proxy->target) = value->val_b;
+			break;
+		}
 
-	proxy->write_cb(proxy);
+		/* Store old value before trying to update */
+		old_value.val_b = *((bool*) proxy->target);
+		*((bool*) proxy->target) = value->val_b;
+
+		/* Get back to old value if write callback failed */
+		if (proxy->write_cb(id) < 0) {
+			LOG_INF("Write callback failed to ID %d", id);
+			*((bool*) proxy->target) = old_value.val_b;
+			return -EAGAIN;
+		}
+		break;
+	case KNOT_VALUE_TYPE_INT:
+		/* Copy without backup if no write callback set */
+		if (proxy->write_cb == NULL) {
+			*((int*) proxy->target) = value->val_i;
+			break;
+		}
+
+		/* Store old value before trying to update */
+		old_value.val_i = *((int*) proxy->target);
+		*((int*) proxy->target) = value->val_i;
+
+		/* Get back to old value if write callback failed */
+		if (proxy->write_cb(id) < 0) {
+			LOG_INF("Write callback failed to ID %d", id);
+			*((int*) proxy->target) = old_value.val_i;
+			return -EAGAIN;
+		}
+		break;
+	case KNOT_VALUE_TYPE_FLOAT:
+		/* Copy without backup if no write callback set */
+		if (proxy->write_cb == NULL) {
+			*((float*) proxy->target) = value->val_f;
+			break;
+		}
+
+		/* Store old value before trying to update */
+		old_value.val_f = *((float*) proxy->target);
+		*((float*) proxy->target) = value->val_f;
+
+		/* Get back to old value if write callback failed */
+		if (proxy->write_cb(id) < 0) {
+			LOG_INF("Write callback failed to ID %d", id);
+			*((float*) proxy->target) = old_value.val_f;
+			return -EAGAIN;
+		}
+		break;
+	case KNOT_VALUE_TYPE_RAW:
+		/* Abort if buffer overflow */
+		if (value_len > proxy->target_len) {
+			LOG_WRN("Write failed for ID %d: "
+				"Msg too big for buffer (%d > %d)",
+				id, value_len, proxy->target_len);
+			return -EFBIG;
+		}
+
+		/* Copy without backup if no write callback set */
+		if (proxy->write_cb == NULL) {
+			memset(proxy->target, 0, proxy->target_len);
+			memcpy(proxy->target, value->raw, value_len);
+			break;
+		}
+
+		/* Store old values */
+		memcpy(old_value.raw, proxy->target, proxy->target_len);
+
+		/* Update value */
+		memset(proxy->target, 0, proxy->target_len);
+		memcpy(proxy->target, value->raw, value_len);
+
+		/* Get back to old value if write callback failed */
+		if (proxy->write_cb(id) < 0) {
+			LOG_INF("Write callback failed to ID %d", id);
+			memcpy(proxy->target, old_value.raw,
+			       proxy->target_len);
+			return -EAGAIN;
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
 
 	return proxy->olen;
 }
@@ -421,7 +530,8 @@ static bool check_timeout(struct knot_proxy *proxy)
 	return false;
 }
 
-bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
+static bool set_proxy_value(struct knot_proxy *proxy,
+			    const knot_value_type value, size_t len)
 {
 	bool change;
 	bool upper;
@@ -441,18 +551,18 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 	timeout = check_timeout(proxy);
 	switch(proxy->schema.value_type) {
 	case KNOT_VALUE_TYPE_BOOL:
-		bval = *((bool *) value);
+		bval = value.val_b;
 		change = check_bool_change(proxy, bval);
 
 		if (proxy->send || timeout || change) {
-			proxy->olen = sizeof(bool);
+			proxy->olen = proxy->target_len;
 			proxy->value.val_b = bval;
 			proxy->send = proxy->wait_resp;
 			ret = true;
 		}
 		break;
 	case KNOT_VALUE_TYPE_INT:
-		s32val = *((s32_t *) value);
+		s32val = value.val_i;
 		change = check_int_change(proxy, s32val);
 		upper = check_int_upper_threshold(proxy, s32val);
 		lower = check_int_lower_threshold(proxy, s32val);
@@ -460,7 +570,7 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		if ( proxy->send || timeout || change ||
 		    (upper && proxy->upper_flag == false) ||
 		    (lower && proxy->lower_flag == false)) {
-			proxy->olen = sizeof(int);
+			proxy->olen = proxy->target_len;
 			proxy->value.val_i = s32val;
 			proxy->send = proxy->wait_resp;
 			ret = true;
@@ -469,7 +579,7 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		proxy->lower_flag = lower; /* Send only at crossing */
 		break;
 	case KNOT_VALUE_TYPE_FLOAT:
-		fval = *((float *) value);
+		fval = value.val_f;
 		change = check_int_change(proxy, fval);
 		upper = check_float_upper_threshold(proxy, fval);
 		lower = check_float_lower_threshold(proxy, fval);
@@ -477,7 +587,7 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		if ( proxy->send || timeout || change ||
 		    (upper && proxy->upper_flag == false) ||
 		    (lower && proxy->lower_flag == false)) {
-			proxy->olen = sizeof(float);
+			proxy->olen = proxy->target_len;
 			proxy->value.val_f = fval;
 			proxy->send = proxy->wait_resp;
 			ret = true;
@@ -485,82 +595,15 @@ bool knot_proxy_value_set_basic(struct knot_proxy *proxy, const void *value)
 		proxy->upper_flag = upper; /* Send only at crossing */
 		proxy->lower_flag = lower; /* Send only at crossing */
 		break;
-	default:
-		goto done;
+	case KNOT_VALUE_TYPE_RAW:
+		change = check_raw_change(proxy, value.raw, len);
+		if (proxy->send || change || timeout) {
+			proxy->olen = len; /* Amount to send */
+			memcpy(proxy->value.raw, value.raw, len);
+			proxy->send = proxy->wait_resp;
+			ret = true;
+		}
 	}
 done:
 	return ret;
-}
-
-bool knot_proxy_value_set_string(struct knot_proxy *proxy,
-				 const char *value, int len)
-{
-	bool change;
-	bool timeout;
-
-	if (unlikely(!proxy))
-		return false;
-
-	if (proxy->schema.value_type != KNOT_VALUE_TYPE_RAW)
-		return false;
-
-	timeout = check_timeout(proxy);
-
-	/* Match current value? */
-	change = check_raw_change(proxy, value, len);
-
-	if (!proxy->send && !change && !timeout)
-		return false;
-
-	/* len may not include null */
-	len = MIN(KNOT_DATA_RAW_SIZE, len);
-	proxy->olen = len; /* Amount to send */
-	memcpy(proxy->value.raw, value, len);
-	proxy->send = proxy->wait_resp;
-
-	return true;
-}
-
-bool knot_proxy_value_get_basic(struct knot_proxy *proxy, void *value)
-{
-	bool *bval;
-	s32_t *s32val;
-	float *fval;
-
-	if (unlikely(!proxy))
-		return false;
-
-	switch(proxy->schema.value_type) {
-	case KNOT_VALUE_TYPE_BOOL:
-		bval = (bool *) value;
-		*bval = proxy->value.val_b;
-		break;
-	case KNOT_VALUE_TYPE_INT:
-		s32val = (s32_t *) value;
-		*s32val = proxy->value.val_i;
-		break;
-	case KNOT_VALUE_TYPE_FLOAT:
-		fval = (float *) value;
-		*fval = proxy->value.val_f;
-		break;
-	default:
-		return false;
-	}
-
-	return true;
-}
-
-bool knot_proxy_value_get_string(struct knot_proxy *proxy,
-				 char *value, int len, int *olen)
-{
-	if (unlikely(!proxy))
-		return false;
-
-	if (proxy->schema.value_type != KNOT_VALUE_TYPE_RAW)
-		return false;
-
-	*olen = len;
-	memcpy(value, proxy->value.raw, len);
-
-	return true;
 }

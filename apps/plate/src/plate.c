@@ -25,20 +25,9 @@ LOG_MODULE_REGISTER(plate, LOG_LEVEL_DBG);
 /* Tracked value */
 static char plate[] = "KNT0000";
 
-static void plate_changed(struct knot_proxy *proxy)
+int random_plate(int id)
 {
-	int len;
-
-	if (knot_proxy_value_get_string(proxy, plate, sizeof(plate), &len))
-		LOG_INF("Plate changed %s", plate);
-}
-
-static void random_plate(struct knot_proxy *proxy)
-{
-	u8_t id;
 	int num;
-	bool res;
-	id = knot_proxy_get_id(proxy);
 
 	num = (sys_rand32_get() % 7);
 	plate[3] = '0' + num;
@@ -46,11 +35,7 @@ static void random_plate(struct knot_proxy *proxy)
 	plate[5] = '2' + num;
 	plate[6] = '3' + num;
 
-	res = knot_proxy_value_set_string(proxy, plate, sizeof(plate));
-
-	/* Notify if sent */
-	if (res)
-		LOG_INF("Sent plate %s", plate);
+	return KNOT_CALLBACK_SUCCESS;
 }
 
 void setup(void)
@@ -61,7 +46,7 @@ void setup(void)
 	if (knot_data_register(0, "PLATE", KNOT_TYPE_ID_NONE,
 			       KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
 			       &plate, sizeof(plate),
-			       plate_changed, random_plate) < 0) {
+			       NULL, random_plate) < 0) {
 		LOG_ERR("PLATE failed to register");
 	}
 	success = knot_data_config(0, KNOT_EVT_FLAG_TIME, 10, NULL);

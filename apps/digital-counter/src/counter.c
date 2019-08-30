@@ -36,22 +36,6 @@ int counter;			/* Events counter */
 struct device *gpio_led;		/* GPIO device */
 struct device *gpio_sensor;		/* GPIO device */
 
-void read_led(struct knot_proxy *proxy)
-{
-	knot_proxy_value_set_basic(proxy, &led);
-}
-
-void write_counter(struct knot_proxy *proxy)
-{
-	knot_proxy_value_get_basic(proxy, &counter);
-	LOG_INF("Value for counter changed to %d", counter);
-}
-
-void read_counter(struct knot_proxy *proxy)
-{
-	knot_proxy_value_set_basic(proxy, &counter);
-}
-
 void setup(void)
 {
 	/* Peripherals control */
@@ -72,14 +56,14 @@ void setup(void)
 	/* KNoT config - LED*/
 	knot_data_register(0, "LED", KNOT_TYPE_ID_SWITCH,
 			   KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-			   &led, sizeof(led), NULL, read_led);
+			   &led, sizeof(led), NULL, NULL);
 	knot_data_config(0, KNOT_EVT_FLAG_CHANGE, NULL);
 
 	/* KNoT config - Counter*/
 	knot_data_register(1, "Counter", KNOT_TYPE_ID_TEMPERATURE,
 			   KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
 			   &counter, sizeof(counter),
-			   write_counter, read_counter);
+			   NULL, NULL);
 	knot_data_config(1,
 			 KNOT_EVT_FLAG_TIME, 30,
 			 KNOT_EVT_FLAG_UPPER_THRESHOLD, 10, NULL);

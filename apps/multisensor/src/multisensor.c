@@ -60,73 +60,23 @@ static void val_update(struct k_timer *timer_id)
 K_TIMER_DEFINE(val_update_timer, val_update, NULL);
 #endif
 
-static void changed_thermo(struct knot_proxy *proxy)
+int read_thermo(int id)
 {
-	u8_t id;
-
-	id = knot_proxy_get_id(proxy);
-	knot_proxy_value_get_basic(proxy, &thermo);
-
-	LOG_INF("Value for thermo with id %u changed to %d", id, thermo);
-}
-
-static void poll_thermo(struct knot_proxy *proxy)
-{
-	u8_t id;
-	bool res;
-
-	id = knot_proxy_get_id(proxy);
-	/* Get current temperature from actual object */
 	thermo++;
-
-	/* Pushing temperature to remote */
-	res = knot_proxy_value_set_basic(proxy, &thermo);
-
-	/* Notify if sent */
-	if (res)
-		LOG_INF("Sending value %d for thermo with id %u", thermo, id);
-
+	return KNOT_CALLBACK_SUCCESS;
 }
 
-static void changed_led(struct knot_proxy *proxy)
+int changed_led(int id)
 {
-	knot_proxy_value_get_basic(proxy, &led);
-	LOG_INF("Value for led changed to %d", led);
-
 #if CONFIG_BOARD_NRF52840_PCA10056
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
 #endif
+	return KNOT_CALLBACK_SUCCESS;
 }
 
-static void poll_led(struct knot_proxy *proxy)
+int random_plate(int id)
 {
-	/* Pushing status to remote */
-	bool res;
-	res = knot_proxy_value_set_basic(proxy, &led);
-
-	/* Notify if sent */
-	if (res) {
-		if (led)
-			LOG_INF("Sending value true for led");
-		else
-			LOG_INF("Sending value false for led");
-	}
-}
-
-static void plate_changed(struct knot_proxy *proxy)
-{
-	int len;
-
-	if (knot_proxy_value_get_string(proxy, plate, sizeof(plate), &len))
-		LOG_INF("Plate changed %s", plate);
-}
-
-static void random_plate(struct knot_proxy *proxy)
-{
-	u8_t id;
 	int num;
-	bool res;
-	id = knot_proxy_get_id(proxy);
 
 	num = (sys_rand32_get() % 7);
 	plate[3] = '0' + num;
@@ -134,52 +84,30 @@ static void random_plate(struct knot_proxy *proxy)
 	plate[5] = '2' + num;
 	plate[6] = '3' + num;
 
-	res = knot_proxy_value_set_string(proxy, plate, sizeof(plate));
-
-	/* Notify if sent */
-	if (res)
-		LOG_INF("Sent plate %s", plate);
+	return KNOT_CALLBACK_SUCCESS;
 }
 
 void setup(void)
 {
-	bool success;
-
 	/* THERMO - Sent every 5 seconds or at high temperatures */
-	if (knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
-			       KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-			       &thermo, sizeof(thermo),
-			       changed_thermo, poll_thermo) < 0) {
-		LOG_ERR("THERMO_0 failed to register");
-	}
-	success = knot_data_config(0,
-				   KNOT_EVT_FLAG_TIME, 5,
-				   KNOT_EVT_FLAG_UPPER_THRESHOLD,
-				   high_temp, NULL);
-	if (!success)
-		LOG_ERR("THERMO failed to configure");
+	knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
+			   KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+			   &thermo, sizeof(thermo), NULL, read_thermo);
+	knot_data_config(0,
+			 KNOT_EVT_FLAG_TIME, 5,
+			 KNOT_EVT_FLAG_UPPER_THRESHOLD, high_temp, NULL);
 
 	/* BUTTON - Sent after change */
-	if (knot_data_register(1, "LED", KNOT_TYPE_ID_SWITCH,
-			       KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-			       &led, sizeof(led),
-			       changed_led, poll_led) < 0) {
-		LOG_ERR("LED failed to register");
-	}
-	success = knot_data_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
-	if (!success)
-		LOG_ERR("LED failed to configure");
+	knot_data_register(1, "LED", KNOT_TYPE_ID_SWITCH,
+			   KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+			   &led, sizeof(led), changed_led, NULL);
+	knot_data_config(1, KNOT_EVT_FLAG_CHANGE, NULL);
 
 	/* PLATE - Sent every 10 seconds */
-	if (knot_data_register(2, "PLATE", KNOT_TYPE_ID_NONE,
-			       KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
-			       &plate, sizeof(plate),
-			       plate_changed, random_plate) < 0) {
-		LOG_ERR("PLATE failed to register");
-	}
-	success = knot_data_config(2, KNOT_EVT_FLAG_TIME, 10, NULL);
-	if (!success)
-		LOG_ERR("PLATE failed to configure");
+	knot_data_register(2, "PLATE", KNOT_TYPE_ID_NONE,
+			   KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
+			   &plate, sizeof(plate), NULL, random_plate);
+	knot_data_config(2, KNOT_EVT_FLAG_TIME, 10, NULL);
 
 	/* Peripherals control */
 #if CONFIG_BOARD_NRF52840_PCA10056
