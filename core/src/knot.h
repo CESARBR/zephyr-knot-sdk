@@ -26,8 +26,8 @@ typedef void (*knot_callback_t) (struct knot_proxy *proxy);
  */
 int knot_proxy_register(u8_t id, const char *name,
 			u16_t type_id, u8_t value_type,
-			u8_t unit, knot_callback_t changed_cb,
-			knot_callback_t pool_cb);
+			u8_t unit, knot_callback_t write_cb,
+			knot_callback_t read_cb);
 
 /*
  * This fuction configures which events should send proxy value to cloud

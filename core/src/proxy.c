@@ -76,8 +76,8 @@ static struct knot_proxy {
 	/* Time values */
 	u32_t			last_timeout;
 
-	knot_callback_t		poll_cb; /* Poll for local changes */
-	knot_callback_t		changed_cb; /* Report new value to user app */
+	knot_callback_t		read_cb; /* Poll for local changes */
+	knot_callback_t		write_cb; /* Report new value to user app */
 } proxy_pool[CONFIG_KNOT_THING_DATA_MAX];
 
 static u8_t last_id = 0xff;
@@ -99,8 +99,8 @@ void proxy_stop(void)
 
 int knot_proxy_register(u8_t id, const char *name,
 			u16_t type_id, u8_t value_type,
-			u8_t unit, knot_callback_t changed_cb,
-			knot_callback_t poll_cb)
+			u8_t unit, knot_callback_t write_cb,
+			knot_callback_t read_cb)
 {
 	struct knot_proxy *proxy;
 
@@ -143,8 +143,8 @@ int knot_proxy_register(u8_t id, const char *name,
 	/* Set default config */
 	proxy->config.event_flags = KNOT_EVT_FLAG_NONE;
 
-	proxy->poll_cb = poll_cb;
-	proxy->changed_cb = changed_cb;
+	proxy->read_cb = read_cb;
+	proxy->write_cb = write_cb;
 
 	if (id > last_id || last_id == 0xff)
 		last_id = id;
@@ -278,7 +278,7 @@ const knot_value_type *proxy_read(u8_t id, u8_t *olen, bool wait_resp)
 
 	proxy = &proxy_pool[id];
 
-	if (proxy->poll_cb == NULL)
+	if (proxy->read_cb == NULL)
 		return NULL;
 
 	proxy->olen = 0;
@@ -286,7 +286,7 @@ const knot_value_type *proxy_read(u8_t id, u8_t *olen, bool wait_resp)
 	/* Wait for response? */
 	proxy->wait_resp = wait_resp;
 
-	proxy->poll_cb(proxy);
+	proxy->read_cb(proxy);
 
 	/*
 	 * Read callback may set new values. When a
@@ -311,7 +311,7 @@ s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 	if (proxy->id == 0xff)
 		return -EINVAL;
 
-	if (proxy->changed_cb == NULL)
+	if (proxy->write_cb == NULL)
 		return 0;
 
 	memcpy(&proxy->value, value, sizeof(*value));
@@ -321,7 +321,7 @@ s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 	 * the user app through write callback.
 	 */
 
-	proxy->changed_cb(proxy);
+	proxy->write_cb(proxy);
 
 	return proxy->olen;
 }
