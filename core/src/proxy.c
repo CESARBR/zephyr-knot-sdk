@@ -51,9 +51,7 @@ LOG_MODULE_DECLARE(knot, CONFIG_KNOT_LOG_LEVEL);
 
 #define check_raw_change(proxy, rawval, rawlen)	\
 	(KNOT_EVT_FLAG_CHANGE & proxy->config.event_flags \
-	&& ( proxy->rlen != rawlen \
-	     || memcmp(proxy->value.raw, rawval, rawlen) != 0) \
-	   )
+	&& memcmp(proxy->value.raw, rawval, rawlen) != 0)
 
 static struct knot_proxy {
 	/* KNoT identifier */
@@ -71,7 +69,6 @@ static struct knot_proxy {
 	bool 			upper_flag; /* Upper limit crossed */
 	bool 			lower_flag; /* Lower limit crossed */
 	u8_t			olen; /* Amount to send / Output: temporary */
-	u8_t			rlen; /* Length RAW value */
 
 	/* Config values */
 	knot_config		config;
@@ -318,12 +315,6 @@ s8_t proxy_write(u8_t id, const knot_value_type *value, u8_t value_len)
 		return 0;
 
 	memcpy(&proxy->value, value, sizeof(*value));
-	/*
-	 * Set string length if raw data. 'value_len' can be ignored for basic
-	 * types: knotd is responsible for encoding and setting payload_len.
-	 */
-	if (proxy->schema.value_type == KNOT_VALUE_TYPE_RAW)
-		proxy->rlen = value_len;
 
 	/*
 	 * New values sent from cloud are informed to
@@ -475,7 +466,6 @@ bool knot_proxy_value_set_string(struct knot_proxy *proxy,
 	/* len may not include null */
 	len = MIN(KNOT_DATA_RAW_SIZE, len);
 	proxy->olen = len; /* Amount to send */
-	proxy->rlen = len; /* RAW type length */
 	memcpy(proxy->value.raw, value, len);
 	proxy->send = proxy->wait_resp;
 
@@ -520,8 +510,8 @@ bool knot_proxy_value_get_string(struct knot_proxy *proxy,
 	if (proxy->schema.value_type != KNOT_VALUE_TYPE_RAW)
 		return false;
 
-	*olen = MIN(len, proxy->rlen);
-	memcpy(value, proxy->value.raw, *olen);
+	*olen = len;
+	memcpy(value, proxy->value.raw, len);
 
 	return true;
 }
