@@ -61,7 +61,7 @@ void setup(void)
 	/* THERMO - Sent every 5 seconds or at high temperatures */
 	if (knot_proxy_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 		      KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
-		      changed_thermo, poll_thermo) == NULL) {
+		      changed_thermo, poll_thermo) < 0) {
 		LOG_ERR("THERMO_0 failed to register");
 	}
 	success = knot_proxy_set_config(0, KNOT_EVT_FLAG_TIME, 5,

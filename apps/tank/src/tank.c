@@ -70,7 +70,7 @@ void setup(void)
 	/* VOLUME - Sent every 5 seconds or at low volumes */
 	if (knot_proxy_register(0, "VOLUME", KNOT_TYPE_ID_VOLUME,
 		      KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_VOLUME_L,
-		      changed_volume, poll_volume) == NULL) {
+		      changed_volume, poll_volume) < 0) {
 		LOG_ERR("VOLUME_0 failed to register");
 	}
 	success = knot_proxy_set_config(0, KNOT_EVT_FLAG_TIME, 5, NULL);

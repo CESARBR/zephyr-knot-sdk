@@ -60,7 +60,7 @@ void setup(void)
 	/* PLATE - Sent every 10 seconds */
 	if (knot_proxy_register(0, "PLATE", KNOT_TYPE_ID_NONE,
 		      KNOT_VALUE_TYPE_RAW, KNOT_UNIT_NOT_APPLICABLE,
-		      plate_changed, random_plate) == NULL) {
+		      plate_changed, random_plate) < 0) {
 		LOG_ERR("PLATE failed to register");
 	}
 	success = knot_proxy_set_config(0, KNOT_EVT_FLAG_TIME, 10, NULL);
