@@ -89,7 +89,7 @@ void setup(void)
 	/* BUTTON - Sent after change */
 	if (knot_proxy_register(0, "LED", KNOT_TYPE_ID_SWITCH,
 		      KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
-		      changed_led, poll_led) == NULL) {
+		      changed_led, poll_led) < 0) {
 		LOG_ERR("LED failed to register");
 	}
 	success = knot_proxy_set_config(0, KNOT_EVT_FLAG_CHANGE, NULL);

@@ -97,10 +97,10 @@ void proxy_stop(void)
 
 }
 
-struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
-				       u16_t type_id, u8_t value_type,
-				       u8_t unit, knot_callback_t changed_cb,
-				       knot_callback_t poll_cb)
+int knot_proxy_register(u8_t id, const char *name,
+			u16_t type_id, u8_t value_type,
+			u8_t unit, knot_callback_t changed_cb,
+			knot_callback_t poll_cb)
 {
 	struct knot_proxy *proxy;
 
@@ -109,21 +109,21 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 		LOG_ERR("Register for ID %d failed: "
 			"id >= CONFIG_KNOT_THING_DATA_MAX (%d)",
 			id, CONFIG_KNOT_THING_DATA_MAX);
-		return NULL;
+		return -1;
 	}
 
 	/* Assigned already? */
 	if (proxy_pool[id].id != 0xff) {
 		LOG_ERR("Register for ID %d failed: "
 			"Id already registered", id);
-		return NULL;
+		return -1;
 	}
 
 	/* Basic field validation */
 	if (knot_schema_is_valid(type_id, value_type, unit) != 0 || !name) {
 		LOG_ERR("Register for ID %d failed: "
 			"Invalid schema", id);
-		return NULL;
+		return -1;
 	}
 
 	proxy = &proxy_pool[id];
@@ -149,7 +149,7 @@ struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
 	if (id > last_id || last_id == 0xff)
 		last_id = id;
 
-	return proxy;
+	return id;
 }
 
 bool knot_proxy_set_config(u8_t id, ...)

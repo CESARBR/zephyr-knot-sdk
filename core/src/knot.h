@@ -20,11 +20,14 @@ struct knot_proxy;
 
 typedef void (*knot_callback_t) (struct knot_proxy *proxy);
 
-/* Creates & tracks device changes a remote device (cloud) */
-struct knot_proxy *knot_proxy_register(u8_t id, const char *name,
-				       u16_t type_id, u8_t value_type,
-				       u8_t unit, knot_callback_t changed_cb,
-				       knot_callback_t pool_cb);
+/*
+ * Creates & tracks device changes on a remote device (cloud).
+ * Returns the registered id. Returns a negative number if failed.
+ */
+int knot_proxy_register(u8_t id, const char *name,
+			u16_t type_id, u8_t value_type,
+			u8_t unit, knot_callback_t changed_cb,
+			knot_callback_t pool_cb);
 
 /*
  * This fuction configures which events should send proxy value to cloud
