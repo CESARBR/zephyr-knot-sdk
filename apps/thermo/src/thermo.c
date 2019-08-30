@@ -61,6 +61,7 @@ void setup(void)
 	/* THERMO - Sent every 5 seconds or at high temperatures */
 	if (knot_data_register(0, "THERMO", KNOT_TYPE_ID_TEMPERATURE,
 			       KNOT_VALUE_TYPE_INT, KNOT_UNIT_TEMPERATURE_C,
+			       &thermo, sizeof(thermo),
 			       changed_thermo, poll_thermo) < 0) {
 		LOG_ERR("THERMO_0 failed to register");
 	}

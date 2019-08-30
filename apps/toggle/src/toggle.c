@@ -47,6 +47,7 @@ void setup(void)
 	/* KNoT config */
 	knot_data_register(0, "LED", KNOT_TYPE_ID_SWITCH,
 			   KNOT_VALUE_TYPE_BOOL, KNOT_UNIT_NOT_APPLICABLE,
+			   &toggle, sizeof(toggle),
 			   write_led, NULL);
 
 	knot_data_config(0, KNOT_EVT_FLAG_CHANGE, NULL);

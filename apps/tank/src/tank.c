@@ -70,6 +70,7 @@ void setup(void)
 	/* VOLUME - Sent every 5 seconds or at low volumes */
 	if (knot_data_register(0, "VOLUME", KNOT_TYPE_ID_VOLUME,
 			       KNOT_VALUE_TYPE_FLOAT, KNOT_UNIT_VOLUME_L,
+			       &volume, sizeof(volume),
 			       changed_volume, poll_volume) < 0) {
 		LOG_ERR("VOLUME_0 failed to register");
 	}
