@@ -124,6 +124,7 @@ setup:
 			continue;
 
 		LOG_INF("Reseting system...");
+		k_sleep(2000);
 		sys_reboot(SYS_REBOOT_WARM);
 	}
 }
