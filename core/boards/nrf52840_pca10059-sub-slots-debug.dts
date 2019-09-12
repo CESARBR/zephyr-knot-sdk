@@ -29,9 +29,12 @@
 		};
 
 		/*
-		 * Using last 2 pages of storage partition
+		 * Using first 4 pages of scratch partition for
+		 * OpenThread storage.
+		 * This is allowed as the scratch area is used only
+		 * during OTA update.
 		 */
-		ot_partition: partition@fe000 {
+		ot_partition: sub-partition@ce000 {
 			label = "ot-storage";
 			reg = <0x000ce000 0x00002000>;
 		};

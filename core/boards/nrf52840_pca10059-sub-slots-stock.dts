@@ -27,9 +27,15 @@
 			reg = <0x00030000 0x00003E000>;
 		};
 
-		ot_partition: partition@fe000 {
+		/*
+		 * Using first 4 pages of scratch partition for
+		 * OpenThread storage.
+		 * This is allowed as scratch area is used only
+		 * during OTA update.
+		 */
+		ot_partition: sub-partition@d0000 {
 			label = "ot-storage";
-			reg = <0x000ce000 0x00002000>;
+			reg = <0x000d0000 0x00004000>;
 		};
 		/* Nordic nRF5 bootloader <0xe0000 0x1c000>
 		 *
