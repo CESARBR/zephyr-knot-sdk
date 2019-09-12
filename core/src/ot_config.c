@@ -90,17 +90,16 @@ int ot_config_load(void)
 static void update_role(void)
 {
 	role = otThreadGetDeviceRole(ot_context->instance);
+	LOG_DBG("OT role: %u", role);
 
-	if (role == OT_DEVICE_ROLE_CHILD) {
-		LOG_DBG("OT role: %u (child)", role);
+	/* Device connected */
+	if (role != OT_DEVICE_ROLE_DISABLED && role != OT_DEVICE_ROLE_DETACHED)
 		return;
-	}
 
-	LOG_WRN("OT role: %u (not child)", role);
-	/* Call disconnection callback if set */
+	/* Device disconnected */
+	LOG_WRN("OT disconnected!");
 	if (disconn_cb != NULL)
 		disconn_cb();
-
 }
 
 static void change_cb(otChangedFlags aFlags, void *aContext)
@@ -198,6 +197,7 @@ int ot_config_start(void)
 
 	/* Enable OpenThread service */
 	LOG_DBG("Starting OpenThread service");
+
 	rc = otIp6SetEnabled(ot_context->instance, true);
 	if (rc) {
 		LOG_ERR("Failed to enable IPv6 communication. (err %d)", rc);
@@ -217,6 +217,7 @@ int ot_config_stop(void)
 
 	/* Disable OpenThread service */
 	LOG_DBG("Stopping OpenThread service");
+
 	rc = otThreadSetEnabled(ot_context->instance, false);
 	if (rc) {
 		LOG_ERR("Failed to stop Thread protocol. (err %d)", rc);
@@ -232,8 +233,9 @@ int ot_config_stop(void)
 
 bool ot_config_is_ready(void)
 {
-	/* Device is ready when its role is set to Child */
-	return (role == OT_DEVICE_ROLE_CHILD);
+	/* Device is ready when its role is set to Child, Router or Leader */
+	return (role != OT_DEVICE_ROLE_DISABLED &&
+		role != OT_DEVICE_ROLE_DETACHED);
 }
 
 #endif // endif CONFIG_NET_L2_OPENTHREAD
