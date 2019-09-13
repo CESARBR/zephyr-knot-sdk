@@ -7,10 +7,8 @@
  */
 
 /*
- * The knot client application is acting as a client that is run in Zephyr OS,
- * The client sends sensor data encapsulated using KNoT netcol.
+ * Use callback to toggle led status when the button is pressed.
  */
-
 
 #include <zephyr.h>
 #include <net/net_core.h>
@@ -23,47 +21,29 @@
 LOG_MODULE_REGISTER(button, LOG_LEVEL_DBG);
 
 /* Tracked value */
-static bool led = true;
+bool led = true;
 
-/*
- * Use GPIO only for real boards.
- * Use timer to mock values change if using qemu.
- */
-#if CONFIG_BOARD_NRF52840_PCA10056
 #include <device.h>
 #include <gpio.h>
-#define GPIO_PORT		SW0_GPIO_CONTROLLER /* General GPIO Controller */
-#define BUTTON_PIN		DT_GPIO_KEYS_SW1_GPIO_PIN /* User button */
-#define LED_PIN			LED1_GPIO_PIN /* User LED */
+#define GPIO_PORT	SW0_GPIO_CONTROLLER /* General GPIO Controller */
+#define BUTTON_PIN	DT_GPIO_KEYS_SW1_GPIO_PIN /* User button */
+#define LED_PIN		LED1_GPIO_PIN /* User LED */
 
-static struct device *gpiob;		/* GPIO device */
-static struct gpio_callback button_cb; /* Button pressed callback */
+struct device *gpiob;		/* GPIO device */
+struct gpio_callback button_cb; /* Button pressed callback */
 
-static void btn_press(struct device *gpiob,
-		       struct gpio_callback *cb, u32_t pins)
+void btn_press(struct device *gpiob,
+		      struct gpio_callback *cb, u32_t pins)
 {
 	led = !led;
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Update GPIO */
-
 }
-#else
-
-#define UPDATE_PERIOD K_SECONDS(3) /* Update values each 3 seconds */
-static void val_update(struct k_timer *timer_id)
-{
-	led = !led;
-	k_timer_start(timer_id, UPDATE_PERIOD, UPDATE_PERIOD);
-}
-K_TIMER_DEFINE(val_update_timer, val_update, NULL);
-#endif
 
 int changed_led(int id)
 {
 	LOG_INF("Value for led changed to %d", led);
-
-#if CONFIG_BOARD_NRF52840_PCA10056
 	gpio_pin_write(gpiob, LED_PIN, !led); /* Led is On at LOW */
-#endif
+
 	return KNOT_CALLBACK_SUCCESS;
 }
 
@@ -83,9 +63,8 @@ void setup(void)
 		LOG_ERR("LED failed to configure");
 
 	/* Peripherals control */
-#if CONFIG_BOARD_NRF52840_PCA10056
-	/* Read button */
 	gpiob = device_get_binding(GPIO_PORT);
+
 	/* Button Pin has pull up, interruption on low edge and debounce */
 	gpio_pin_configure(gpiob, BUTTON_PIN,
 			   GPIO_DIR_IN | GPIO_PUD_PULL_UP | GPIO_INT_DEBOUNCE |
@@ -96,11 +75,6 @@ void setup(void)
 
 	/* Led pin */
 	gpio_pin_configure(gpiob, LED_PIN, GPIO_DIR_OUT);
-
-#else
-	k_timer_start(&val_update_timer, UPDATE_PERIOD, UPDATE_PERIOD);
-#endif
-
 }
 
 void loop(void)
