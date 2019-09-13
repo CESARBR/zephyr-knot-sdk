@@ -1,4 +1,4 @@
-/* hello.c - KNoT Application Client */
+/* blink.c - KNoT Application Client */
 
 /*
  * Copyright (c) 2019, CESAR. All rights reserved.
@@ -25,7 +25,7 @@
 #define LED_PORT	LED1_GPIO_CONTROLLER /* General GPIO Controller */
 #define LED_PIN		LED1_GPIO_PIN /* User LED */
 
-LOG_MODULE_REGISTER(hello, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(blink, LOG_LEVEL_DBG);
 
 bool led = true; 			/* Tracked value */
 struct device *gpio_led;		/* GPIO device */
