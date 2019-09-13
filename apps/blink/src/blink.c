@@ -59,8 +59,8 @@ void loop(void)
 	/* Get current time */
 	int64_t current_time = k_uptime_get();
 
-	/* Toggle led after every 3 seconds */
-	if (current_time - last_toggle_time > 2000) {
+	/* Toggle led every 10 seconds */
+	if (current_time - last_toggle_time > 10000) {
 		led = !led;
 		gpio_pin_write(gpio_led, LED_PIN, !led); /* Update GPIO */
 		last_toggle_time = current_time;
