@@ -5,7 +5,7 @@ if (NOT DEFINED ENV{KNOT_BASE})
 endif()
 
 include($ENV{KNOT_BASE}/core/CMakeLists.txt)
-project(Hello)
+project(Button)
 
 FILE(GLOB app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})
