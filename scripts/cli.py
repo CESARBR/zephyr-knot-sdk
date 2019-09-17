@@ -140,12 +140,16 @@ class KnotSDK(metaclass=Singleton):
         IMG_PATH = "img"
         # Board Ids used for compiling
         BOARD_DK = 'nrf52840_pca10056'
+        BOARD_MESH = 'knot_mesh'
         BOARD_DONGLE = 'nrf52840_pca10059'
+        # Using image for dongle while a new image is not built for mesh
         MCUBOOT_STOCK_FILES = {
             BOARD_DK:     'mcuboot-ec-p256-dk.hex',
+            BOARD_MESH:   'mcuboot-ec-p256-dongle.hex',
             BOARD_DONGLE: 'mcuboot-ec-p256-dongle.hex'}
         # Board Aliases used for compiling
         BOARD_ALIASES = {'dk':     BOARD_DK,
+                         'mesh':   BOARD_MESH,
                          'dongle': BOARD_DONGLE}
         NRFUTIL_PATH = "third_party/pc-nrfutil/nrfutil"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
@@ -156,6 +160,7 @@ class KnotSDK(metaclass=Singleton):
         # The image slot size may vary based on the target board
         SIGN_IMG_SLOT_SIZES = {
             BOARD_DK:     '0x67000',
+            BOARD_MESH:   '0x5E000',
             BOARD_DONGLE: '0x5E000'}
         CMAKE_KNOT_DEBUG = "KNOT_DEBUG"
         CONFIG_PATH = "config"
@@ -336,7 +341,7 @@ or remove the other boards")
         return ports[0].device
 
     def __flash(self, file_path, port):
-        # Use nrfjprog for DK and nrfutil for Dongle
+        # Use nrfjprog for DK and nrfutil for Dongle and KNoT Mesh
         if self.board == self.Constants.BOARD_DK:
             cmd = 'nrfjprog --program ' + file_path + \
                   ' --sectorerase -f nrf52 --reset'
@@ -344,7 +349,8 @@ or remove the other boards")
             logging.info('Flashing file ' + file_path)
             run_cmd(cmd)
 
-        elif self.board == self.Constants.BOARD_DONGLE:
+        elif self.board in [self.Constants.BOARD_DONGLE,
+                            self.Constants.BOARD_MESH]:
             # Abort if device port is not set
             if port is None:
                 port = self.find_flash_dev(
@@ -378,8 +384,9 @@ or remove the other boards")
         Flash signed image to board. If full flag is set, flash
         mcuboot + signed image merged file.
         """
-        # Flash full image if board is dongle
-        if full or self.board == self.Constants.BOARD_DONGLE:
+        # Flash full image if board is dongle or KNoT Mesh
+        if full or self.board in [self.Constants.BOARD_DONGLE,
+                                  self.Constants.BOARD_MESH]:
             logging.info("Flashing apps with mcuboot")
             target_path = self.full_hex_path
         else:
