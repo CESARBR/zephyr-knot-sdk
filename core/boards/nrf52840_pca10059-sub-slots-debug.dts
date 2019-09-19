@@ -34,9 +34,9 @@
 		 * This is allowed as the scratch area is used only
 		 * during OTA update.
 		 */
-		ot_partition: sub-partition@ce000 {
+		ot_partition: sub-partition@d0000 {
 			label = "ot-storage";
-			reg = <0x000ce000 0x00002000>;
+			reg = <0x000d0000 0x00004000>;
 		};
 	};
 };
