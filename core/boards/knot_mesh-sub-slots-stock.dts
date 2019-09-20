@@ -19,12 +19,12 @@
 
 		slot_0_0_sub_partition: sub-partition@10000 {
 			label = "image-knot-setup";
-			reg = <0x00010000 0x000020000>;
+			reg = <0x00010000 0x00001c000>;
 		};
 
-		slot_0_1_sub_partition: sub-partition@30000 {
+		slot_0_1_sub_partition: sub-partition@2c000 {
 			label = "image-knot-app";
-			reg = <0x00030000 0x00003e000>;
+			reg = <0x0002c000 0x000042000>;
 		};
 
 		/*
