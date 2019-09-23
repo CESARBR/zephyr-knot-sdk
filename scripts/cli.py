@@ -16,6 +16,7 @@ import subprocess
 import logging
 import coloredlogs
 import serial.tools.list_ports
+import shlex
 
 
 class Singleton(type):
@@ -189,7 +190,7 @@ class KnotSDK(metaclass=Singleton):
         logging.info('Using KNoT base path: ' + self.knot_path)
 
         # Get current working directory
-        self.cwd = os.getcwd()
+        self.cwd = shlex.quote(os.getcwd())
 
     def __def_paths(self):
         """
