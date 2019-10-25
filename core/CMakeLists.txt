@@ -32,7 +32,8 @@ if (NOT ${BOARD} STREQUAL qemu_x86)
                 $ENV{KNOT_BASE}/core/boards/overlay-main.dts
         )
         set(DTC_OVERLAY_FILE
-                "${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} ${DTC_OVERLAY_SET_SLOT}"
+                "${DTC_OVERLAY_FILE} ${DTC_OVERLAY_MULTI_SLOT} \
+                 ${DTC_OVERLAY_SET_SLOT} ${DTC_OVERLAY_USER}"
         )
 endif ()
 
