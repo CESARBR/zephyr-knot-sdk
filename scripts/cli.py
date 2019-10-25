@@ -118,6 +118,7 @@ class KnotSDK(metaclass=Singleton):
     knot_path = ""  # Common directory and files used by images
     ext_ot_path = None  # External OpenThread repository
     ext_proto_path = None  # External KNoT Protocol repository
+    ext_dts_ovl_path = None  # External DTS overlay file
     cwd = ""  # Current working directory from where cli was called
     setup_app = None  # Setup app
     main_app = None  # Main app
@@ -246,6 +247,19 @@ class KnotSDK(metaclass=Singleton):
             logging.info('Using KNoT Protocol path: {}'.format(self.ext_proto_path))
         else:
             logging.info('No KNoT Protocol path passed')
+
+    def set_ext_dts_ovl_path(self, dts_ovl_path=None):
+        """
+        In case of no DTS overlay path passed, keep it as None.
+        """
+        # Use default DTS files if none is passed
+        if dts_ovl_path is not None:
+            self.ext_dts_ovl_path = dts_ovl_path
+            logging.info('Using external DTS overlay path: {}'.format(
+                self.ext_dts_ovl_path))
+        else:
+            logging.info('No external DTS overlay found. \
+                Using default DTS files')
 
     def print_supported_boards(self):
         """
@@ -468,6 +482,10 @@ or remove the other boards")
             opt +=\
                 ' -DEXTERNAL_PROJECT_PATH_KNOT_PROTOCOL={}'.format(
                     self.ext_proto_path)
+
+        # Use external KNoT Protocol path if provided
+        if self.ext_dts_ovl_path is not None:
+            opt += ' -DDTC_OVERLAY_USER={}'.format(self.ext_dts_ovl_path)
 
         # Debug mode
         if self.debug_app:
@@ -693,6 +711,7 @@ def cli():
 @click.pass_context
 @click.option('--ot_path', help='Define OpenThread repository path')
 @click.option('--proto_path', help='Define KNoT Protocol repository path')
+@click.option('--dts_ovl_path', help='Define a user DTS overlay file path')
 @click.option('-q', '--quiet', help='Suppress successful sub-command messages',
               is_flag=True)
 @click.option('-b', '--board', help='Target board')
@@ -703,7 +722,7 @@ def cli():
               is_flag=True)
 @click.option('-p', '--port', help='Device port')
 @click.option('-o', '--output', help='Output path')
-def make(ctx, ot_path, proto_path, quiet, board, debug,
+def make(ctx, ot_path, proto_path, dts_ovl_path, quiet, board, debug,
          flash, clean, mcuboot, port, output):
     if quiet:
         KnotSDK().set_quiet(True)
@@ -730,6 +749,9 @@ def make(ctx, ot_path, proto_path, quiet, board, debug,
 
     # Defined board required
     KnotSDK().set_board(board=board)
+
+    # Optional external DTS overlay file path
+    KnotSDK().set_ext_dts_ovl_path(dts_ovl_path=dts_ovl_path)
 
     # Make apps
     KnotSDK().make_setup()
