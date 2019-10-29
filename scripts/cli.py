@@ -143,6 +143,7 @@ class KnotSDK(metaclass=Singleton):
         BOARD_DK = 'nrf52840_pca10056'
         BOARD_MESH = 'knot_mesh'
         BOARD_DONGLE = 'nrf52840_pca10059'
+        BOARDS = [BOARD_DK, BOARD_MESH, BOARD_DONGLE]
         # Using image for dongle while a new image is not built for mesh
         MCUBOOT_STOCK_FILES = {
             BOARD_DK:     'mcuboot-ec-p256-dk.hex',
@@ -152,6 +153,7 @@ class KnotSDK(metaclass=Singleton):
         BOARD_ALIASES = {'dk':     BOARD_DK,
                          'mesh':   BOARD_MESH,
                          'dongle': BOARD_DONGLE}
+        USER_DTS_OVERLAY_FILE = {board: board + '.overlay' for board in BOARDS}
         NRFUTIL_PATH = "third_party/pc-nrfutil/nrfutil"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
@@ -250,11 +252,20 @@ class KnotSDK(metaclass=Singleton):
 
     def set_ext_dts_ovl_path(self, dts_ovl_path=None):
         """
-        In case of no DTS overlay path passed, keep it as None.
+        Check for a local DTS overlay file if none specified.
+        In case of no DTS overlay path found, keep it as None.
         """
+        user_dts_overlay_path = os.path.join(self.cwd,
+            self.Constants.USER_DTS_OVERLAY_FILE[self.board])
+
         # Use default DTS files if none is passed
         if dts_ovl_path is not None:
             self.ext_dts_ovl_path = dts_ovl_path
+        elif os.path.isfile(user_dts_overlay_path):
+            self.ext_dts_ovl_path = user_dts_overlay_path
+
+        # Log in case of a DTS overlay path found
+        if self.ext_dts_ovl_path is not None:
             logging.info('Using external DTS overlay path: {}'.format(
                 self.ext_dts_ovl_path))
         else:
