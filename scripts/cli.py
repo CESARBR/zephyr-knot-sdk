@@ -154,6 +154,8 @@ class KnotSDK(metaclass=Singleton):
                          'mesh':   BOARD_MESH,
                          'dongle': BOARD_DONGLE}
         USER_DTS_OVERLAY_FILE = {board: board + '.overlay' for board in BOARDS}
+        USER_DTS_OVERLAY_FILE_ALIASES = {value: key + '.overlay'
+                                        for key, value in BOARD_ALIASES.items()}
         NRFUTIL_PATH = "third_party/pc-nrfutil/nrfutil"
         SIGN_SCRIPT_PATH = "third_party/mcuboot/scripts/imgtool.py"
         SIGN_KEY_PATH = "third_party/mcuboot/root-ec-p256.pem"
@@ -258,11 +260,16 @@ class KnotSDK(metaclass=Singleton):
         user_dts_overlay_path = os.path.join(self.cwd,
             self.Constants.USER_DTS_OVERLAY_FILE[self.board])
 
+        user_dts_overlay_alias_path = os.path.join(self.cwd,
+            self.Constants.USER_DTS_OVERLAY_FILE_ALIASES[self.board])
+
         # Use default DTS files if none is passed
         if dts_ovl_path is not None:
             self.ext_dts_ovl_path = dts_ovl_path
         elif os.path.isfile(user_dts_overlay_path):
             self.ext_dts_ovl_path = user_dts_overlay_path
+        elif os.path.isfile(user_dts_overlay_alias_path):
+            self.ext_dts_ovl_path = user_dts_overlay_alias_path
 
         # Log in case of a DTS overlay path found
         if self.ext_dts_ovl_path is not None:
