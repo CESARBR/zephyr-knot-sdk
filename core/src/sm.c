@@ -35,6 +35,7 @@ static bool to_xpr;		/* Timeout expired */
 static char uuid[KNOT_PROTOCOL_UUID_LEN + 1];	/* Device uuid */
 static char token[KNOT_PROTOCOL_TOKEN_LEN + 1];	/* Device token */
 static u64_t device_id;				/* Device id */
+static bool rst_flag; 				/* Reset flag */
 
 enum sm_state {
 	STATE_REG,		/* Registers new device */
@@ -335,6 +336,8 @@ static size_t process_cmd(const u8_t *ipdu, size_t ilen,
 	switch (imsg->hdr.type) {
 	case KNOT_MSG_UNREG_REQ:
 		/* Clear NVM */
+		rst_flag = true;
+		len = msg_create_unreg(omsg);
 		break;
 	case KNOT_MSG_POLL_DATA_REQ:
 		id = imsg->data.sensor_id;
@@ -612,4 +615,9 @@ done:
 	state = next;
 
 	return len;
+}
+
+bool sm_get_reset(void)
+{
+	return rst_flag;
 }

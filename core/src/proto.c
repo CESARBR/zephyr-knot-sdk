@@ -92,7 +92,7 @@ static void proto_thread(void)
 		peripheral_flag_status();
 
 		/* Handle reset flag */
-		reset = peripheral_get_reset();
+		reset = peripheral_get_reset() || sm_get_reset();
 		if (reset) {
 			/* TODO: Unregister before reseting */
 			LOG_INF("Reseting system...");

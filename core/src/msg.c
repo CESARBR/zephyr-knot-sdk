@@ -73,3 +73,11 @@ size_t msg_create_data(knot_msg *msg, u8_t id,
 
 	return (sizeof(msg->hdr) + msg->hdr.payload_len);
 }
+
+size_t msg_create_unreg(knot_msg *msg)
+{
+	msg->hdr.type = KNOT_MSG_UNREG_RSP;
+	msg->hdr.payload_len = 0;
+
+	return sizeof(msg->hdr);
+}
