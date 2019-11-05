@@ -13,3 +13,4 @@ size_t msg_create_schema(knot_msg *msg, u8_t id,
 size_t msg_create_data(knot_msg *msg, u8_t id,
 		       const knot_value_type *value, uint8_t value_len,
 		       bool resp);
+size_t msg_create_unreg(knot_msg *msg);
