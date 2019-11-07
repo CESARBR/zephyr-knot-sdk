@@ -89,6 +89,19 @@ static void proto_thread(void)
 		/* Calling KNoT app: loop() */
 		loop();
 
+		peripheral_flag_status();
+
+		/* Handle reset flag */
+		reset = peripheral_get_reset();
+		if (reset) {
+			/* TODO: Unregister before reseting */
+			LOG_INF("Reseting system...");
+			#if !CONFIG_BOARD_QEMU_X86
+				clear_factory();
+				sys_reboot(SYS_REBOOT_WARM);
+			#endif
+		}
+
 		/* Ignore net and SM if disconnected */
 		if (check_connection() == false) {
 			peripheral_set_status_period(STATUS_DISCONN_PERIOD);
@@ -109,19 +122,6 @@ static void proto_thread(void)
 				   &olen, olen, K_NO_WAIT);
 
 done:
-		peripheral_flag_status();
-
-		/* Handle reset flag */
-		reset = peripheral_get_reset();
-		if (reset) {
-			/* TODO: Unregister before reseting */
-			LOG_INF("Reseting system...");
-			#if !CONFIG_BOARD_QEMU_X86
-				clear_factory();
-				sys_reboot(SYS_REBOOT_WARM);
-			#endif
-		}
-
 		k_yield();
 	}
 
