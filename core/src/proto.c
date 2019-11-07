@@ -117,7 +117,7 @@ done:
 			/* TODO: Unregister before reseting */
 			LOG_INF("Reseting system...");
 			#if !CONFIG_BOARD_QEMU_X86
-			clear_factory();
+				clear_factory();
 				sys_reboot(SYS_REBOOT_WARM);
 			#endif
 		}
