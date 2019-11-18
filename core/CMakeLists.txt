@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.8.2)
 find_package(Git REQUIRED)
 
-macro(set_conf_file)
-    set(CONF_FILE
-      "$ENV{KNOT_BASE}/core/core.conf \
-       $ENV{KNOT_BASE}/core/overlay-knot-ot.conf \
-       $ENV{KNOT_BASE}/core/boards/${BOARD}.conf \
-       prj.conf \
-       ")
-endmacro()
+set(CONF_FILE
+        "$ENV{KNOT_BASE}/core/core.conf \
+         $ENV{KNOT_BASE}/core/overlay-knot-ot.conf \
+         $ENV{KNOT_BASE}/core/boards/${BOARD}.conf \
+         prj.conf"
+)
 
 if(NOT BOARD)
         error("Board not defined!")
